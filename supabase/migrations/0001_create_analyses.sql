@@ -52,5 +52,15 @@ drop policy if exists "delete own analyses" on public.analyses;
 create policy "delete own analyses" on public.analyses
   for delete using (auth.uid() = user_id);
 
--- Enable Realtime so the UI gets live status updates.
-alter publication supabase_realtime add table public.analyses;
+-- Enable Realtime so the UI gets live status updates (safe to re-run).
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'analyses'
+  ) then
+    alter publication supabase_realtime add table public.analyses;
+  end if;
+end $$;
