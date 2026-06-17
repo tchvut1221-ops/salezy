@@ -1,13 +1,5 @@
 {
   "framework": "nextjs",
   "buildCommand": "next build",
-  "outputDirectory": ".next",
-  "env": {
-    "NEXT_PUBLIC_SUPABASE_URL": "@salezy_supabase_url",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@salezy_supabase_anon_key",
-    "SUPABASE_SERVICE_KEY": "@salezy_supabase_service_key",
-    "OPENAI_API_KEY": "@salezy_openai_api_key",
-    "INNGEST_EVENT_KEY": "@salezy_inngest_event_key",
-    "INNGEST_SIGNING_KEY": "@salezy_inngest_signing_key"
-  }
+  "outputDirectory": ".next"
 }
