@@ -1,75 +1,39 @@
 # Salezy — Claude Code Instructions
 
-## What is Salezy
-A web app that analyzes sales call recordings using AI.
-The user uploads an audio file → gets transcription + psychological analysis of the conversation.
-
-## Target User
-Individual salespeople in Israel. Not enterprises.
-They pay 200 NIS/month for a subscription.
-
-## MVP Scope (Week 1-2)
-1. Upload audio file (mp3/wav/m4a)
-2. Transcribe using Whisper API
-3. Analyze the transcript using GPT-4 / Claude
-4. Display structured analysis report
-
-## Analysis Output (3 Focus Areas)
-1. Customer personality type — Analytical / Driver / Amiable / Expressive
-2. Salesperson performance — what worked, what didn't, actionable tips
-3. Customer needs — what the customer actually wants (explicit + implicit)
-
-## Tech Stack
-- Framework: Next.js 14 (App Router)
-- Language: TypeScript
-- Styling: Tailwind CSS + shadcn/ui
-- Auth: Clerk or NextAuth
-- DB: Supabase (PostgreSQL)
-- File Storage: Supabase Storage
-- Transcription: OpenAI Whisper API
-- Analysis: OpenAI GPT-4o
-- Payments: Stripe (future)
+## Stack
+- Next.js 14 (App Router) + TypeScript only — no plain JS ever
+- Tailwind CSS + shadcn/ui
+- Supabase (DB + Storage)
+- Inngest (background jobs)
+- OpenAI Whisper (transcription) + GPT-4o (analysis)
+- Auth: Magic Link via Supabase Auth
 - Deployment: Vercel
 
-## Project Structure
-salezy/
-├── app/
-│   ├── (auth)/
-│   ├── dashboard/
-│   ├── upload/
-│   ├── analysis/[id]/
-│   └── api/
-├── components/
-│   ├── ui/
-│   └── salezy/
-├── lib/
-│   ├── whisper.ts
-│   ├── analysis.ts
-│   └── supabase.ts
-└── types/
-    └── index.ts
+## Architecture Rules
+- Server components by default — client components only when required
+- All heavy processing inside Inngest steps, never in API routes
+- ffmpeg processing only inside Inngest steps
+- API routes must verify the authenticated user on every request
 
-## Design Principles
-- 70% functionality, 30% design
-- Clean, professional, modern — not corporate
-- Hebrew primary language for UI text
-- Mobile-first
-- Dark mode preferred
+## Security — Non-Negotiable
+- SUPABASE_SERVICE_ROLE_KEY: server-side only (API routes / Inngest). Never in client code.
+- All secrets in .env.local — never hardcoded
+- RLS enabled on every Supabase table — users access only their own rows
+- File uploads: validate type (mp3/wav/m4a only) and size (max 100MB) before processing
+- Never expose stack traces or technical errors to the user
+- Rate limit all API routes
 
-## Key Rules
-- Always use TypeScript, never plain JS
-- Use server components by default
-- All API keys in .env.local, never hardcoded
-- Error handling on every API call
+## Code Standards
+- TypeScript strict mode — no any
+- Error handling on every async call
 - Loading states on every async action
+- User-facing text in Hebrew
 
-## Current Status
-MVP Phase — building core upload + analysis flow.
-Auth and payments come after core works.
+## Current MVP Scope
+1. Upload audio file → store in Supabase Storage
+2. Inngest job: transcribe with Whisper → analyze with GPT-4o
+3. Analysis output: customer personality type / salesperson performance / customer needs
+4. Display results in /analysis/[id]
 
 ## What NOT to build yet
-- Real-time recording (Phase 2)
-- Mobile app (Phase 2)
-- Zoom/Meet integration (Phase 3)
-- Multi-user teams (future)
-- Dashboard analytics (after 50 users)
+- Real-time recording, mobile app, Zoom integration, team features, payments
