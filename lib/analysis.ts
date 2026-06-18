@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
-import type { AnalysisResult } from "@/types";
+import type { AnalysisResult, PersonalityType } from "@/types";
 import { SALES_SYSTEM_KNOWLEDGE } from "@/lib/sales-knowledge";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -98,7 +98,9 @@ export async function synthesizeAnalysis(
   }
 }
 
-כל הטקסט בתוך ה-JSON חייב להיות בעברית. שמר על נאמנות לניתוח שקיבלת. החזר JSON בלבד.`;
+⚠️ חשוב: השדה customerPersonality.type חייב להיות **בדיוק** אחד מהערכים באנגלית — Analytical, Driver, Amiable, או Expressive. אל תתרגם אותו לעברית ואל תשנה אותו.
+
+כל שאר הטקסט בתוך ה-JSON חייב להיות בעברית. שמר על נאמנות לניתוח שקיבלת. החזר JSON בלבד.`;
 
   const res = await openai.chat.completions.create({
     model: "gpt-4o",
@@ -114,5 +116,33 @@ export async function synthesizeAnalysis(
   if (!content) {
     throw new Error("Empty synthesis response from the model");
   }
-  return resultSchema.parse(JSON.parse(content));
+
+  const raw = JSON.parse(content);
+  // Defensive: the model occasionally translates/varies the DISC type even when
+  // told not to. Map common variants back to the canonical enum before Zod.
+  const t = raw?.customerPersonality?.type;
+  if (typeof t === "string") {
+    const mapped = DISC_TYPE_MAP[t.trim().toLowerCase()];
+    if (mapped) raw.customerPersonality.type = mapped;
+  }
+  return resultSchema.parse(raw);
 }
+
+const DISC_TYPE_MAP: Record<string, PersonalityType> = {
+  analytical: "Analytical",
+  analytic: "Analytical",
+  אנליטי: "Analytical",
+  מנתח: "Analytical",
+  driver: "Driver",
+  דרייבר: "Driver",
+  דחפן: "Driver",
+  מוביל: "Driver",
+  amiable: "Amiable",
+  אמיאבל: "Amiable",
+  ידידותי: "Amiable",
+  נוח: "Amiable",
+  expressive: "Expressive",
+  אקספרסיבי: "Expressive",
+  אקספרסיב: "Expressive",
+  ביטויי: "Expressive",
+};
