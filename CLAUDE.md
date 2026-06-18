@@ -37,3 +37,16 @@
 
 ## What NOT to build yet
 - Real-time recording, mobile app, Zoom integration, team features, payments
+
+## Agents (.claude/commands/)
+Invoke agents with `/agent-name [task]` — the Planner routes tasks to the right agent.
+
+| Agent | Purpose |
+|-------|---------|
+| `/planner` | Orchestrator — תכנון, ניתוב לסוכנים, skills matrix |
+| `/agent-research` | מחקר טכנולוגי, השוואות שירותים, benchmarks — מייצר docs/research/ |
+| `/agent-security` | Audit אבטחה, RLS, LLM security, incident response |
+
+**Skills Matrix** (מה להריץ אחרי כל סוכן):
+- research → `/code-review low`
+- security → `/owasp-security` → `/security-review` → `/code-review ultra` → `/verify` → `/canary`
