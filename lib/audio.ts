@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { promises as fs } from "node:fs";
+import { promises as fs, chmodSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import ffmpegPath from "ffmpeg-static";
@@ -107,6 +107,12 @@ export async function splitIfNeeded(
 
 function runFfmpeg(args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
+    // Bundled binaries can lose the executable bit on serverless — restore it.
+    try {
+      chmodSync(ffmpegPath as string, 0o755);
+    } catch {
+      // best-effort; if the path is wrong spawn() will surface the real error
+    }
     const proc = spawn(ffmpegPath as string, args);
     let stderr = "";
     proc.stderr.on("data", (d) => (stderr += d.toString()));
