@@ -61,7 +61,7 @@ export const analyzeCall = inngest.createFunction(
       if (needsConversion(fileName)) {
         await admin
           .from("analyses")
-          .update({ status: "converting" })
+          .update({ status: "converting", error: null })
           .eq("id", analysisId);
         const converted = await convertToMp3(buffer, fileName);
         buffer = converted.buffer;
@@ -70,14 +70,16 @@ export const analyzeCall = inngest.createFunction(
 
       await admin
         .from("analyses")
-        .update({ status: "transcribing" })
+        .update({ status: "transcribing", error: null })
         .eq("id", analysisId);
 
       const chunks = await splitIfNeeded(buffer, fileName);
-      const parts: string[] = [];
-      for (const chunk of chunks) {
-        parts.push(await transcribeAudio(chunk.buffer, chunk.name));
-      }
+      // Transcribe chunks concurrently — sequential transcription of a long
+      // (split) call overruns the serverless time budget. Promise.all preserves
+      // order, so the joined transcript stays in sequence.
+      const parts = await Promise.all(
+        chunks.map((chunk) => transcribeAudio(chunk.buffer, chunk.name))
+      );
       const full = parts.join("\n").trim();
 
       await admin
