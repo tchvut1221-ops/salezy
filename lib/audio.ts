@@ -15,6 +15,43 @@ export interface AudioChunk {
 }
 
 /**
+ * Re-encode any audio/video container to a 16kHz mono mp3 — the format the
+ * transcription API ingests directly. Mono 16kHz is the ASR sweet spot and also
+ * shrinks the file, helping large recordings stay under the per-request limit.
+ * MUST run inside an Inngest step (uses ffmpeg + the OS temp dir).
+ */
+export async function convertToMp3(
+  buffer: Buffer,
+  fileName: string
+): Promise<AudioChunk> {
+  if (!ffmpegPath) {
+    throw new Error("ffmpeg binary not found (ffmpeg-static)");
+  }
+
+  const ext = path.extname(fileName) || ".bin";
+  const base = path.basename(fileName, path.extname(fileName));
+  const workDir = await fs.mkdtemp(path.join(os.tmpdir(), "salezy-conv-"));
+  const inputPath = path.join(workDir, `input${ext}`);
+  const outputPath = path.join(workDir, `${base}.mp3`);
+
+  try {
+    await fs.writeFile(inputPath, buffer);
+    await runFfmpeg([
+      "-i", inputPath,
+      "-vn", // drop any video track
+      "-ac", "1", // mono
+      "-ar", "16000", // 16kHz
+      "-c:a", "libmp3lame",
+      "-q:a", "4",
+      outputPath,
+    ]);
+    return { buffer: await fs.readFile(outputPath), name: `${base}.mp3` };
+  } finally {
+    await fs.rm(workDir, { recursive: true, force: true });
+  }
+}
+
+/**
  * Returns the audio as Whisper-sized chunks. Files already under the limit are
  * returned as-is; larger files are split by time with ffmpeg (stream copy, no
  * re-encode). MUST run inside an Inngest step (uses ffmpeg + the OS temp dir).

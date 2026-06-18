@@ -5,7 +5,9 @@
 - Tailwind CSS + shadcn/ui
 - Supabase (DB + Storage)
 - Inngest (background jobs)
-- OpenAI Whisper (transcription) + GPT-4o (analysis)
+- Transcription: OpenAI `gpt-4o-transcribe-diarize` (Hebrew, speaker-labeled)
+- Analysis (hybrid): Claude Sonnet 4.6 reasons → GPT-4o formats to JSON. Sales-domain knowledge injected from `lib/sales-knowledge.ts`
+- Audio conversion: non-mp3/wav uploads are converted to 16kHz mono mp3 with ffmpeg (inside Inngest)
 - Auth: Magic Link via Supabase Auth
 - Deployment: Vercel
 
@@ -17,9 +19,10 @@
 
 ## Security — Non-Negotiable
 - SUPABASE_SERVICE_ROLE_KEY: server-side only (API routes / Inngest). Never in client code.
+- OPENAI_API_KEY and ANTHROPIC_API_KEY: server-side only (Inngest steps). Never in client bundle.
 - All secrets in .env.local — never hardcoded
 - RLS enabled on every Supabase table — users access only their own rows
-- File uploads: validate type (mp3/wav/m4a only) and size (max 100MB) before processing
+- File uploads: validate type (mp3/wav/m4a/mp4/mov/ogg/aac/webm) and size (max 50MB) before processing
 - Never expose stack traces or technical errors to the user
 - Rate limit all API routes
 

@@ -6,6 +6,7 @@ import type { Analysis, AnalysisStatus } from "@/types";
 
 const STEPS: { key: AnalysisStatus; label: string }[] = [
   { key: "uploaded", label: "הועלה" },
+  { key: "converting", label: "ממיר קובץ" },
   { key: "transcribing", label: "מתמלל" },
   { key: "analyzing", label: "מנתח" },
   { key: "completed", label: "מוכן" },

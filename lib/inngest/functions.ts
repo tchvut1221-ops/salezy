@@ -1,8 +1,9 @@
 import { inngest } from "./client";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { splitIfNeeded } from "@/lib/audio";
+import { splitIfNeeded, convertToMp3 } from "@/lib/audio";
 import { transcribeAudio } from "@/lib/whisper";
-import { analyzeTranscript } from "@/lib/analysis";
+import { reasonAboutCall, synthesizeAnalysis } from "@/lib/analysis";
+import { needsConversion } from "@/lib/constants";
 
 /**
  * The Salezy pipeline. Triggered by the "analysis/requested" event after a
@@ -48,20 +49,31 @@ export const analyzeCall = inngest.createFunction(
     });
 
     const transcript = await step.run("transcribe", async () => {
-      await admin
-        .from("analyses")
-        .update({ status: "transcribing" })
-        .eq("id", analysisId);
-
       const { data: file, error } = await admin.storage
         .from("recordings")
         .download(filePath);
       if (error || !file) throw error ?? new Error("הקובץ לא נמצא ב-Storage");
 
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const fileName = filePath.split("/").pop() ?? "audio.mp3";
-      const chunks = await splitIfNeeded(buffer, fileName);
+      let buffer: Buffer = Buffer.from(await file.arrayBuffer());
+      let fileName = filePath.split("/").pop() ?? "audio.mp3";
 
+      // Convert non-mp3/wav uploads (mp4/mov/ogg/m4a/aac/webm) to mp3 first.
+      if (needsConversion(fileName)) {
+        await admin
+          .from("analyses")
+          .update({ status: "converting" })
+          .eq("id", analysisId);
+        const converted = await convertToMp3(buffer, fileName);
+        buffer = converted.buffer;
+        fileName = converted.name;
+      }
+
+      await admin
+        .from("analyses")
+        .update({ status: "transcribing" })
+        .eq("id", analysisId);
+
+      const chunks = await splitIfNeeded(buffer, fileName);
       const parts: string[] = [];
       for (const chunk of chunks) {
         parts.push(await transcribeAudio(chunk.buffer, chunk.name));
@@ -75,12 +87,17 @@ export const analyzeCall = inngest.createFunction(
       return full;
     });
 
-    const result = await step.run("analyze", async () => {
+    // Hybrid analysis: Claude Sonnet 4.6 reasons, GPT-4o formats to JSON.
+    const reasoning = await step.run("reason", async () => {
       await admin
         .from("analyses")
         .update({ status: "analyzing" })
         .eq("id", analysisId);
-      return analyzeTranscript(transcript);
+      return reasonAboutCall(transcript);
+    });
+
+    const result = await step.run("synthesize", async () => {
+      return synthesizeAnalysis(reasoning);
     });
 
     await step.run("complete", async () => {

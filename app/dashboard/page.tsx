@@ -6,6 +6,7 @@ import type { Analysis, AnalysisStatus } from "@/types";
 
 const STATUS_LABELS: Record<AnalysisStatus, string> = {
   uploaded: "בתור",
+  converting: "ממיר קובץ",
   transcribing: "מתמלל",
   analyzing: "מנתח",
   completed: "מוכן",
@@ -14,6 +15,7 @@ const STATUS_LABELS: Record<AnalysisStatus, string> = {
 
 const STATUS_COLORS: Record<AnalysisStatus, string> = {
   uploaded: "text-zinc-400",
+  converting: "text-amber-400",
   transcribing: "text-amber-400",
   analyzing: "text-amber-400",
   completed: "text-emerald-400",

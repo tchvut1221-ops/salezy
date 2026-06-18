@@ -16,7 +16,11 @@ export default function UploadPage() {
     setError("");
     const f = e.target.files?.[0] ?? null;
     if (f && !isAllowedAudio(f)) {
-      setError("קובץ לא נתמך. אפשר mp3 / wav / m4a בלבד, עד 100MB.");
+      setError(
+        `קובץ לא נתמך. אפשר mp3 / wav / m4a / mp4 / mov / ogg / aac / webm, עד ${Math.round(
+          MAX_FILE_BYTES / 1024 / 1024
+        )}MB.`
+      );
       setFile(null);
       return;
     }
@@ -68,15 +72,15 @@ export default function UploadPage() {
     <main className="mx-auto max-w-xl px-4 py-12">
       <h1 className="text-2xl font-bold text-white">העלאת שיחת מכירה</h1>
       <p className="mt-1 text-sm text-zinc-400">
-        העלה הקלטה (mp3 / wav / m4a, עד {Math.round(MAX_FILE_BYTES / 1024 / 1024)}
-        MB) ונתחיל לנתח אותה.
+        העלה הקלטה (mp3 / wav / m4a / mp4 / mov / ogg / aac / webm, עד{" "}
+        {Math.round(MAX_FILE_BYTES / 1024 / 1024)}MB) ונתחיל לנתח אותה.
       </p>
 
       <div className="mt-8 rounded-2xl border border-dashed border-zinc-700 bg-zinc-900 p-8 text-center">
         <input
           id="file"
           type="file"
-          accept=".mp3,.wav,.m4a,audio/*"
+          accept=".mp3,.wav,.m4a,.mp4,.mov,.ogg,.aac,.webm,audio/*,video/mp4,video/quicktime"
           onChange={onPick}
           disabled={busy}
           className="block w-full text-sm text-zinc-300 file:mr-4 file:rounded-lg file:border-0 file:bg-emerald-600 file:px-4 file:py-2 file:text-white hover:file:bg-emerald-500"

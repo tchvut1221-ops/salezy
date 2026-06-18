@@ -1,5 +1,6 @@
 export type AnalysisStatus =
   | "uploaded"
+  | "converting"
   | "transcribing"
   | "analyzing"
   | "completed"
