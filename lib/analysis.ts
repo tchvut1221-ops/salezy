@@ -7,20 +7,113 @@ import { SALES_SYSTEM_KNOWLEDGE } from "@/lib/sales-knowledge";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+// v1 core fields stay strict (they always exist). Every v2 field is optional AND
+// `.catch(undefined)` — if the model emits a malformed value (e.g. an off-enum
+// string) we drop just that field instead of failing the whole analysis. Worst
+// case the result degrades to v1-level richness; it never hard-fails.
+const sentimentValue = z.enum(["positive", "neutral", "negative"]);
+
 const resultSchema = z.object({
   customerPersonality: z.object({
     type: z.enum(["Analytical", "Driver", "Amiable", "Expressive"]),
     explanation: z.string(),
+    confidence: z.number().optional().catch(undefined),
+    howToSellToThisType: z.array(z.string()).optional().catch(undefined),
+    redFlags: z.array(z.string()).optional().catch(undefined),
   }),
   salespersonPerformance: z.object({
     whatWorked: z.array(z.string()),
     whatDidnt: z.array(z.string()),
     tips: z.array(z.string()),
+    overallScore: z.number().optional().catch(undefined),
+    scores: z
+      .object({
+        needsDiscovery: z.number(),
+        objectionHandling: z.number(),
+        listeningRatio: z.number(),
+        closing: z.number(),
+      })
+      .optional()
+      .catch(undefined),
   }),
   customerNeeds: z.object({
     explicit: z.array(z.string()),
     implicit: z.array(z.string()),
+    painPoints: z.array(z.string()).optional().catch(undefined),
+    priorities: z.array(z.string()).optional().catch(undefined),
   }),
+
+  executiveSummary: z.string().optional().catch(undefined),
+  overallScore: z.number().optional().catch(undefined),
+  callObjective: z.string().optional().catch(undefined),
+  callObjectiveAchieved: z
+    .enum(["yes", "partial", "no"])
+    .optional()
+    .catch(undefined),
+  dealStage: z
+    .enum(["discovery", "demo", "objection", "negotiation", "close", "unknown"])
+    .optional()
+    .catch(undefined),
+  buyingSignals: z
+    .object({ positive: z.array(z.string()), negative: z.array(z.string()) })
+    .optional()
+    .catch(undefined),
+  competitorsMentioned: z.array(z.string()).optional().catch(undefined),
+  objections: z
+    .array(
+      z.object({
+        objection: z.string(),
+        howHandled: z.string(),
+        score: z.enum(["excellent", "good", "poor", "missed"]),
+      })
+    )
+    .optional()
+    .catch(undefined),
+  keyMoments: z
+    .array(
+      z.object({
+        quote: z.string(),
+        type: z.enum([
+          "buying_signal",
+          "objection",
+          "pain_point",
+          "breakthrough",
+        ]),
+        significance: z.string(),
+      })
+    )
+    .optional()
+    .catch(undefined),
+  nextSteps: z
+    .array(
+      z.object({
+        action: z.string(),
+        priority: z.enum(["urgent", "soon", "when-possible"]),
+        reasoning: z.string(),
+      })
+    )
+    .optional()
+    .catch(undefined),
+  callMetrics: z
+    .object({
+      estimatedDurationMinutes: z.number().optional().catch(undefined),
+      talkRatioSalesperson: z.number().optional().catch(undefined),
+      energyLevel: z.enum(["low", "medium", "high"]).optional().catch(undefined),
+      callPace: z
+        .enum(["rushed", "optimal", "slow"])
+        .optional()
+        .catch(undefined),
+      sentiment: z
+        .object({
+          start: sentimentValue,
+          middle: sentimentValue,
+          end: sentimentValue,
+        })
+        .optional()
+        .catch(undefined),
+    })
+    .optional()
+    .catch(undefined),
 });
 
 /**
@@ -36,12 +129,23 @@ const resultSchema = z.object({
  * Runs inside an Inngest step only.
  */
 export async function reasonAboutCall(transcript: string): Promise<string> {
-  const system = `אתה מומחה עולמי לניתוח שיחות מכירה בישראל. אתה מקבל תמלול של שיחה (עם תוויות דוברים) ומנתח אותה לעומק.
+  const system = `אתה מומחה עולמי לניתוח שיחות מכירה בישראל. אתה מקבל תמלול של שיחה (עם תוויות דוברים) ומנתח אותה לעומק, ומסתמך אך ורק על מה שנאמר בתמלול — בלי להמציא.
 
-נתח בעברית, בצורה מובנית:
-1. סוג אישיות הלקוח לפי DISC — עם נימוק וציטוטים מהשיחה.
-2. ביצועי איש המכירות — מה עבד, מה פוספס, וטיפים מעשיים לשיפור.
-3. צרכי הלקוח — גלויים (שנאמרו במפורש) וסמויים (שניתן להסיק).
+נתח בעברית, בצורה מובנית ומנומקת, את כל המימדים הבאים. לכל קביעה הצמד ציטוט קצר או הסבר מהשיחה:
+
+1. תקציר מנהלים — 2-3 משפטים: מה קרה בשיחה ומה השורה התחתונה.
+2. מטרת השיחה והאם הושגה (כן / חלקית / לא).
+3. סוג אישיות הלקוח לפי DISC — עם רמת ביטחון (0-100), נימוק וציטוטים, איך הכי נכון למכור לאישיות הזו, ומה להימנע מולה.
+4. שלב העסקה לפי המדריך (discovery / demo / objection / negotiation / close / unknown).
+5. אותות רכישה — חיוביים ושליליים — עם ציטוטים.
+6. מתחרים שהוזכרו (אם הוזכרו).
+7. התנגדויות — לכל אחת: מה הלקוח אמר, איך איש המכירות טיפל, ודירוג הטיפול (excellent / good / poor / missed) לפי ה-rubric.
+8. ביצועי איש המכירות — ציון כולל (0-100) ותת-ציונים (חשיפת צרכים, טיפול בהתנגדויות, יחס הקשבה, סגירה) לפי ה-rubric, מה עבד, מה פוספס, וטיפים מעשיים.
+9. צרכי הלקוח — גלויים, סמויים, נקודות כאב, וסדרי עדיפויות.
+10. רגעי מפתח — לפחות 3 ציטוטים משמעותיים, כל אחד עם סוג (buying_signal / objection / pain_point / breakthrough) ולמה הוא חשוב.
+11. צעדים הבאים — לפחות 2 פעולות קונקרטיות עם עדיפות (urgent / soon / when-possible) ונימוק.
+12. ציון כולל לשיחה (0-100) לפי ה-rubric.
+13. מדדי שיחה (רק אם ניתן להעריך מהתמלול): משך משוער בדקות, יחס הדיבור של איש המכירות באחוזים (אמוד לפי כמות הדיבור של כל דובר), רמת אנרגיה, קצב, וסנטימנט בתחילת/אמצע/סוף השיחה. אם אי אפשר להעריך מדד מסוים — דלג עליו ואל תנחש.
 
 הסתמך על הידע המקצועי הבא:
 
@@ -49,7 +153,7 @@ ${SALES_SYSTEM_KNOWLEDGE}`;
 
   const res = await anthropic.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 4096,
+    max_tokens: 8192,
     thinking: { type: "adaptive" },
     system,
     messages: [
