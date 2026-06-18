@@ -2,14 +2,60 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import * as tus from "tus-js-client";
 import { createClient } from "@/lib/supabase/client";
 import { isAllowedAudio, MAX_FILE_BYTES } from "@/lib/constants";
 import { startAnalysis } from "./actions";
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+
+/**
+ * Resumable (TUS) upload to Supabase Storage. The plain `.upload()` is
+ * unreliable for large files (it would silently stall on a 39MB call); the
+ * resumable protocol chunks the file, retries on failure, and reports progress.
+ */
+function resumableUpload(opts: {
+  file: File;
+  path: string;
+  token: string;
+  onProgress: (pct: number) => void;
+}): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const upload = new tus.Upload(opts.file, {
+      endpoint: `${SUPABASE_URL}/storage/v1/upload/resumable`,
+      retryDelays: [0, 3000, 5000, 10000, 20000],
+      headers: {
+        authorization: `Bearer ${opts.token}`,
+        "x-upsert": "true",
+      },
+      uploadDataDuringCreation: true,
+      removeFingerprintOnSuccess: true,
+      metadata: {
+        bucketName: "recordings",
+        objectName: opts.path,
+        contentType: opts.file.type || "application/octet-stream",
+        cacheControl: "3600",
+      },
+      chunkSize: 6 * 1024 * 1024, // Supabase requires 6MB chunks
+      onError: reject,
+      onProgress: (sent, total) => {
+        if (total) opts.onProgress(Math.round((sent / total) * 100));
+      },
+      onSuccess: () => resolve(),
+    });
+
+    upload.findPreviousUploads().then((previous) => {
+      if (previous.length) upload.resumeFromPreviousUpload(previous[0]);
+      upload.start();
+    });
+  });
+}
 
 export default function UploadPage() {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
 
   function onPick(e: React.ChangeEvent<HTMLInputElement>) {
@@ -31,28 +77,31 @@ export default function UploadPage() {
     if (!file) return;
     setBusy(true);
     setError("");
+    setProgress(0);
 
     try {
       const supabase = createClient();
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
         router.push("/login");
         return;
       }
 
       const id = crypto.randomUUID();
-      const path = `${user.id}/${id}/${file.name}`;
+      const path = `${session.user.id}/${id}/${file.name}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from("recordings")
-        .upload(path, file, { contentType: file.type || undefined });
-      if (uploadError) throw uploadError;
+      await resumableUpload({
+        file,
+        path,
+        token: session.access_token,
+        onProgress: setProgress,
+      });
 
       const { error: insertError } = await supabase.from("analyses").insert({
         id,
-        user_id: user.id,
+        user_id: session.user.id,
         file_name: file.name,
         file_path: path,
         status: "uploaded",
@@ -92,6 +141,20 @@ export default function UploadPage() {
           </p>
         )}
       </div>
+
+      {busy && (
+        <div className="mt-6">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-800">
+            <div
+              className="h-full rounded-full bg-emerald-500 transition-all"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <p className="mt-2 text-center text-sm text-zinc-400">
+            {progress < 100 ? `מעלה... ${progress}%` : "ההעלאה הושלמה, מתחיל ניתוח..."}
+          </p>
+        </div>
+      )}
 
       {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
 
