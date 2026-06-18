@@ -33,10 +33,14 @@ You are the **Planner** — הסוכן המתאם של Salezy.
 
 ### Step 3: זיהוי סוכנים
 ```
-🔬 /agent-research  — החלטות טכנולוגיה, מחקר מתחרים, benchmark, ספריות
-🔒 /agent-security  — audit אבטחה, RLS, טיפול קבצים, OpenAI API, Inngest
+🔬 /agent-research   — החלטות טכנולוגיה, מחקר מתחרים, benchmark, ספריות
+🔒 /agent-security   — audit אבטחה, RLS, טיפול קבצים, OpenAI API, Inngest
+⚙️ /agent-pipeline   — מנוע ה-AI: prompts, schema, Inngest, knowledge base
+🎨 /agent-design     — החלטות עיצוביות: specs לרכיבים, layout, visual hierarchy
+🖥️ /agent-ui         — React components, pages, UX flows
+📊 /agent-analytics  — dashboard stats, Supabase aggregation, גרפים
+🗃️ /agent-data       — lib/sales-knowledge.ts, docs/, עדכון CLAUDE.md
 ```
-*(סוכנים נוספים ייוצרו לפי הצורך: pipeline, ui, auth...)*
 
 ### Step 4: יצירת תכנית עם Tasks
 ```
@@ -79,13 +83,23 @@ git push origin feature/[name]
 
 ## Skills Matrix
 
-| After Agent  | Skills to Run |
-|--------------|---------------|
-| research     | `/code-review low` (דיוק מסמכים) |
-| security     | `/owasp-security` → `/security-review` → `/code-review ultra` → `/verify` → `/canary` |
-| pipeline     | `/verify` → `/run` (בדיקת Inngest flow מלא) |
-| ui           | `/run` → `/verify` → `/simplify` |
-| auth         | `/security-review` → `/code-review high` → `/verify` |
+| After Agent   | Skills to Run                                                                              |
+|---------------|--------------------------------------------------------------------------------------------|
+| research      | `/code-review low` (דיוק מסמכים)                                                         |
+| pipeline      | `/prompt-upgrade` → `/analysis-quality-check` → `/code-review high` → `/verify` → **`/agent-security` (LLM injection + migrations RLS check)** |
+| design        | (אין code → אין skills — רק spec מסמך)                                                   |
+| ui            | `/run` → `/verify` → `/simplify` → `/code-review medium` → **`/agent-security` (XSS)**  |
+| analytics     | `/run` → `/verify` → `/code-review medium` → **`/agent-security` (RLS queries)**         |
+| data          | `/knowledge-update` → `/code-review low` → **`/agent-security` (no secrets in bundle)**  |
+| security      | `/owasp-security` → `/security-review` → `/code-review ultra` → `/verify` → `/canary`   |
+
+## Custom Skills (Salezy-specific)
+
+| Skill                     | מתי להשתמש                                          |
+|---------------------------|------------------------------------------------------|
+| `/prompt-upgrade`         | שדרוג פרומפט מתודי — בדיקה עם 3 שיחות מבחן         |
+| `/analysis-quality-check` | לפני כל deploy — ודא שכל fields מתמלאים נכון        |
+| `/knowledge-update`       | הוספת ידע מכירות חדש ל-lib/sales-knowledge.ts        |
 
 ## Constraints (NON-NEGOTIABLE)
 - NEVER push directly to `main` — feature branch תמיד

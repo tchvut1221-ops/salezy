@@ -43,10 +43,16 @@ Invoke agents with `/agent-name [task]` — the Planner routes tasks to the righ
 
 | Agent | Purpose |
 |-------|---------|
-| `/planner` | Orchestrator — תכנון, ניתוב לסוכנים, skills matrix |
-| `/agent-research` | מחקר טכנולוגי, השוואות שירותים, benchmarks — מייצר docs/research/ |
-| `/agent-security` | Audit אבטחה, RLS, LLM security, incident response |
+| `/planner`               | Orchestrator — תכנון, ניתוב לסוכנים, skills matrix |
+| `/agent-research`        | מחקר טכנולוגי, השוואות שירותים, benchmarks |
+| `/agent-security`        | Audit אבטחה, RLS, LLM security, incident response |
+| `/agent-pipeline`        | מנוע ה-AI: GPT-4o prompts, schema, Inngest, knowledge base |
+| `/agent-design`          | החלטות עיצוביות: specs, visual hierarchy, premium aesthetic |
+| `/agent-ui`              | React components, pages, UX flows |
+| `/agent-analytics`       | Dashboard stats, Supabase aggregation queries, charts |
+| `/agent-data`            | lib/sales-knowledge.ts, docs/, עדכון CLAUDE.md |
 
-**Skills Matrix** (מה להריץ אחרי כל סוכן):
-- research → `/code-review low`
-- security → `/owasp-security` → `/security-review` → `/code-review ultra` → `/verify` → `/canary`
+**Custom Skills:**
+| `/prompt-upgrade`         | שדרוג פרומפט GPT מתודי עם 3 שיחות מבחן |
+| `/analysis-quality-check` | בדיקת איכות ניתוח לפני deploy (18-point checklist) |
+| `/knowledge-update`       | הוספת ידע מכירות ל-sales-knowledge.ts |
