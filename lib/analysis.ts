@@ -184,27 +184,60 @@ ${SALES_SYSTEM_KNOWLEDGE}`;
 export async function synthesizeAnalysis(
   reasoning: string
 ): Promise<AnalysisResult> {
-  const system = `קיבלת ניתוח מקצועי של שיחת מכירה בעברית. המר אותו ל-JSON תקין בלבד (ללא טקסט נוסף) במבנה הבא:
+  const system = `קיבלת ניתוח מקצועי של שיחת מכירה בעברית. המר אותו ל-JSON תקין בלבד (ללא טקסט נוסף) במבנה הבא. כלול שדה רק אם המידע קיים בניתוח — אם אין מידע למימד מסוים, השמט את השדה לגמרי (אל תמציא ערכים ואל תכתוב null).
 
 {
+  "executiveSummary": "תקציר 2-3 משפטים",
+  "overallScore": 0-100,
+  "callObjective": "מטרת השיחה",
+  "callObjectiveAchieved": "yes | partial | no",
   "customerPersonality": {
     "type": "Analytical | Driver | Amiable | Expressive",
-    "explanation": "הסבר קצר בעברית עם דוגמאות"
+    "explanation": "הסבר קצר בעברית עם דוגמאות",
+    "confidence": 0-100,
+    "howToSellToThisType": ["..."],
+    "redFlags": ["..."]
   },
+  "dealStage": "discovery | demo | objection | negotiation | close | unknown",
+  "buyingSignals": { "positive": ["..."], "negative": ["..."] },
+  "competitorsMentioned": ["..."],
+  "objections": [
+    { "objection": "מה הלקוח אמר", "howHandled": "איך טופל", "score": "excellent | good | poor | missed" }
+  ],
   "salespersonPerformance": {
     "whatWorked": ["..."],
     "whatDidnt": ["..."],
-    "tips": ["..."]
+    "tips": ["..."],
+    "overallScore": 0-100,
+    "scores": { "needsDiscovery": 0-100, "objectionHandling": 0-100, "listeningRatio": 0-100, "closing": 0-100 }
   },
   "customerNeeds": {
     "explicit": ["..."],
-    "implicit": ["..."]
+    "implicit": ["..."],
+    "painPoints": ["..."],
+    "priorities": ["..."]
+  },
+  "keyMoments": [
+    { "quote": "ציטוט מהשיחה", "type": "buying_signal | objection | pain_point | breakthrough", "significance": "למה זה חשוב" }
+  ],
+  "nextSteps": [
+    { "action": "מה לעשות", "priority": "urgent | soon | when-possible", "reasoning": "למה" }
+  ],
+  "callMetrics": {
+    "estimatedDurationMinutes": 0,
+    "talkRatioSalesperson": 0-100,
+    "energyLevel": "low | medium | high",
+    "callPace": "rushed | optimal | slow",
+    "sentiment": { "start": "positive | neutral | negative", "middle": "positive | neutral | negative", "end": "positive | neutral | negative" }
   }
 }
 
-⚠️ חשוב: השדה customerPersonality.type חייב להיות **בדיוק** אחד מהערכים באנגלית — Analytical, Driver, Amiable, או Expressive. אל תתרגם אותו לעברית ואל תשנה אותו.
-
-כל שאר הטקסט בתוך ה-JSON חייב להיות בעברית. שמר על נאמנות לניתוח שקיבלת. החזר JSON בלבד.`;
+⚠️ חשוב:
+- customerPersonality.type חייב להיות **בדיוק** אחד מ: Analytical, Driver, Amiable, Expressive (באנגלית). אל תתרגם ואל תשנה.
+- כל שאר ערכי ה-enum (callObjectiveAchieved, dealStage, objections[].score, keyMoments[].type, nextSteps[].priority, energyLevel, callPace, sentiment) חייבים להיות בדיוק באנגלית כפי שמופיע למעלה.
+- כל שאר הטקסט בתוך ה-JSON חייב להיות בעברית.
+- השדות whatWorked, whatDidnt, tips, explicit, implicit ו-customerPersonality חובה תמיד.
+- שמור על נאמנות מוחלטת לניתוח שקיבלת — אל תוסיף מידע שלא נמצא בו. החזר JSON בלבד.`;
 
   const res = await openai.chat.completions.create({
     model: "gpt-4o",
