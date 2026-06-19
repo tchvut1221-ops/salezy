@@ -42,7 +42,7 @@ function ScoreGaugeSkeleton() {
     <Panel title="ציון השיחה">
       <div className="flex flex-col items-center gap-6 sm:flex-row sm:gap-8">
         <div className="relative shrink-0" dir="ltr">
-          <svg viewBox="0 0 200 118" className="w-52" role="img" aria-hidden="true">
+          <svg viewBox="0 0 200 118" className="w-52" aria-hidden="true">
             <path
               d="M 20 100 A 80 80 0 0 1 180 100"
               fill="none"

@@ -49,7 +49,7 @@ export function LoadingMessages({ status }: { status: AnalysisStatus }) {
       setIndex((i) => (i + 1) % messages.length);
     }, 2500);
     return () => clearInterval(id);
-  }, [messages]);
+  }, [status, messages.length]);
 
   if (messages.length === 0) return null;
 
