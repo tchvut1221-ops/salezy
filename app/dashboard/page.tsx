@@ -2,6 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/actions";
+import { computeStats, fetchScorePoints } from "@/lib/analytics";
+import { StatsBar } from "@/components/salezy/stats-bar";
+import { ScoreChart } from "@/components/salezy/score-chart";
 import type { Analysis, AnalysisStatus } from "@/types";
 
 const STATUS_LABELS: Record<AnalysisStatus, string> = {
@@ -37,8 +40,16 @@ export default async function DashboardPage() {
 
   const analyses = (data ?? []) as Analysis[];
 
+  // Stats bar + trend chart reuse the same query/aggregation helper that
+  // backs app/api/analytics/route.ts (kept DRY). This is a server component,
+  // so it queries Supabase directly instead of round-tripping through our
+  // own HTTP route. Hidden entirely when the user has zero v2/scored calls
+  // (v1 analyses have no `scores`) so we never render an empty/broken chart.
+  const scorePoints = await fetchScorePoints(supabase, user.id);
+  const stats = computeStats(scorePoints);
+
   return (
-    <main className="mx-auto max-w-2xl px-4 py-12">
+    <main className="mx-auto max-w-4xl px-4 py-12">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-white">הניתוחים שלי</h1>
         <form action={signOut}>
@@ -54,6 +65,13 @@ export default async function DashboardPage() {
       >
         + העלאת שיחה חדשה
       </Link>
+
+      {scorePoints.length > 0 && (
+        <div className="mt-8 space-y-6">
+          <StatsBar stats={stats} />
+          <ScoreChart points={scorePoints} />
+        </div>
+      )}
 
       <div className="mt-8 space-y-3">
         {analyses.length === 0 ? (
