@@ -8,6 +8,8 @@ export type AnalysisStatus =
 
 export type PersonalityType = "Analytical" | "Driver" | "Amiable" | "Expressive";
 
+// v2 enums consumed by the (not-yet-wired) enriched result components. The full
+// v2 schema lands via the feature/stage-a-schema PR; these keep the build green.
 export type DealStage =
   | "discovery"
   | "demo"
