@@ -3,6 +3,14 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Analysis, AnalysisStatus } from "@/types";
+import { ExecutiveSummary } from "./executive-summary";
+import { ScoreGauge } from "./score-gauge";
+import { DealIntelligence } from "./deal-intelligence";
+import { ObjectionTracker } from "./objection-tracker";
+import { KeyMoments } from "./key-moments";
+import { NextSteps } from "./next-steps";
+import { LoadingMessages } from "./loading-messages";
+import { ResultSkeleton } from "./result-skeleton";
 
 const STEPS: { key: AnalysisStatus; label: string }[] = [
   { key: "uploaded", label: "הועלה" },
@@ -30,16 +38,21 @@ export function AnalysisView({ initial }: { initial: Analysis }) {
           event: "UPDATE",
           schema: "public",
           table: "analyses",
+          // Scoped by id AND user_id (not just id) so this subscription can
+          // never deliver another user's row even if RLS were misconfigured.
           filter: `id=eq.${initial.id}`,
         },
-        (payload) => setAnalysis(payload.new as Analysis)
+        (payload) => {
+          const next = payload.new as Analysis;
+          if (next.user_id === initial.user_id) setAnalysis(next);
+        }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [initial.id]);
+  }, [initial.id, initial.user_id]);
 
   return (
     <div>
@@ -80,16 +93,70 @@ function Progress({ status }: { status: AnalysisStatus }) {
           </div>
         ))}
       </div>
-      <p className="mt-6 animate-pulse text-center text-sm text-zinc-400">
-        מעבד את השיחה... אפשר להישאר בדף, הוא יתעדכן אוטומטית.
+      <LoadingMessages status={status} />
+      <p className="mt-2 text-center text-xs text-zinc-600">
+        אפשר להישאר בדף, הוא יתעדכן אוטומטית.
       </p>
+      <ResultSkeleton />
     </div>
   );
 }
 
 function Result({ result }: { result: NonNullable<Analysis["result"]> }) {
+  const hasDealIntelligence =
+    Boolean(result.dealStage && result.dealStage !== "unknown") ||
+    Boolean(result.buyingSignals?.positive.length) ||
+    Boolean(result.buyingSignals?.negative.length) ||
+    Boolean(result.competitorsMentioned?.length);
+
+  // The synthesis prompt asks the model for `overallScore` at both the
+  // top level and nested under salespersonPerformance — the inngest pipeline's
+  // dashboard snapshot already falls back to the nested one (lib/inngest/functions.ts),
+  // so the gauge must use the same fallback or it can disappear on a call the
+  // dashboard still counts as v2.
+  const overallScore = result.overallScore ?? result.salespersonPerformance.overallScore;
+
   return (
     <div className="mt-8 space-y-5">
+      {/* ── v2 enriched cards — each guarded on its own data so v1-only results
+          (no v2 fields at all) render none of this and fall through cleanly
+          to the original 3-card view below. ── */}
+      {result.executiveSummary && (
+        <ExecutiveSummary
+          summary={result.executiveSummary}
+          callObjective={result.callObjective}
+          achieved={result.callObjectiveAchieved}
+        />
+      )}
+
+      {typeof overallScore === "number" && (
+        <ScoreGauge
+          overall={overallScore}
+          scores={result.salespersonPerformance.scores}
+        />
+      )}
+
+      {hasDealIntelligence && (
+        <DealIntelligence
+          dealStage={result.dealStage}
+          buyingSignals={result.buyingSignals}
+          competitors={result.competitorsMentioned}
+        />
+      )}
+
+      {result.objections && result.objections.length > 0 && (
+        <ObjectionTracker objections={result.objections} />
+      )}
+
+      {result.keyMoments && result.keyMoments.length > 0 && (
+        <KeyMoments moments={result.keyMoments} />
+      )}
+
+      {result.nextSteps && result.nextSteps.length > 0 && (
+        <NextSteps steps={result.nextSteps} />
+      )}
+
+      {/* ── v1 core — always present, never altered. ── */}
       <Card title="סוג אישיות הלקוח">
         <p className="text-emerald-400">{result.customerPersonality.type}</p>
         <p className="mt-1 text-sm text-zinc-300">

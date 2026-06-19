@@ -102,8 +102,8 @@ Step "synthesize-json" → GPT-4o (temp 0.1, JSON mode)
 ## מחקרים פתוחים (TODO)
 
 - [ ] benchmark עלות per analysis (transcription + 2 GPT calls combined)
-- [ ] ספריית גרפים: Recharts vs Tremor (לשלב C — dashboard)
-- [ ] PDF export ב-Vercel: react-pdf vs puppeteer (לשלב B — export button)
+- [x] ספריית גרפים: **Recharts** — נבחר ויושם בשלב C (`components/salezy/score-chart.tsx`). אומת תאימות peer-dep עם React 19 (`"react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0"`) לפני ההתקנה; Tremor נשאר fallback שלא היה צריך.
+- [ ] PDF export ב-Vercel: react-pdf vs puppeteer (לא נכלל ב-MVP הנוכחי — Stages A-D)
 - [ ] ניתוח מתחרים: Gong, Avoma, Wingman — feature gaps ל-Salezy
 
 ---

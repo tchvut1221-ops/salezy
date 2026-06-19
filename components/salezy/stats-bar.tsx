@@ -1,0 +1,76 @@
+import { Panel, scoreColor } from "./ui";
+import type { AnalyticsStats } from "@/lib/analytics";
+
+const PERSONALITY_LABELS: Record<string, string> = {
+  Analytical: "אנליטי",
+  Driver: "תוצאתי",
+  Amiable: "חברותי",
+  Expressive: "אקספרסיבי",
+};
+
+function Metric({
+  label,
+  value,
+  valueClassName,
+}: {
+  label: string;
+  value: string;
+  valueClassName?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+        {label}
+      </span>
+      <span className={`text-2xl font-bold tabular-nums ${valueClassName ?? "text-white"}`}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Four headline metrics across the user's v2 (scored) calls:
+ * total calls, average overall score, improvement delta, and the most
+ * common customer personality type detected.
+ *
+ * `improvementDelta` definition (computed in lib/analytics.ts): average
+ * score of the more recent half of calls minus the average of the older
+ * half, split chronologically down the middle. Null (rendered as "—") when
+ * there are fewer than 2 calls to compare.
+ */
+export function StatsBar({ stats }: { stats: AnalyticsStats }) {
+  const avgColor = scoreColor(stats.averageScore);
+
+  const deltaText =
+    stats.improvementDelta === null
+      ? "—"
+      : `${stats.improvementDelta >= 0 ? "+" : ""}${stats.improvementDelta.toFixed(1)}`;
+  const deltaColor =
+    stats.improvementDelta === null
+      ? "text-zinc-400"
+      : stats.improvementDelta > 0
+        ? "text-emerald-400"
+        : stats.improvementDelta < 0
+          ? "text-red-400"
+          : "text-zinc-400";
+
+  const personalityText = stats.mostCommonPersonality
+    ? PERSONALITY_LABELS[stats.mostCommonPersonality] ?? stats.mostCommonPersonality
+    : "—";
+
+  return (
+    <Panel eyebrow="סטטיסטיקות" title="סיכום ביצועים">
+      <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
+        <Metric label="מספר שיחות" value={String(stats.callCount)} />
+        <Metric
+          label="ציון ממוצע"
+          value={stats.averageScore.toFixed(1)}
+          valueClassName={avgColor.text}
+        />
+        <Metric label="שיפור" value={deltaText} valueClassName={deltaColor} />
+        <Metric label="טיפוס לקוח נפוץ" value={personalityText} />
+      </div>
+    </Panel>
+  );
+}

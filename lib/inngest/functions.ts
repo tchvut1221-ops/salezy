@@ -103,9 +103,28 @@ export const analyzeCall = inngest.createFunction(
     });
 
     await step.run("complete", async () => {
+      // Flat numeric snapshot so the dashboard can aggregate scores without
+      // parsing the full `result` blob. Mark the row "v2" only when the model
+      // actually produced an overall score; otherwise it stays a v1-level result.
+      const perf = result.salespersonPerformance;
+      const overall = result.overallScore ?? perf.overallScore;
+      const scores =
+        typeof overall === "number"
+          ? {
+              overall,
+              ...(perf.scores ?? {}),
+              personalityType: result.customerPersonality.type,
+            }
+          : null;
+
       await admin
         .from("analyses")
-        .update({ status: "completed", result })
+        .update({
+          status: "completed",
+          result,
+          analysis_version: scores ? "v2" : "v1",
+          scores,
+        })
         .eq("id", analysisId);
     });
 
