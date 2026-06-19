@@ -35,13 +35,21 @@ const ETA_BY_STATUS: Record<AnalysisStatus, string> = {
 
 export function LoadingMessages({ status }: { status: AnalysisStatus }) {
   const messages = MESSAGES_BY_STATUS[status];
-  const [index, setIndex] = useState(0);
+  // Keyed remount on `status` resets the rotation to message 0 whenever the
+  // status changes, without a separate effect just to reset state.
+  return (
+    <Rotator key={status} messages={messages} status={status} />
+  );
+}
 
-  // Reset to the first message whenever the status itself changes, then rotate
-  // through that status's messages on a fixed interval.
-  useEffect(() => {
-    setIndex(0);
-  }, [status]);
+function Rotator({
+  messages,
+  status,
+}: {
+  messages: string[];
+  status: AnalysisStatus;
+}) {
+  const [index, setIndex] = useState(0);
 
   useEffect(() => {
     if (messages.length <= 1) return;
@@ -49,7 +57,7 @@ export function LoadingMessages({ status }: { status: AnalysisStatus }) {
       setIndex((i) => (i + 1) % messages.length);
     }, 2500);
     return () => clearInterval(id);
-  }, [status, messages.length]);
+  }, [messages]);
 
   if (messages.length === 0) return null;
 

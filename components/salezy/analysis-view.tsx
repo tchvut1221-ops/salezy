@@ -109,6 +109,13 @@ function Result({ result }: { result: NonNullable<Analysis["result"]> }) {
     Boolean(result.buyingSignals?.negative.length) ||
     Boolean(result.competitorsMentioned?.length);
 
+  // The synthesis prompt asks the model for `overallScore` at both the
+  // top level and nested under salespersonPerformance — the inngest pipeline's
+  // dashboard snapshot already falls back to the nested one (lib/inngest/functions.ts),
+  // so the gauge must use the same fallback or it can disappear on a call the
+  // dashboard still counts as v2.
+  const overallScore = result.overallScore ?? result.salespersonPerformance.overallScore;
+
   return (
     <div className="mt-8 space-y-5">
       {/* ── v2 enriched cards — each guarded on its own data so v1-only results
@@ -122,9 +129,9 @@ function Result({ result }: { result: NonNullable<Analysis["result"]> }) {
         />
       )}
 
-      {typeof result.overallScore === "number" && (
+      {typeof overallScore === "number" && (
         <ScoreGauge
-          overall={result.overallScore}
+          overall={overallScore}
           scores={result.salespersonPerformance.scores}
         />
       )}
