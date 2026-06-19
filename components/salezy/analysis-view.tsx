@@ -9,6 +9,8 @@ import { DealIntelligence } from "./deal-intelligence";
 import { ObjectionTracker } from "./objection-tracker";
 import { KeyMoments } from "./key-moments";
 import { NextSteps } from "./next-steps";
+import { LoadingMessages } from "./loading-messages";
+import { ResultSkeleton } from "./result-skeleton";
 
 const STEPS: { key: AnalysisStatus; label: string }[] = [
   { key: "uploaded", label: "הועלה" },
@@ -91,9 +93,11 @@ function Progress({ status }: { status: AnalysisStatus }) {
           </div>
         ))}
       </div>
-      <p className="mt-6 animate-pulse text-center text-sm text-zinc-400">
-        מעבד את השיחה... אפשר להישאר בדף, הוא יתעדכן אוטומטית.
+      <LoadingMessages status={status} />
+      <p className="mt-2 text-center text-xs text-zinc-600">
+        אפשר להישאר בדף, הוא יתעדכן אוטומטית.
       </p>
+      <ResultSkeleton />
     </div>
   );
 }

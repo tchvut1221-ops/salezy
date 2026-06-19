@@ -83,9 +83,15 @@ export default async function DashboardPage() {
 
       <div className="mt-8 space-y-3">
         {analyses.length === 0 ? (
-          <p className="text-center text-sm text-zinc-500">
-            עדיין אין ניתוחים. העלה את השיחה הראשונה שלך.
-          </p>
+          <div className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-900/40 px-6 py-10 text-center">
+            <p className="font-medium text-zinc-200">
+              עדיין אין לך ניתוחים — הניתוח הראשון שלך מחכה לקובץ
+            </p>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-zinc-500">
+              העלה הקלטה של שיחת מכירה ותקבל ניתוח אישיות הלקוח, ציון ביצועים
+              מפורט וצעדים הבאים מומלצים — הכל אוטומטית, בתוך דקות.
+            </p>
+          </div>
         ) : (
           analyses.map((a) => (
             <Link
