@@ -110,7 +110,11 @@ export const analyzeCall = inngest.createFunction(
       const overall = result.overallScore ?? perf.overallScore;
       const scores =
         typeof overall === "number"
-          ? { overall, ...(perf.scores ?? {}) }
+          ? {
+              overall,
+              ...(perf.scores ?? {}),
+              personalityType: result.customerPersonality.type,
+            }
           : null;
 
       await admin

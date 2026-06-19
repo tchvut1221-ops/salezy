@@ -8,8 +8,8 @@ export type AnalysisStatus =
 
 export type PersonalityType = "Analytical" | "Driver" | "Amiable" | "Expressive";
 
-// v2 enums consumed by the (not-yet-wired) enriched result components. The full
-// v2 schema lands via the feature/stage-a-schema PR; these keep the build green.
+// v2 enums consumed by the enriched result components (components/salezy/) and
+// produced by the hybrid analysis pipeline (lib/analysis.ts).
 export type DealStage =
   | "discovery"
   | "demo"
@@ -121,8 +121,8 @@ export interface Analysis {
   error: string | null;
   /** "v1" = legacy 3-card result, "v2" = enriched schema. */
   analysis_version: "v1" | "v2";
-  /** Flat score snapshot for cheap dashboard aggregation (v2 only). */
-  scores: Record<string, number> | null;
+  /** Flat score snapshot for cheap dashboard aggregation (v2 only): numeric sub-scores plus `personalityType` (DISC type string). */
+  scores: Record<string, number | string> | null;
   created_at: string;
   updated_at: string;
 }
