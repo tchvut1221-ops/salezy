@@ -121,8 +121,15 @@ export interface Analysis {
   error: string | null;
   /** "v1" = legacy 3-card result, "v2" = enriched schema. */
   analysis_version: "v1" | "v2";
-  /** Flat score snapshot for cheap dashboard aggregation (v2 only): numeric sub-scores plus `personalityType` (DISC type string). */
-  scores: Record<string, number | string> | null;
+  /** Flat score snapshot for cheap dashboard aggregation (v2 only). */
+  scores: {
+    overall: number;
+    needsDiscovery?: number;
+    objectionHandling?: number;
+    listeningRatio?: number;
+    closing?: number;
+    personalityType?: PersonalityType;
+  } | null;
   created_at: string;
   updated_at: string;
 }

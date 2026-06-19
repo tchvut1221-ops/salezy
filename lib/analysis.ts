@@ -128,7 +128,17 @@ const resultSchema = z.object({
  *
  * Runs inside an Inngest step only.
  */
+// Sane ceiling on transcript size — guards against a pathological input (wrong
+// file, corrupted/looping transcription) burning Claude+GPT spend on a call
+// far outside any real sales-call duration. ~150k chars is generous headroom
+// over even a multi-hour call.
+const MAX_TRANSCRIPT_CHARS = 150_000;
+
 export async function reasonAboutCall(transcript: string): Promise<string> {
+  if (transcript.length > MAX_TRANSCRIPT_CHARS) {
+    throw new Error("התמלול ארוך מהצפוי לשיחת מכירה — ייתכן שהקובץ שגוי");
+  }
+
   const system = `אתה מומחה עולמי לניתוח שיחות מכירה בישראל. אתה מקבל תמלול של שיחה (עם תוויות דוברים) ומנתח אותה לעומק, ומסתמך אך ורק על מה שנאמר בתמלול — בלי להמציא.
 
 נתח בעברית, בצורה מובנית ומנומקת, את כל המימדים הבאים. לכל קביעה הצמד ציטוט קצר או הסבר מהשיחה:
@@ -242,6 +252,7 @@ export async function synthesizeAnalysis(
   const res = await openai.chat.completions.create({
     model: "gpt-4o",
     temperature: 0.1,
+    max_tokens: 4096,
     response_format: { type: "json_object" },
     messages: [
       { role: "system", content: system },
@@ -254,7 +265,13 @@ export async function synthesizeAnalysis(
     throw new Error("Empty synthesis response from the model");
   }
 
-  const raw = JSON.parse(content);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- raw model JSON, shape-checked below then Zod-validated
+  let raw: any;
+  try {
+    raw = JSON.parse(content);
+  } catch {
+    throw new Error("תשובת המודל לא הייתה JSON תקין");
+  }
   // Defensive: the model occasionally translates/varies the DISC type even when
   // told not to. Map common variants back to the canonical enum before Zod.
   const t = raw?.customerPersonality?.type;

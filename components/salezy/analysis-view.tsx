@@ -36,16 +36,21 @@ export function AnalysisView({ initial }: { initial: Analysis }) {
           event: "UPDATE",
           schema: "public",
           table: "analyses",
+          // Scoped by id AND user_id (not just id) so this subscription can
+          // never deliver another user's row even if RLS were misconfigured.
           filter: `id=eq.${initial.id}`,
         },
-        (payload) => setAnalysis(payload.new as Analysis)
+        (payload) => {
+          const next = payload.new as Analysis;
+          if (next.user_id === initial.user_id) setAnalysis(next);
+        }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [initial.id]);
+  }, [initial.id, initial.user_id]);
 
   return (
     <div>

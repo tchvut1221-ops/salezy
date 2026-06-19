@@ -78,10 +78,10 @@ export function ScoreGauge({
                       {Math.round(v)}
                     </span>
                   </div>
-                  {/* Track + fill anchored to the right so it grows RTL. */}
+                  {/* Track + fill anchored to the trailing edge so it grows RTL. */}
                   <div className="relative h-2 overflow-hidden rounded-full bg-zinc-800">
                     <div
-                      className={`absolute inset-y-0 right-0 rounded-full ${sc.bar}`}
+                      className={`absolute inset-y-0 end-0 rounded-full ${sc.bar}`}
                       style={{ width: `${v}%` }}
                     />
                   </div>
