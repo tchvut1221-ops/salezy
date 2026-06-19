@@ -10,6 +10,19 @@ import { startAnalysis } from "./actions";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 
 /**
+ * `File.name` is attacker-controlled (it's just a JS string property that
+ * can be set arbitrarily, e.g. via a crafted File/Blob) and is embedded
+ * verbatim in the Storage object path below. Strip it down to a safe
+ * basename so it can't introduce extra path segments ("/", "..") or other
+ * characters Supabase Storage object keys don't allow.
+ */
+function sanitizeFileNameForPath(name: string): string {
+  const base = name.split(/[/\\]/).pop() || "file";
+  const safe = base.replace(/[^a-zA-Z0-9._-]/g, "_");
+  return safe || "file";
+}
+
+/**
  * Resumable (TUS) upload to Supabase Storage. The plain `.upload()` is
  * unreliable for large files (it would silently stall on a 39MB call); the
  * resumable protocol chunks the file, retries on failure, and reports progress.
@@ -90,7 +103,7 @@ export default function UploadPage() {
       }
 
       const id = crypto.randomUUID();
-      const path = `${session.user.id}/${id}/${file.name}`;
+      const path = `${session.user.id}/${id}/${sanitizeFileNameForPath(file.name)}`;
 
       await resumableUpload({
         file,
