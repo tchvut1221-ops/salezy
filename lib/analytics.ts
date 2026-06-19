@@ -97,6 +97,9 @@ export function computeStats(points: ScorePoint[]): AnalyticsStats {
     if (!p.personalityType) continue;
     counts.set(p.personalityType, (counts.get(p.personalityType) ?? 0) + 1);
   }
+  // Ties resolve to whichever type appeared first chronologically (Map
+  // iteration order = insertion order = `points`' order), since `count >
+  // bestCount` only overwrites on a strict improvement.
   let mostCommonPersonality: PersonalityType | null = null;
   let bestCount = 0;
   for (const [type, count] of counts) {

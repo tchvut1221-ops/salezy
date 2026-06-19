@@ -5,7 +5,9 @@ import { signOut } from "@/app/actions";
 import { computeStats, fetchScorePoints } from "@/lib/analytics";
 import { StatsBar } from "@/components/salezy/stats-bar";
 import { ScoreChart } from "@/components/salezy/score-chart";
-import type { Analysis, AnalysisStatus } from "@/types";
+import type { AnalysisStatus } from "@/types";
+
+type AnalysisListItem = { id: string; file_name: string; status: AnalysisStatus };
 
 const STATUS_LABELS: Record<AnalysisStatus, string> = {
   uploaded: "בתור",
@@ -33,19 +35,25 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data } = await supabase
-    .from("analyses")
-    .select("*")
-    .order("created_at", { ascending: false });
+  // List only needs these 3 fields — avoid pulling the full `result` jsonb
+  // (the entire AI analysis output) for every row just to render a status
+  // badge. Runs alongside the analytics query instead of after it; neither
+  // depends on the other's result.
+  const [{ data }, scorePoints] = await Promise.all([
+    supabase
+      .from("analyses")
+      .select("id, file_name, status")
+      .order("created_at", { ascending: false }),
+    fetchScorePoints(supabase, user.id),
+  ]);
 
-  const analyses = (data ?? []) as Analysis[];
+  const analyses = (data ?? []) as AnalysisListItem[];
 
   // Stats bar + trend chart reuse the same query/aggregation helper that
   // backs app/api/analytics/route.ts (kept DRY). This is a server component,
   // so it queries Supabase directly instead of round-tripping through our
   // own HTTP route. Hidden entirely when the user has zero v2/scored calls
   // (v1 analyses have no `scores`) so we never render an empty/broken chart.
-  const scorePoints = await fetchScorePoints(supabase, user.id);
   const stats = computeStats(scorePoints);
 
   return (
