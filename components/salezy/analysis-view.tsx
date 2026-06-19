@@ -3,6 +3,12 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Analysis, AnalysisStatus } from "@/types";
+import { ExecutiveSummary } from "./executive-summary";
+import { ScoreGauge } from "./score-gauge";
+import { DealIntelligence } from "./deal-intelligence";
+import { ObjectionTracker } from "./objection-tracker";
+import { KeyMoments } from "./key-moments";
+import { NextSteps } from "./next-steps";
 
 const STEPS: { key: AnalysisStatus; label: string }[] = [
   { key: "uploaded", label: "הועלה" },
@@ -88,8 +94,53 @@ function Progress({ status }: { status: AnalysisStatus }) {
 }
 
 function Result({ result }: { result: NonNullable<Analysis["result"]> }) {
+  const hasDealIntelligence =
+    Boolean(result.dealStage && result.dealStage !== "unknown") ||
+    Boolean(result.buyingSignals?.positive.length) ||
+    Boolean(result.buyingSignals?.negative.length) ||
+    Boolean(result.competitorsMentioned?.length);
+
   return (
     <div className="mt-8 space-y-5">
+      {/* ── v2 enriched cards — each guarded on its own data so v1-only results
+          (no v2 fields at all) render none of this and fall through cleanly
+          to the original 3-card view below. ── */}
+      {result.executiveSummary && (
+        <ExecutiveSummary
+          summary={result.executiveSummary}
+          callObjective={result.callObjective}
+          achieved={result.callObjectiveAchieved}
+        />
+      )}
+
+      {typeof result.overallScore === "number" && (
+        <ScoreGauge
+          overall={result.overallScore}
+          scores={result.salespersonPerformance.scores}
+        />
+      )}
+
+      {hasDealIntelligence && (
+        <DealIntelligence
+          dealStage={result.dealStage}
+          buyingSignals={result.buyingSignals}
+          competitors={result.competitorsMentioned}
+        />
+      )}
+
+      {result.objections && result.objections.length > 0 && (
+        <ObjectionTracker objections={result.objections} />
+      )}
+
+      {result.keyMoments && result.keyMoments.length > 0 && (
+        <KeyMoments moments={result.keyMoments} />
+      )}
+
+      {result.nextSteps && result.nextSteps.length > 0 && (
+        <NextSteps steps={result.nextSteps} />
+      )}
+
+      {/* ── v1 core — always present, never altered. ── */}
       <Card title="סוג אישיות הלקוח">
         <p className="text-emerald-400">{result.customerPersonality.type}</p>
         <p className="mt-1 text-sm text-zinc-300">
