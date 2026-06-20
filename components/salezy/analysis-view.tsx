@@ -54,19 +54,36 @@ export function AnalysisView({ initial }: { initial: Analysis }) {
     };
   }, [initial.id, initial.user_id]);
 
+  const isReady = analysis.status === "completed" && Boolean(analysis.result);
+
   return (
     <div>
-      <h1 className="text-2xl font-bold text-white">{analysis.file_name}</h1>
-
-      {analysis.status === "failed" ? (
-        <p className="mt-6 rounded-lg bg-red-950 p-4 text-sm text-red-300">
-          הניתוח נכשל. נסה להעלות את הקובץ שוב.
-        </p>
-      ) : analysis.status === "completed" && analysis.result ? (
-        <Result result={analysis.result} />
-      ) : (
-        <Progress status={analysis.status} />
+      {/* כפתור "הורד PDF" — מחוץ ל-#analysis-content ומוסתר בהדפסה. */}
+      {isReady && (
+        <div className="mb-4 flex justify-end">
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500"
+          >
+            הורד PDF
+          </button>
+        </div>
       )}
+
+      <div id="analysis-content">
+        <h1 className="text-2xl font-bold text-white">{analysis.file_name}</h1>
+
+        {analysis.status === "failed" ? (
+          <p className="mt-6 rounded-lg bg-red-950 p-4 text-sm text-red-300">
+            הניתוח נכשל. נסה להעלות את הקובץ שוב.
+          </p>
+        ) : isReady && analysis.result ? (
+          <Result result={analysis.result} />
+        ) : (
+          <Progress status={analysis.status} />
+        )}
+      </div>
     </div>
   );
 }

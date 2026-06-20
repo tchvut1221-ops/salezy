@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { Analysis } from "@/types";
 import { AnalysisView } from "@/components/salezy/analysis-view";
+import "./print.css";
 
 export default async function AnalysisPage({
   params,
