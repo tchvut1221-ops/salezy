@@ -161,18 +161,26 @@ export async function reasonAboutCall(transcript: string): Promise<string> {
 
 ${SALES_SYSTEM_KNOWLEDGE}`;
 
-  const res = await anthropic.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 8192,
-    thinking: { type: "adaptive" },
-    system,
-    messages: [
-      {
-        role: "user",
-        content: `הנה תמלול השיחה לניתוח:\n\n${transcript}`,
-      },
-    ],
-  });
+  // Adaptive thinking and the final text share one max_tokens budget. The deep
+  // 13-dimension Hebrew analysis below can need thousands of thinking tokens on
+  // a long call before it ever starts writing — 8192 let thinking consume the
+  // whole budget and leave zero text on real (~30+ min) calls, surfacing as
+  // "Empty reasoning response from Claude". Streaming is required above
+  // ~16k max_tokens to avoid the SDK's non-streaming timeout guard.
+  const res = await anthropic.messages
+    .stream({
+      model: "claude-sonnet-4-6",
+      max_tokens: 16000,
+      thinking: { type: "adaptive" },
+      system,
+      messages: [
+        {
+          role: "user",
+          content: `הנה תמלול השיחה לניתוח:\n\n${transcript}`,
+        },
+      ],
+    })
+    .finalMessage();
 
   const text = res.content
     .filter((b): b is Anthropic.TextBlock => b.type === "text")
@@ -181,7 +189,9 @@ ${SALES_SYSTEM_KNOWLEDGE}`;
     .trim();
 
   if (!text) {
-    throw new Error("Empty reasoning response from Claude");
+    throw new Error(
+      `Empty reasoning response from Claude (stop_reason: ${res.stop_reason})`
+    );
   }
   return text;
 }
