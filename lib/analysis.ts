@@ -20,6 +20,24 @@ const resultSchema = z.object({
     type: z.enum(["Analytical", "Driver", "Amiable", "Expressive"]),
     explanation: z.string(),
     confidence: z.number().optional().catch(undefined),
+    /** נטייה משנית (תמהיל) — רוב האנשים אינם טיפוס טהור */
+    secondaryType: z
+      .enum(["Analytical", "Driver", "Amiable", "Expressive"])
+      .optional()
+      .catch(undefined),
+    /** קריאת שני הצירים שמהם נגזר הטיפוס */
+    axes: z
+      .object({
+        assertiveness: z.enum(["high", "low"]),
+        responsiveness: z.enum(["task", "people"]),
+      })
+      .optional()
+      .catch(undefined),
+    /** ציטוטי ראיה מהתמלול שהובילו לסיווג */
+    signals: z
+      .array(z.object({ quote: z.string(), interpretation: z.string() }))
+      .optional()
+      .catch(undefined),
     howToSellToThisType: z.array(z.string()).optional().catch(undefined),
     redFlags: z.array(z.string()).optional().catch(undefined),
   }),
@@ -150,7 +168,12 @@ export async function reasonAboutCall(
 
 1. תקציר מנהלים — 2-3 משפטים: מה קרה בשיחה ומה השורה התחתונה.
 2. מטרת השיחה והאם הושגה (כן / חלקית / לא).
-3. סוג אישיות הלקוח לפי DISC — עם רמת ביטחון (0-100), נימוק וציטוטים, איך הכי נכון למכור לאישיות הזו, ומה להימנע מולה.
+3. סוג אישיות הלקוח לפי DISC — נתח לעומק לפי מדריך הצירים, ההבחנה בין טיפוסים סמוכים, ומדריך כיול הביטחון:
+   - הטיפוס הראשי (Driver / Expressive / Amiable / Analytical) + טיפוס משני/תמהיל אם יש נטייה משנית בולטת.
+   - קריאת שני הצירים: אסרטיביות (גבוהה/נמוכה) ומיקוד (משימה/אנשים).
+   - רמת ביטחון (0-100) לפי כמות וההתכנסות של הסימנים — אל תיתן ביטחון גבוה בלי בסיס.
+   - הסימנים הלשוניים הספציפיים שהובילו לסיווג, כל אחד עם ציטוט קצר מהתמלול והסבר מה הוא מסגיר.
+   - איך הכי נכון למכור לאישיות הזו, ומה שורף את העסקה מולה.
 4. שלב העסקה לפי המדריך (discovery / demo / objection / negotiation / close / unknown).
 5. אותות רכישה — חיוביים ושליליים — עם ציטוטים.
 6. מתחרים שהוזכרו (אם הוזכרו).
@@ -183,9 +206,13 @@ ${SALES_SYSTEM_KNOWLEDGE}`;
     defaultParameters: { max_tokens: 16000 },
   });
 
-  // `thinking` isn't part of @inngest/ai's declared Anthropic input type yet,
-  // but the AI Gateway forwards `body` to the wire unmodified, so it still
-  // reaches Anthropic's API — this cast only works around the missing type.
+  // `thinking` and `output_config` aren't part of @inngest/ai's declared
+  // Anthropic input type yet, but the AI Gateway forwards `body` to the wire
+  // unmodified, so they still reach Anthropic's API — this cast only works
+  // around the missing types. `effort` (not `budget_tokens`, deprecated on
+  // this model) is Anthropic's current lever for thinking depth vs. speed;
+  // "medium" is their documented recommended default for Sonnet 4.6 — a
+  // milder choice than "low" while still trading some depth for speed.
   const body = {
     system,
     messages: [
@@ -196,7 +223,11 @@ ${SALES_SYSTEM_KNOWLEDGE}`;
     ],
     max_tokens: 16000,
     thinking: { type: "adaptive" },
-  } as AiAdapter.Input<typeof model> & { thinking: { type: "adaptive" } };
+    output_config: { effort: "medium" },
+  } as AiAdapter.Input<typeof model> & {
+    thinking: { type: "adaptive" };
+    output_config: { effort: "medium" };
+  };
 
   const res = await step.ai.infer("reason", { model, body });
 
@@ -231,8 +262,13 @@ export async function synthesizeAnalysis(
   "callObjectiveAchieved": "yes | partial | no",
   "customerPersonality": {
     "type": "Analytical | Driver | Amiable | Expressive",
+    "secondaryType": "Analytical | Driver | Amiable | Expressive",
     "explanation": "הסבר קצר בעברית עם דוגמאות",
     "confidence": 0-100,
+    "axes": { "assertiveness": "high | low", "responsiveness": "task | people" },
+    "signals": [
+      { "quote": "ציטוט קצר מהשיחה", "interpretation": "מה הציטוט מסגיר על הטיפוס (עברית)" }
+    ],
     "howToSellToThisType": ["..."],
     "redFlags": ["..."]
   },
@@ -271,7 +307,8 @@ export async function synthesizeAnalysis(
 }
 
 ⚠️ חשוב:
-- customerPersonality.type חייב להיות **בדיוק** אחד מ: Analytical, Driver, Amiable, Expressive (באנגלית). אל תתרגם ואל תשנה.
+- customerPersonality.type ו-customerPersonality.secondaryType חייבים להיות **בדיוק** אחד מ: Analytical, Driver, Amiable, Expressive (באנגלית). אל תתרגם ואל תשנה. השמט את secondaryType לגמרי אם אין נטייה משנית בולטת.
+- customerPersonality.axes.assertiveness חייב להיות "high" או "low"; customerPersonality.axes.responsiveness חייב להיות "task" או "people".
 - כל שאר ערכי ה-enum (callObjectiveAchieved, dealStage, objections[].score, keyMoments[].type, nextSteps[].priority, energyLevel, callPace, sentiment) חייבים להיות בדיוק באנגלית כפי שמופיע למעלה.
 - כל שאר הטקסט בתוך ה-JSON חייב להיות בעברית.
 - השדות whatWorked, whatDidnt, tips, explicit, implicit ו-customerPersonality חובה תמיד.
@@ -301,13 +338,21 @@ export async function synthesizeAnalysis(
     throw new Error("תשובת המודל לא הייתה JSON תקין");
   }
   // Defensive: the model occasionally translates/varies the DISC type even when
-  // told not to. Map common variants back to the canonical enum before Zod.
-  const t = raw?.customerPersonality?.type;
-  if (typeof t === "string") {
-    const mapped = DISC_TYPE_MAP[t.trim().toLowerCase()];
-    if (mapped) raw.customerPersonality.type = mapped;
+  // told not to. Map common variants back to the canonical enum before Zod, for
+  // both the primary type and the (optional) secondary/blend type.
+  const personality = raw?.customerPersonality;
+  if (personality) {
+    personality.type = normalizeDiscType(personality.type) ?? personality.type;
+    const secondary = normalizeDiscType(personality.secondaryType);
+    if (secondary) personality.secondaryType = secondary;
   }
   return resultSchema.parse(raw);
+}
+
+/** Normalize a single DISC value (Hebrew/variant/typo) to the canonical enum, or undefined. */
+function normalizeDiscType(value: unknown): PersonalityType | undefined {
+  if (typeof value !== "string") return undefined;
+  return DISC_TYPE_MAP[value.trim().toLowerCase()];
 }
 
 const DISC_TYPE_MAP: Record<string, PersonalityType> = {
