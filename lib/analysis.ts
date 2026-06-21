@@ -161,17 +161,22 @@ export async function reasonAboutCall(transcript: string): Promise<string> {
 
 ${SALES_SYSTEM_KNOWLEDGE}`;
 
-  // Adaptive thinking and the final text share one max_tokens budget. The deep
-  // 13-dimension Hebrew analysis below can need thousands of thinking tokens on
-  // a long call before it ever starts writing — 8192 let thinking consume the
-  // whole budget and leave zero text on real (~30+ min) calls, surfacing as
-  // "Empty reasoning response from Claude". Streaming is required above
-  // ~16k max_tokens to avoid the SDK's non-streaming timeout guard.
+  // Thinking and the final text share one max_tokens budget. 8192 with
+  // unbounded adaptive thinking let thinking consume the whole budget and
+  // leave zero text on real (~30+ min) calls ("Empty reasoning response from
+  // Claude"). Raising max_tokens to 16000 fixed that, but then unbounded
+  // thinking on long transcripts pushed the call's wall-clock time past
+  // Vercel's 300s function limit (FUNCTION_INVOCATION_TIMEOUT). A hard
+  // budget_tokens cap on thinking (still supported on Sonnet 4.6, though
+  // deprecated in favor of adaptive thinking on newer models) bounds total
+  // generation deterministically while still guaranteeing 5000 tokens of
+  // headroom for the text response. Streaming is required above ~16k
+  // max_tokens to avoid the SDK's non-streaming timeout guard.
   const res = await anthropic.messages
     .stream({
       model: "claude-sonnet-4-6",
-      max_tokens: 16000,
-      thinking: { type: "adaptive" },
+      max_tokens: 10000,
+      thinking: { type: "enabled", budget_tokens: 5000 },
       system,
       messages: [
         {
