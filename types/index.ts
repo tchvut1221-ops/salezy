@@ -39,6 +39,15 @@ export interface AnalysisResult {
     explanation: string;
     /** עד כמה ה-AI בטוח בזיהוי (0-100) */
     confidence?: number;
+    /** נטייה משנית (תמהיל) — רוב האנשים אינם טיפוס טהור */
+    secondaryType?: PersonalityType;
+    /** קריאת שני הצירים שמהם נגזר הטיפוס */
+    axes?: {
+      assertiveness: "high" | "low";
+      responsiveness: "task" | "people";
+    };
+    /** ציטוטי ראיה מהתמלול שהובילו לסיווג */
+    signals?: Array<{ quote: string; interpretation: string }>;
     /** טיפים ספציפיים למכירה לאישיות הזו */
     howToSellToThisType?: string[];
     /** מה להימנע מולו */

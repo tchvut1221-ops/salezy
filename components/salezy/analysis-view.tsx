@@ -9,6 +9,7 @@ import { DealIntelligence } from "./deal-intelligence";
 import { ObjectionTracker } from "./objection-tracker";
 import { KeyMoments } from "./key-moments";
 import { NextSteps } from "./next-steps";
+import { PersonalityCard } from "./personality-card";
 import { LoadingMessages } from "./loading-messages";
 import { ResultSkeleton } from "./result-skeleton";
 
@@ -173,13 +174,9 @@ function Result({ result }: { result: NonNullable<Analysis["result"]> }) {
         <NextSteps steps={result.nextSteps} />
       )}
 
-      {/* ── v1 core — always present, never altered. ── */}
-      <Card title="סוג אישיות הלקוח">
-        <p className="text-emerald-400">{result.customerPersonality.type}</p>
-        <p className="mt-1 text-sm text-zinc-300">
-          {result.customerPersonality.explanation}
-        </p>
-      </Card>
+      {/* ── v1 core — always present. The personality card self-degrades when the
+          enriched DISC fields are absent (legacy analyses). ── */}
+      <PersonalityCard personality={result.customerPersonality} />
 
       <Card title="ביצועי איש המכירות">
         <List label="מה עבד" items={result.salespersonPerformance.whatWorked} />
