@@ -1,11 +1,13 @@
 import OpenAI from "openai";
-import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
+import type { AiAdapter, GetStepTools } from "inngest";
+import { inngest } from "@/lib/inngest/client";
 import type { AnalysisResult, PersonalityType } from "@/types";
 import { SALES_SYSTEM_KNOWLEDGE } from "@/lib/sales-knowledge";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+type AnalyzeCallStep = GetStepTools<typeof inngest>;
 
 // v1 core fields stay strict (they always exist). Every v2 field is optional AND
 // `.catch(undefined)` — if the model emits a malformed value (e.g. an off-enum
@@ -134,7 +136,10 @@ const resultSchema = z.object({
 // over even a multi-hour call.
 const MAX_TRANSCRIPT_CHARS = 150_000;
 
-export async function reasonAboutCall(transcript: string): Promise<string> {
+export async function reasonAboutCall(
+  transcript: string,
+  step: AnalyzeCallStep
+): Promise<string> {
   if (transcript.length > MAX_TRANSCRIPT_CHARS) {
     throw new Error("התמלול ארוך מהצפוי לשיחת מכירה — ייתכן שהקובץ שגוי");
   }
@@ -166,29 +171,37 @@ ${SALES_SYSTEM_KNOWLEDGE}`;
   // leave zero text on real (~30+ min) calls ("Empty reasoning response from
   // Claude"). Raising max_tokens to 16000 fixed that, but then unbounded
   // thinking on long transcripts pushed the call's wall-clock time past
-  // Vercel's 300s function limit (FUNCTION_INVOCATION_TIMEOUT). A hard
-  // budget_tokens cap on thinking (still supported on Sonnet 4.6, though
-  // deprecated in favor of adaptive thinking on newer models) bounds total
-  // generation deterministically while still guaranteeing 5000 tokens of
-  // headroom for the text response. Streaming is required above ~16k
-  // max_tokens to avoid the SDK's non-streaming timeout guard.
-  const res = await anthropic.messages
-    .stream({
-      model: "claude-sonnet-4-6",
-      max_tokens: 10000,
-      thinking: { type: "enabled", budget_tokens: 5000 },
-      system,
-      messages: [
-        {
-          role: "user",
-          content: `הנה תמלול השיחה לניתוח:\n\n${transcript}`,
-        },
-      ],
-    })
-    .finalMessage();
+  // Vercel's 300s function limit (FUNCTION_INVOCATION_TIMEOUT) — an earlier
+  // fix capped budget_tokens to bound that, trading away analysis depth.
+  // Dispatching via Inngest's AI Gateway instead removes the constraint at
+  // the root: the outbound call to Anthropic is made by Inngest's own
+  // infrastructure, not this Vercel function, so it can't trip maxDuration
+  // no matter how long thinking takes — restoring unbounded adaptive
+  // thinking is safe again.
+  const model = step.ai.models.anthropic({
+    model: "claude-sonnet-4-6",
+    defaultParameters: { max_tokens: 16000 },
+  });
+
+  // `thinking` isn't part of @inngest/ai's declared Anthropic input type yet,
+  // but the AI Gateway forwards `body` to the wire unmodified, so it still
+  // reaches Anthropic's API — this cast only works around the missing type.
+  const body = {
+    system,
+    messages: [
+      {
+        role: "user",
+        content: `הנה תמלול השיחה לניתוח:\n\n${transcript}`,
+      },
+    ],
+    max_tokens: 16000,
+    thinking: { type: "adaptive" },
+  } as AiAdapter.Input<typeof model> & { thinking: { type: "adaptive" } };
+
+  const res = await step.ai.infer("reason", { model, body });
 
   const text = res.content
-    .filter((b): b is Anthropic.TextBlock => b.type === "text")
+    .filter((b): b is { type: "text"; text: string } => b.type === "text")
     .map((b) => b.text)
     .join("\n")
     .trim();

@@ -90,13 +90,15 @@ export const analyzeCall = inngest.createFunction(
     });
 
     // Hybrid analysis: Claude Sonnet 4.6 reasons, GPT-4o formats to JSON.
-    const reasoning = await step.run("reason", async () => {
+    // reasonAboutCall dispatches step.ai.infer itself, which is already a
+    // tracked Inngest step — it can't be nested inside another step.run.
+    await step.run("set-analyzing", async () => {
       await admin
         .from("analyses")
         .update({ status: "analyzing" })
         .eq("id", analysisId);
-      return reasonAboutCall(transcript);
     });
+    const reasoning = await reasonAboutCall(transcript, step);
 
     const result = await step.run("synthesize", async () => {
       return synthesizeAnalysis(reasoning);
