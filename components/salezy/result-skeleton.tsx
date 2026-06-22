@@ -46,7 +46,7 @@ function ScoreGaugeSkeleton() {
             <path
               d="M 20 100 A 80 80 0 0 1 180 100"
               fill="none"
-              stroke="#27272a"
+              stroke="#2A2A3D"
               strokeWidth="14"
               strokeLinecap="round"
               className="animate-pulse"

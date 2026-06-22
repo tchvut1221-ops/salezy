@@ -1,5 +1,24 @@
 import type { Metadata } from "next";
+import { Alef, Heebo, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+
+const alef = Alef({
+  subsets: ["hebrew"],
+  weight: ["400", "700"],
+  variable: "--font-alef",
+});
+
+const heebo = Heebo({
+  subsets: ["hebrew", "latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-heebo",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-jetbrains-mono",
+});
 
 export const metadata: Metadata = {
   title: "Salezy — ניתוח שיחות מכירה",
@@ -12,8 +31,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="he" dir="rtl" className="h-full antialiased">
-      <body className="flex min-h-full flex-col bg-zinc-950 text-zinc-100">
+    <html
+      lang="he"
+      dir="rtl"
+      className={`dark h-full antialiased ${alef.variable} ${heebo.variable} ${jetbrainsMono.variable}`}
+    >
+      <body className="flex min-h-full flex-col bg-background text-foreground">
         {children}
       </body>
     </html>

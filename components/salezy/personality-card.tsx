@@ -19,29 +19,29 @@ const TYPE_META: Record<
     he: "משימתי",
     tagline: "תוצאות ושליטה",
     colorName: "אדום",
-    dot: "bg-red-500",
-    text: "text-red-400",
+    dot: "bg-[#FF4D4D]",
+    text: "text-[#FF4D4D]",
   },
   Expressive: {
     he: "מבטא",
     tagline: "השפעה ורגש",
     colorName: "צהוב",
-    dot: "bg-amber-400",
-    text: "text-amber-300",
+    dot: "bg-[#FFD400]",
+    text: "text-[#FFD400]",
   },
   Amiable: {
     he: "תומך",
     tagline: "יחסים ויציבות",
     colorName: "ירוק",
-    dot: "bg-green-500",
-    text: "text-green-400",
+    dot: "bg-[#00C48C]",
+    text: "text-[#00C48C]",
   },
   Analytical: {
     he: "אנליטי",
     tagline: "דיוק ונתונים",
     colorName: "כחול",
-    dot: "bg-sky-500",
-    text: "text-sky-400",
+    dot: "bg-[#4D7EFF]",
+    text: "text-[#4D7EFF]",
   },
 };
 
@@ -167,8 +167,8 @@ function TipList({
   items: string[];
   tone: "positive" | "negative";
 }) {
-  const dot = tone === "positive" ? "bg-emerald-500" : "bg-red-500";
-  const head = tone === "positive" ? "text-emerald-400" : "text-red-400";
+  const dot = tone === "positive" ? "bg-[#00D4A0]" : "bg-[#FF4D6A]";
+  const head = tone === "positive" ? "text-[#00D4A0]" : "text-[#FF4D6A]";
   return (
     <div>
       <p className={`mb-2 text-sm font-medium ${head}`}>{label}</p>

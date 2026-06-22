@@ -6,24 +6,24 @@ import type { ReactNode } from "react";
  * rather than introducing a new one.
  */
 
-/** Semantic color tokens for a 0-100 score: emerald ≥70, amber 40-69, red <40. */
+/** Semantic color tokens for a 0-100 score: --score-high ≥70, --score-mid 40-69, --score-low <40. */
 export function scoreColor(score: number) {
   if (score >= 70)
     return {
-      text: "text-emerald-400",
-      bar: "bg-emerald-500",
-      stroke: "#34d399",
+      text: "text-[#00D4A0]",
+      bar: "bg-[#00D4A0]",
+      stroke: "#00D4A0",
     };
   if (score >= 40)
     return {
-      text: "text-amber-400",
-      bar: "bg-amber-500",
-      stroke: "#fbbf24",
+      text: "text-[#F5A623]",
+      bar: "bg-[#F5A623]",
+      stroke: "#F5A623",
     };
   return {
-    text: "text-red-400",
-    bar: "bg-red-500",
-    stroke: "#f87171",
+    text: "text-[#FF4D6A]",
+    bar: "bg-[#FF4D6A]",
+    stroke: "#FF4D6A",
   };
 }
 
@@ -41,7 +41,7 @@ export function Panel({
 }) {
   return (
     <section
-      className={`rounded-2xl border border-zinc-800 bg-zinc-900 p-6 ${
+      className={`rounded-[12px] border border-zinc-800 bg-zinc-900 p-6 ${
         className ?? ""
       }`}
     >
@@ -52,7 +52,11 @@ export function Panel({
               {eyebrow}
             </p>
           )}
-          {title && <h2 className="text-lg font-semibold text-white">{title}</h2>}
+          {title && (
+            <h2 className="font-heading text-lg font-semibold text-foreground">
+              {title}
+            </h2>
+          )}
         </div>
       )}
       {children}
@@ -62,10 +66,10 @@ export function Panel({
 
 const PILL_TONES = {
   neutral: "bg-zinc-800 text-zinc-300 ring-zinc-700",
-  positive: "bg-emerald-500/10 text-emerald-300 ring-emerald-500/25",
-  negative: "bg-red-500/10 text-red-300 ring-red-500/25",
-  warn: "bg-amber-500/10 text-amber-300 ring-amber-500/25",
-  info: "bg-sky-500/10 text-sky-300 ring-sky-500/25",
+  positive: "bg-[#00D4A0]/10 text-[#00D4A0] ring-[#00D4A0]/25",
+  negative: "bg-[#FF4D6A]/10 text-[#FF4D6A] ring-[#FF4D6A]/25",
+  warn: "bg-[#F5A623]/10 text-[#F5A623] ring-[#F5A623]/25",
+  info: "bg-[#4D7EFF]/10 text-[#4D7EFF] ring-[#4D7EFF]/25",
 } as const;
 
 /** Small rounded chip. */

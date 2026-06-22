@@ -69,32 +69,32 @@ export function ScoreChart({ points }: { points: ScorePoint[] }) {
       <div className="h-64 w-full" dir="ltr">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-            <XAxis dataKey="date" stroke="#71717a" fontSize={12} />
-            <YAxis domain={[0, 100]} stroke="#71717a" fontSize={12} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#2A2A3D" />
+            <XAxis dataKey="date" stroke="#8888AA" fontSize={12} />
+            <YAxis domain={[0, 100]} stroke="#8888AA" fontSize={12} />
             <Tooltip
               contentStyle={{
-                backgroundColor: "#18181b",
-                border: "1px solid #27272a",
+                backgroundColor: "#1A1A26",
+                border: "1px solid #2A2A3D",
                 borderRadius: 8,
-                color: "#e4e4e7",
+                color: "#F0F0FF",
               }}
-              labelStyle={{ color: "#a1a1aa" }}
+              labelStyle={{ color: "#8888AA" }}
             />
             <Line
               type="monotone"
               dataKey="score"
               name="ציון"
-              stroke="#34d399"
+              stroke="#00D4A0"
               strokeWidth={2}
-              dot={{ r: 3, fill: "#34d399" }}
+              dot={{ r: 3, fill: "#00D4A0" }}
               activeDot={{ r: 5 }}
             />
             <Line
               type="monotone"
               dataKey="trend"
               name="מגמה"
-              stroke="#71717a"
+              stroke="#3D3D5C"
               strokeWidth={2}
               strokeDasharray="6 4"
               dot={false}

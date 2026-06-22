@@ -4,12 +4,31 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+  Salezy ships dark-mode only. The zinc-* shades below are the project's actual
+  background/border/text scale (see DESIGN.md) — overriding them here means every
+  existing `bg-zinc-900` / `text-zinc-400` / etc. across the components automatically
+  follows the design system instead of Tailwind's stock gray.
+*/
+@theme {
+  --color-zinc-950: #0a0a0f; /* --bg-base */
+  --color-zinc-900: #111118; /* --bg-surface */
+  --color-zinc-800: #2a2a3d; /* --border (also used as track/groove backgrounds) */
+  --color-zinc-700: #3d3d5c; /* --border-strong */
+  --color-zinc-600: #444460; /* --text-disabled */
+  --color-zinc-500: #8888aa; /* --text-secondary */
+  --color-zinc-400: #8888aa; /* --text-secondary */
+  --color-zinc-300: #f0f0ff; /* --text-primary */
+  --color-zinc-200: #f0f0ff; /* --text-primary */
+  --color-zinc-100: #f0f0ff; /* --text-primary */
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-sans: var(--font-heebo);
+  --font-mono: var(--font-jetbrains-mono);
+  --font-heading: var(--font-alef);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -48,73 +67,42 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-:root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
-
+/* Dark-only product: :root carries the same values as .dark so theming is never
+   conditional on a class toggle that might not be applied somewhere. */
+:root,
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #0a0a0f;
+  --foreground: #f0f0ff;
+  --card: #111118;
+  --card-foreground: #f0f0ff;
+  --popover: #1a1a26;
+  --popover-foreground: #f0f0ff;
+  --primary: #4d7eff;
+  --primary-foreground: #f0f0ff;
+  --secondary: #1a1a26;
+  --secondary-foreground: #f0f0ff;
+  --muted: #1a1a26;
+  --muted-foreground: #8888aa;
+  --accent: #1f1f2e;
+  --accent-foreground: #f0f0ff;
+  --destructive: #ff4d6a;
+  --border: #2a2a3d;
+  --input: #2a2a3d;
+  --ring: #4d7eff;
+  --chart-1: #00d4a0;
+  --chart-2: #4d7eff;
+  --chart-3: #f5a623;
+  --chart-4: #00c48c;
+  --chart-5: #3d3d5c;
+  --radius: 0.5rem;
+  --sidebar: #111118;
+  --sidebar-foreground: #f0f0ff;
+  --sidebar-primary: #4d7eff;
+  --sidebar-primary-foreground: #f0f0ff;
+  --sidebar-accent: #1f1f2e;
+  --sidebar-accent-foreground: #f0f0ff;
+  --sidebar-border: #2a2a3d;
+  --sidebar-ring: #4d7eff;
 }
 
 @layer base {
