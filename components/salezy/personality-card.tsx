@@ -9,14 +9,40 @@ import type { AnalysisResult, PersonalityType } from "@/types";
  * analysis (type+explanation only) still renders cleanly.
  */
 
+// Color overlay from the popular 4-type framework Israeli reps know: Red /
+// Yellow / Green / Blue. Derived deterministically from `type` — no schema field.
 const TYPE_META: Record<
   PersonalityType,
-  { he: string; tagline: string }
+  { he: string; tagline: string; colorName: string; dot: string; text: string }
 > = {
-  Driver: { he: "משימתי", tagline: "תוצאות ושליטה" },
-  Expressive: { he: "מבטא", tagline: "השפעה ורגש" },
-  Amiable: { he: "תומך", tagline: "יחסים ויציבות" },
-  Analytical: { he: "אנליטי", tagline: "דיוק ונתונים" },
+  Driver: {
+    he: "משימתי",
+    tagline: "תוצאות ושליטה",
+    colorName: "אדום",
+    dot: "bg-red-500",
+    text: "text-red-400",
+  },
+  Expressive: {
+    he: "מבטא",
+    tagline: "השפעה ורגש",
+    colorName: "צהוב",
+    dot: "bg-amber-400",
+    text: "text-amber-300",
+  },
+  Amiable: {
+    he: "תומך",
+    tagline: "יחסים ויציבות",
+    colorName: "ירוק",
+    dot: "bg-green-500",
+    text: "text-green-400",
+  },
+  Analytical: {
+    he: "אנליטי",
+    tagline: "דיוק ונתונים",
+    colorName: "כחול",
+    dot: "bg-sky-500",
+    text: "text-sky-400",
+  },
 };
 
 const AXIS_LABEL = {
@@ -47,12 +73,22 @@ export function PersonalityCard({
       <div className="space-y-5">
         {/* Type headline + blend + confidence */}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <span className="text-2xl font-bold text-emerald-400">{meta.he}</span>
+          <span className="flex items-center gap-2">
+            <span className={`h-3.5 w-3.5 rounded-full ${meta.dot}`} />
+            <span className={`text-2xl font-bold ${meta.text}`}>{meta.he}</span>
+          </span>
           <span className="text-sm text-zinc-500">
-            {meta.tagline} · {type}
+            {meta.colorName} · {meta.tagline} · {type}
           </span>
           {secondaryType && secondaryType !== type && (
-            <Pill tone="info">נטייה משנית: {TYPE_META[secondaryType].he}</Pill>
+            <Pill tone="info">
+              <span className="flex items-center gap-1.5">
+                <span
+                  className={`h-2 w-2 rounded-full ${TYPE_META[secondaryType].dot}`}
+                />
+                נטייה משנית: {TYPE_META[secondaryType].he}
+              </span>
+            </Pill>
           )}
         </div>
 
