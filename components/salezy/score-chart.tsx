@@ -70,8 +70,24 @@ export function ScoreChart({ points }: { points: ScorePoint[] }) {
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#2A2A3D" />
-            <XAxis dataKey="date" stroke="#8888AA" fontSize={12} />
-            <YAxis domain={[0, 100]} stroke="#8888AA" fontSize={12} />
+            <XAxis
+              dataKey="date"
+              stroke="#2A2A3D"
+              tick={{
+                fill: "#8888AA",
+                fontFamily: "var(--font-jetbrains-mono)",
+                fontSize: 12,
+              }}
+            />
+            <YAxis
+              domain={[0, 100]}
+              stroke="#2A2A3D"
+              tick={{
+                fill: "#8888AA",
+                fontFamily: "var(--font-jetbrains-mono)",
+                fontSize: 12,
+              }}
+            />
             <Tooltip
               contentStyle={{
                 backgroundColor: "#1A1A26",

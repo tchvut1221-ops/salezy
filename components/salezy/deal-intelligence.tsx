@@ -44,15 +44,15 @@ export function DealIntelligence({
                     <span
                       className={`h-3 w-3 rounded-full ${
                         current
-                          ? "bg-emerald-400 ring-4 ring-emerald-500/20"
+                          ? "bg-primary ring-4 ring-primary/20"
                           : reached
-                            ? "bg-emerald-500"
+                            ? "bg-primary"
                             : "bg-zinc-700"
                       }`}
                     />
                     <span
                       className={`whitespace-nowrap text-xs ${
-                        reached ? "text-emerald-300" : "text-zinc-500"
+                        reached ? "text-primary" : "text-zinc-500"
                       }`}
                     >
                       {s.label}
@@ -61,7 +61,7 @@ export function DealIntelligence({
                   {i < STAGES.length - 1 && (
                     <div
                       className={`mx-1 h-px flex-1 ${
-                        i < idx ? "bg-emerald-500/50" : "bg-zinc-800"
+                        i < idx ? "bg-primary/50" : "bg-zinc-800"
                       }`}
                     />
                   )}
@@ -118,8 +118,8 @@ function SignalList({
   items: string[];
   tone: "positive" | "negative";
 }) {
-  const dot = tone === "positive" ? "bg-emerald-500" : "bg-red-500";
-  const head = tone === "positive" ? "text-emerald-400" : "text-red-400";
+  const dot = tone === "positive" ? "bg-score-high" : "bg-score-low";
+  const head = tone === "positive" ? "text-score-high" : "text-score-low";
   return (
     <div>
       <p className={`mb-2 text-sm font-medium ${head}`}>{label}</p>

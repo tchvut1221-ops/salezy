@@ -4,19 +4,19 @@ import type { ObjectionScore } from "@/types";
 const SCORE_META: Record<ObjectionScore, { label: string; cls: string }> = {
   excellent: {
     label: "מצוין",
-    cls: "bg-emerald-500/10 text-emerald-300 ring-emerald-500/25",
+    cls: "bg-score-high/10 text-score-high ring-score-high/25",
   },
   good: {
     label: "טוב",
-    cls: "bg-teal-500/10 text-teal-300 ring-teal-500/25",
+    cls: "bg-primary/10 text-primary ring-primary/25",
   },
   poor: {
     label: "חלש",
-    cls: "bg-amber-500/10 text-amber-300 ring-amber-500/25",
+    cls: "bg-score-mid/10 text-score-mid ring-score-mid/25",
   },
   missed: {
     label: "פוספס",
-    cls: "bg-red-500/10 text-red-300 ring-red-500/25",
+    cls: "bg-score-low/10 text-score-low ring-score-low/25",
   },
 };
 
@@ -30,7 +30,7 @@ export function ObjectionTracker({
     <Panel title="מעקב התנגדויות">
       <div className="overflow-x-auto rounded-xl border border-zinc-800">
         <table className="w-full text-right text-sm">
-          <thead className="bg-zinc-950/40 text-xs uppercase tracking-wide text-zinc-500">
+          <thead className="bg-zinc-950/40 text-xs uppercase text-zinc-500">
             <tr>
               <th className="px-4 py-2.5 font-medium">מה הלקוח אמר</th>
               <th className="px-4 py-2.5 font-medium">איך טופל</th>

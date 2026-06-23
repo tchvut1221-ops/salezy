@@ -31,10 +31,10 @@ export default async function Home() {
     <main className="flex-1">
       {/* Hero */}
       <section className="mx-auto max-w-4xl px-4 py-20 text-center sm:py-28">
-        <p className="text-sm font-medium uppercase tracking-wider text-emerald-400">
+        <p className="text-sm font-medium uppercase tracking-wider text-primary">
           Salezy
         </p>
-        <h1 className="mt-4 text-3xl font-bold leading-tight text-white sm:text-5xl">
+        <h1 className="mt-4 text-3xl font-bold leading-tight text-foreground sm:text-5xl">
           הכר את הלקוח שלך כמו שאף אחד לא הכיר
         </h1>
         <p className="mx-auto mt-5 max-w-2xl text-lg text-zinc-400">
@@ -44,7 +44,7 @@ export default async function Home() {
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
             href="/login"
-            className="inline-flex w-full items-center justify-center rounded-lg bg-emerald-600 px-8 py-3 text-base font-medium text-white transition hover:bg-emerald-500 sm:w-auto"
+            className="inline-flex w-full items-center justify-center rounded-lg bg-primary px-8 py-3 text-base font-medium text-primary-foreground transition hover:bg-primary/90 sm:w-auto"
           >
             התחל בחינם
           </Link>
@@ -57,9 +57,9 @@ export default async function Home() {
           {FEATURES.map((f) => (
             <div
               key={f.title}
-              className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6"
+              className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6 transition-colors hover:border-zinc-700"
             >
-              <h2 className="text-lg font-semibold text-white">{f.title}</h2>
+              <h2 className="text-lg font-semibold text-foreground">{f.title}</h2>
               <p className="mt-2 text-sm leading-relaxed text-zinc-400">
                 {f.description}
               </p>
@@ -80,13 +80,13 @@ export default async function Home() {
 
       {/* Closing CTA */}
       <section className="mx-auto max-w-4xl px-4 py-16 text-center">
-        <h2 className="text-2xl font-bold text-white">
+        <h2 className="text-2xl font-bold text-foreground">
           מוכנים להבין מה קורה בשיחות שלכם?
         </h2>
         <div className="mt-6">
           <Link
             href="/login"
-            className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-8 py-3 text-base font-medium text-white transition hover:bg-emerald-500"
+            className="inline-flex items-center justify-center rounded-lg bg-primary px-8 py-3 text-base font-medium text-primary-foreground transition hover:bg-primary/90"
           >
             התחל בחינם
           </Link>

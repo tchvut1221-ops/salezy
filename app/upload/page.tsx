@@ -132,7 +132,7 @@ export default function UploadPage() {
 
   return (
     <main className="mx-auto max-w-xl px-4 py-12">
-      <h1 className="text-2xl font-bold text-white">העלאת שיחת מכירה</h1>
+      <h1 className="text-2xl font-bold text-foreground">העלאת שיחת מכירה</h1>
       <p className="mt-1 text-sm text-zinc-400">
         העלה הקלטה (mp3 / wav / m4a / mp4 / mov / ogg / aac / webm, עד{" "}
         {Math.round(MAX_FILE_BYTES / 1024 / 1024)}MB) ונתחיל לנתח אותה.
@@ -145,12 +145,14 @@ export default function UploadPage() {
           accept=".mp3,.wav,.m4a,.mp4,.mov,.ogg,.aac,.webm,audio/*,video/mp4,video/quicktime"
           onChange={onPick}
           disabled={busy}
-          className="block w-full text-sm text-zinc-300 file:mr-4 file:rounded-lg file:border-0 file:bg-emerald-600 file:px-4 file:py-2 file:text-white hover:file:bg-emerald-500"
+          className="block w-full text-sm text-zinc-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary file:px-4 file:py-2 file:text-primary-foreground file:transition-colors hover:file:bg-primary/90"
         />
         {file && (
           <p className="mt-4 text-sm text-zinc-300">
-            נבחר: <span className="font-medium">{file.name}</span> (
-            {(file.size / 1024 / 1024).toFixed(1)}MB)
+            נבחר: <span className="font-medium">{file.name}</span>{" "}
+            <span dir="ltr" className="font-mono text-zinc-400">
+              ({(file.size / 1024 / 1024).toFixed(1)}MB)
+            </span>
           </p>
         )}
       </div>
@@ -159,22 +161,31 @@ export default function UploadPage() {
         <div className="mt-6">
           <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-800">
             <div
-              className="h-full rounded-full bg-emerald-500 transition-all"
+              className="h-full rounded-full bg-primary transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
           <p className="mt-2 text-center text-sm text-zinc-400">
-            {progress < 100 ? `מעלה... ${progress}%` : "ההעלאה הושלמה, מתחיל ניתוח..."}
+            {progress < 100 ? (
+              <>
+                מעלה...{" "}
+                <span dir="ltr" className="font-mono">
+                  {progress}%
+                </span>
+              </>
+            ) : (
+              "ההעלאה הושלמה, מתחיל ניתוח..."
+            )}
           </p>
         </div>
       )}
 
-      {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
+      {error && <p className="mt-4 text-sm text-score-low">{error}</p>}
 
       <button
         onClick={onUpload}
         disabled={!file || busy}
-        className="mt-6 w-full rounded-lg bg-emerald-600 px-4 py-3 font-medium text-white transition hover:bg-emerald-500 disabled:opacity-50"
+        className="mt-6 w-full rounded-lg bg-primary px-4 py-3 font-medium text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
       >
         {busy ? "מעלה ומתחיל ניתוח..." : "העלה ונתח"}
       </button>

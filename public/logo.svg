@@ -1,0 +1,8 @@
+<svg width="196" height="48" viewBox="0 0 196 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>Salezy</title>
+  <g stroke="#4D7EFF" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M30 13H18V23H30V34H17" />
+    <path d="M33 31L40 24M40 24H34M40 24V30" />
+  </g>
+  <text x="56" y="33" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="27" font-weight="700" letter-spacing="-0.6" fill="#F0F0FF">Salezy</text>
+</svg>

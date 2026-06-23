@@ -1,28 +1,32 @@
 import type { ReactNode } from "react";
 
 /**
- * Shared presentational primitives for the premium analysis view. They extend the
- * app's existing dark language (zinc-950 page, zinc-900 cards, emerald accent, RTL)
- * rather than introducing a new one.
+ * Shared presentational primitives for the premium analysis view. They follow the
+ * design system (bg-base page, bg-surface cards, blue accent, score-* signals, RTL)
+ * defined in DESIGN.md / globals.css.
  */
 
-/** Semantic color tokens for a 0-100 score: --score-high ≥70, --score-mid 40-69, --score-low <40. */
+/**
+ * Semantic color tokens for a 0-100 score: score-high ≥70, score-mid 40-69,
+ * score-low <40. `stroke` stays a literal hex for SVG presentation attributes
+ * (CSS vars aren't reliable there); class names use the theme utilities.
+ */
 export function scoreColor(score: number) {
   if (score >= 70)
     return {
-      text: "text-[#00D4A0]",
-      bar: "bg-[#00D4A0]",
+      text: "text-score-high",
+      bar: "bg-score-high",
       stroke: "#00D4A0",
     };
   if (score >= 40)
     return {
-      text: "text-[#F5A623]",
-      bar: "bg-[#F5A623]",
+      text: "text-score-mid",
+      bar: "bg-score-mid",
       stroke: "#F5A623",
     };
   return {
-    text: "text-[#FF4D6A]",
-    bar: "bg-[#FF4D6A]",
+    text: "text-score-low",
+    bar: "bg-score-low",
     stroke: "#FF4D6A",
   };
 }
@@ -48,14 +52,12 @@ export function Panel({
       {(title || eyebrow) && (
         <div className="mb-4">
           {eyebrow && (
-            <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+            <p className="text-xs font-medium uppercase text-zinc-500">
               {eyebrow}
             </p>
           )}
           {title && (
-            <h2 className="font-heading text-lg font-semibold text-foreground">
-              {title}
-            </h2>
+            <h2 className="text-lg font-semibold text-foreground">{title}</h2>
           )}
         </div>
       )}
@@ -66,10 +68,10 @@ export function Panel({
 
 const PILL_TONES = {
   neutral: "bg-zinc-800 text-zinc-300 ring-zinc-700",
-  positive: "bg-[#00D4A0]/10 text-[#00D4A0] ring-[#00D4A0]/25",
-  negative: "bg-[#FF4D6A]/10 text-[#FF4D6A] ring-[#FF4D6A]/25",
-  warn: "bg-[#F5A623]/10 text-[#F5A623] ring-[#F5A623]/25",
-  info: "bg-[#4D7EFF]/10 text-[#4D7EFF] ring-[#4D7EFF]/25",
+  positive: "bg-score-high/10 text-score-high ring-score-high/25",
+  negative: "bg-score-low/10 text-score-low ring-score-low/25",
+  warn: "bg-score-mid/10 text-score-mid ring-score-mid/25",
+  info: "bg-primary/10 text-primary ring-primary/25",
 } as const;
 
 /** Small rounded chip. */

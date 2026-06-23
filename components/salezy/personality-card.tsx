@@ -19,29 +19,29 @@ const TYPE_META: Record<
     he: "משימתי",
     tagline: "תוצאות ושליטה",
     colorName: "אדום",
-    dot: "bg-[#FF4D4D]",
-    text: "text-[#FF4D4D]",
+    dot: "bg-disc-d",
+    text: "text-disc-d",
   },
   Expressive: {
     he: "מבטא",
     tagline: "השפעה ורגש",
     colorName: "צהוב",
-    dot: "bg-[#FFD400]",
-    text: "text-[#FFD400]",
+    dot: "bg-disc-i",
+    text: "text-disc-i",
   },
   Amiable: {
     he: "תומך",
     tagline: "יחסים ויציבות",
     colorName: "ירוק",
-    dot: "bg-[#00C48C]",
-    text: "text-[#00C48C]",
+    dot: "bg-disc-s",
+    text: "text-disc-s",
   },
   Analytical: {
     he: "אנליטי",
     tagline: "דיוק ונתונים",
     colorName: "כחול",
-    dot: "bg-[#4D7EFF]",
-    text: "text-[#4D7EFF]",
+    dot: "bg-disc-c",
+    text: "text-disc-c",
   },
 };
 
@@ -149,7 +149,9 @@ function Confidence({ value }: { value: number }) {
     <div>
       <div className="mb-1 flex items-center justify-between text-sm">
         <span className="text-zinc-400">רמת ביטחון בזיהוי</span>
-        <span className={c.text}>{pct}%</span>
+        <span dir="ltr" className={`font-mono tabular-nums ${c.text}`}>
+          {pct}%
+        </span>
       </div>
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
         <div className={`h-full rounded-full ${c.bar}`} style={{ width: `${pct}%` }} />
@@ -167,8 +169,8 @@ function TipList({
   items: string[];
   tone: "positive" | "negative";
 }) {
-  const dot = tone === "positive" ? "bg-[#00D4A0]" : "bg-[#FF4D6A]";
-  const head = tone === "positive" ? "text-[#00D4A0]" : "text-[#FF4D6A]";
+  const dot = tone === "positive" ? "bg-score-high" : "bg-score-low";
+  const head = tone === "positive" ? "text-score-high" : "text-score-low";
   return (
     <div>
       <p className={`mb-2 text-sm font-medium ${head}`}>{label}</p>

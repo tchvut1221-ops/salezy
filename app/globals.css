@@ -5,30 +5,56 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
-  Salezy ships dark-mode only. The zinc-* shades below are the project's actual
-  background/border/text scale (see DESIGN.md) — overriding them here means every
-  existing `bg-zinc-900` / `text-zinc-400` / etc. across the components automatically
-  follows the design system instead of Tailwind's stock gray.
+  Salezy design system — dark-mode only (see DESIGN.md).
+  Single source of truth for color is the named brand tokens in :root below;
+  every Tailwind utility and shadcn semantic token is derived from them.
 */
 @theme {
-  --color-zinc-950: #0a0a0f; /* --bg-base */
-  --color-zinc-900: #111118; /* --bg-surface */
-  --color-zinc-800: #2a2a3d; /* --border (also used as track/groove backgrounds) */
-  --color-zinc-700: #3d3d5c; /* --border-strong */
-  --color-zinc-600: #444460; /* --text-disabled */
-  --color-zinc-500: #8888aa; /* --text-secondary */
-  --color-zinc-400: #8888aa; /* --text-secondary */
-  --color-zinc-300: #f0f0ff; /* --text-primary */
-  --color-zinc-200: #f0f0ff; /* --text-primary */
-  --color-zinc-100: #f0f0ff; /* --text-primary */
+  /*
+    Legacy neutral scale: the codebase was built on Tailwind's stock `zinc-*`.
+    Remapping those shades here means every existing `bg-zinc-900`,
+    `text-zinc-400`, etc. automatically follows the brand neutral ramp instead
+    of generic gray — no per-class churn needed.
+  */
+  --color-zinc-950: #0a0a0f; /* bg-base */
+  --color-zinc-900: #111118; /* bg-surface */
+  --color-zinc-800: #2a2a3d; /* border / groove backgrounds */
+  --color-zinc-700: #3d3d5c; /* border-strong */
+  --color-zinc-600: #444460; /* text-disabled */
+  --color-zinc-500: #8888aa; /* text-secondary */
+  --color-zinc-400: #8888aa; /* text-secondary */
+  --color-zinc-300: #f0f0ff; /* text-primary */
+  --color-zinc-200: #f0f0ff; /* text-primary */
+  --color-zinc-100: #f0f0ff; /* text-primary */
+
+  /* Brand surfaces + structure as first-class utilities (bg-surface, border-strong, ...) */
+  --color-base: #0a0a0f;
+  --color-surface: #111118;
+  --color-elevated: #1a1a26;
+  --color-hover: #1f1f2e;
+  --color-border-strong: #3d3d5c;
+
+  /* Accent + semantic signal colors */
+  --color-accent-blue: #4d7eff;
+  --color-score-high: #00d4a0;
+  --color-score-mid: #f5a623;
+  --color-score-low: #ff4d6a;
+
+  /* Customer DISC personality (locked to lib/sales-knowledge.ts: Red/Yellow/Green/Blue) */
+  --color-disc-d: #ff4d4d;
+  --color-disc-i: #ffd400;
+  --color-disc-s: #00c48c;
+  --color-disc-c: #4d7eff;
+
+  /* Type system: Inter (Latin) + Assistant (Hebrew) for sans, JetBrains Mono for every number */
+  --font-sans: var(--font-inter), var(--font-assistant), ui-sans-serif, system-ui,
+    sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", monospace;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-heebo);
-  --font-mono: var(--font-jetbrains-mono);
-  --font-heading: var(--font-alef);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -58,61 +84,92 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /*
+    Radius system is deliberately two values only (DESIGN.md): buttons 8px, cards 12px.
+    rounded-sm/md/lg all collapse to 8px; rounded-xl/2xl/3xl all collapse to 12px,
+    so the many legacy `rounded-2xl` cards become 12px with no per-file edits.
+  */
+  --radius-sm: 0.375rem; /* 6px */
+  --radius-md: 0.5rem; /* 8px */
+  --radius-lg: 0.5rem; /* 8px — buttons */
+  --radius-xl: 0.75rem; /* 12px — cards */
+  --radius-2xl: 0.75rem; /* 12px — cards (legacy alias) */
+  --radius-3xl: 0.75rem; /* 12px */
+  --radius-4xl: 0.75rem; /* 12px */
 }
 
-/* Dark-only product: :root carries the same values as .dark so theming is never
-   conditional on a class toggle that might not be applied somewhere. */
+/*
+  Dark-only product: :root and .dark carry identical values so nothing depends
+  on a class toggle being present. The named brand tokens are the source of
+  truth; the shadcn semantic tokens beneath them are pure derivations, and are
+  also consumed directly (via var()) by SVG/Recharts code that can't use classes.
+*/
 :root,
 .dark {
-  --background: #0a0a0f;
-  --foreground: #f0f0ff;
-  --card: #111118;
-  --card-foreground: #f0f0ff;
-  --popover: #1a1a26;
-  --popover-foreground: #f0f0ff;
-  --primary: #4d7eff;
-  --primary-foreground: #f0f0ff;
-  --secondary: #1a1a26;
-  --secondary-foreground: #f0f0ff;
-  --muted: #1a1a26;
-  --muted-foreground: #8888aa;
-  --accent: #1f1f2e;
-  --accent-foreground: #f0f0ff;
-  --destructive: #ff4d6a;
+  /* ── Brand tokens (source of truth) ── */
+  --bg-base: #0a0a0f;
+  --bg-surface: #111118;
+  --bg-elevated: #1a1a26;
+  --bg-hover: #1f1f2e;
   --border: #2a2a3d;
-  --input: #2a2a3d;
-  --ring: #4d7eff;
-  --chart-1: #00d4a0;
-  --chart-2: #4d7eff;
-  --chart-3: #f5a623;
-  --chart-4: #00c48c;
-  --chart-5: #3d3d5c;
-  --radius: 0.5rem;
-  --sidebar: #111118;
-  --sidebar-foreground: #f0f0ff;
-  --sidebar-primary: #4d7eff;
+  --border-strong: #3d3d5c;
+  --text-primary: #f0f0ff;
+  --text-secondary: #8888aa;
+  --accent-blue: #4d7eff;
+  --score-high: #00d4a0;
+  --score-mid: #f5a623;
+  --score-low: #ff4d6a;
+
+  /* ── shadcn semantic tokens, derived from the brand tokens above ── */
+  --background: var(--bg-base);
+  --foreground: var(--text-primary);
+  --card: var(--bg-surface);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-elevated);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--accent-blue);
+  --primary-foreground: #f0f0ff;
+  --secondary: var(--bg-elevated);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--bg-elevated);
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--bg-hover);
+  --accent-foreground: var(--text-primary);
+  --destructive: var(--score-low);
+  --input: var(--border);
+  --ring: var(--accent-blue);
+  --chart-1: var(--score-high);
+  --chart-2: var(--accent-blue);
+  --chart-3: var(--score-mid);
+  --chart-4: var(--disc-s);
+  --chart-5: var(--border-strong);
+  --radius: 0.5rem; /* 8px button base */
+  --sidebar: var(--bg-surface);
+  --sidebar-foreground: var(--text-primary);
+  --sidebar-primary: var(--accent-blue);
   --sidebar-primary-foreground: #f0f0ff;
-  --sidebar-accent: #1f1f2e;
-  --sidebar-accent-foreground: #f0f0ff;
-  --sidebar-border: #2a2a3d;
-  --sidebar-ring: #4d7eff;
+  --sidebar-accent: var(--bg-hover);
+  --sidebar-accent-foreground: var(--text-primary);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--accent-blue);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
   html {
     @apply font-sans;
+  }
+  body {
+    @apply bg-background text-foreground;
+    /* Hebrew renders denser than Latin; relax line + word spacing for readability. */
+    line-height: 1.6;
+    word-spacing: 0.05em;
+  }
+  /* Every numeral, score, percentage, and timestamp uses JetBrains Mono with tabular figures. */
+  .tabular-nums {
+    font-feature-settings: "tnum";
   }
 }

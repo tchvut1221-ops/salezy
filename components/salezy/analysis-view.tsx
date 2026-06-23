@@ -65,7 +65,7 @@ export function AnalysisView({ initial }: { initial: Analysis }) {
           <button
             type="button"
             onClick={() => window.print()}
-            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500"
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             הורד PDF
           </button>
@@ -73,10 +73,10 @@ export function AnalysisView({ initial }: { initial: Analysis }) {
       )}
 
       <div id="analysis-content">
-        <h1 className="text-2xl font-bold text-white">{analysis.file_name}</h1>
+        <h1 className="text-2xl font-bold text-foreground">{analysis.file_name}</h1>
 
         {analysis.status === "failed" ? (
-          <p className="mt-6 rounded-lg bg-red-950 p-4 text-sm text-red-300">
+          <p className="mt-6 rounded-lg bg-score-low/10 p-4 text-sm text-score-low">
             הניתוח נכשל. נסה להעלות את הקובץ שוב.
           </p>
         ) : isReady && analysis.result ? (
@@ -97,13 +97,13 @@ function Progress({ status }: { status: AnalysisStatus }) {
         {STEPS.map((step, i) => (
           <div key={step.key} className="flex flex-1 flex-col items-center">
             <div
-              className={`h-2 w-full rounded-full ${
-                i <= current ? "bg-emerald-500" : "bg-zinc-800"
+              className={`h-2 w-full rounded-full transition-colors ${
+                i <= current ? "bg-primary" : "bg-zinc-800"
               }`}
             />
             <span
               className={`mt-2 text-xs ${
-                i <= current ? "text-emerald-400" : "text-zinc-500"
+                i <= current ? "text-primary" : "text-zinc-500"
               }`}
             >
               {step.label}
@@ -195,7 +195,7 @@ function Result({ result }: { result: NonNullable<Analysis["result"]> }) {
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
-      <h2 className="text-lg font-semibold text-white">{title}</h2>
+      <h2 className="text-lg font-semibold text-foreground">{title}</h2>
       <div className="mt-3">{children}</div>
     </section>
   );

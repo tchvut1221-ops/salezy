@@ -7,27 +7,27 @@ const MOMENT_META: Record<
 > = {
   buying_signal: {
     label: "אות רכישה",
-    dot: "bg-emerald-500",
-    quoteText: "text-emerald-300",
-    ring: "ring-emerald-500/25",
+    dot: "bg-score-high",
+    quoteText: "text-score-high",
+    ring: "ring-score-high/25",
   },
   objection: {
     label: "התנגדות",
-    dot: "bg-red-500",
-    quoteText: "text-red-300",
-    ring: "ring-red-500/25",
+    dot: "bg-score-low",
+    quoteText: "text-score-low",
+    ring: "ring-score-low/25",
   },
   pain_point: {
     label: "נקודת כאב",
-    dot: "bg-amber-500",
-    quoteText: "text-amber-300",
-    ring: "ring-amber-500/25",
+    dot: "bg-score-mid",
+    quoteText: "text-score-mid",
+    ring: "ring-score-mid/25",
   },
   breakthrough: {
     label: "פריצת דרך",
-    dot: "bg-sky-500",
-    quoteText: "text-sky-300",
-    ring: "ring-sky-500/25",
+    dot: "bg-primary",
+    quoteText: "text-primary",
+    ring: "ring-primary/25",
   },
 };
 

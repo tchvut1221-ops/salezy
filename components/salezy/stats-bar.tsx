@@ -12,17 +12,22 @@ function Metric({
   label,
   value,
   valueClassName,
+  mono = true,
 }: {
   label: string;
   value: string;
   valueClassName?: string;
+  /** Numeric metrics render in JetBrains Mono; the Hebrew personality label does not. */
+  mono?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-        {label}
-      </span>
-      <span className={`text-2xl font-bold tabular-nums ${valueClassName ?? "text-white"}`}>
+      <span className="text-xs font-medium uppercase text-zinc-500">{label}</span>
+      <span
+        className={`text-2xl font-bold tabular-nums ${mono ? "font-mono" : ""} ${
+          valueClassName ?? "text-foreground"
+        }`}
+      >
         {value}
       </span>
     </div>
@@ -50,9 +55,9 @@ export function StatsBar({ stats }: { stats: AnalyticsStats }) {
     stats.improvementDelta === null
       ? "text-zinc-400"
       : stats.improvementDelta > 0
-        ? "text-emerald-400"
+        ? "text-score-high"
         : stats.improvementDelta < 0
-          ? "text-red-400"
+          ? "text-score-low"
           : "text-zinc-400";
 
   const personalityText = stats.mostCommonPersonality
@@ -69,7 +74,7 @@ export function StatsBar({ stats }: { stats: AnalyticsStats }) {
           valueClassName={avgColor.text}
         />
         <Metric label="שיפור" value={deltaText} valueClassName={deltaColor} />
-        <Metric label="טיפוס לקוח נפוץ" value={personalityText} />
+        <Metric label="טיפוס לקוח נפוץ" value={personalityText} mono={false} />
       </div>
     </Panel>
   );

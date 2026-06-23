@@ -20,11 +20,11 @@ const STATUS_LABELS: Record<AnalysisStatus, string> = {
 
 const STATUS_COLORS: Record<AnalysisStatus, string> = {
   uploaded: "text-zinc-400",
-  converting: "text-amber-400",
-  transcribing: "text-amber-400",
-  analyzing: "text-amber-400",
-  completed: "text-emerald-400",
-  failed: "text-red-400",
+  converting: "text-score-mid",
+  transcribing: "text-score-mid",
+  analyzing: "text-score-mid",
+  completed: "text-score-high",
+  failed: "text-score-low",
 };
 
 export default async function DashboardPage() {
@@ -59,9 +59,9 @@ export default async function DashboardPage() {
   return (
     <main className="mx-auto max-w-4xl px-4 py-12">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">הניתוחים שלי</h1>
+        <h1 className="text-2xl font-bold text-foreground">הניתוחים שלי</h1>
         <form action={signOut}>
-          <button className="text-sm text-zinc-400 hover:text-white">
+          <button className="text-sm text-zinc-400 transition-colors hover:text-foreground">
             התנתק
           </button>
         </form>
@@ -69,7 +69,7 @@ export default async function DashboardPage() {
 
       <Link
         href="/upload"
-        className="mt-6 block rounded-lg bg-emerald-600 px-4 py-3 text-center font-medium text-white transition hover:bg-emerald-500"
+        className="mt-6 block rounded-lg bg-primary px-4 py-3 text-center font-medium text-primary-foreground transition hover:bg-primary/90"
       >
         + העלאת שיחה חדשה
       </Link>

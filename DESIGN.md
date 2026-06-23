@@ -56,26 +56,26 @@ these colors in Hebrew, so the UI badges must match exactly.
 - `--disc-c: #4D7EFF` — Conscientious/Analytical ("אנליטי") — כחול, shares the accent blue
 
 ## Typography
-**Why not Inter:** the earlier draft specified Inter for body text. Inter is on this
-toolkit's hard reject list (overused AI-default) and is explicitly banned by the
-`ncode-anti-vibe-coding` skill. Swapped for a Hebrew-native pairing that fits the
-"financial instrument" feeling better.
+Two families only. Inter is a deliberate client brand decision (it overrides the
+toolkit's default reject-list — the `ncode-anti-vibe-coding` skill explicitly defers
+to fonts named here). Because Inter ships no Hebrew glyphs and the UI is Hebrew-first,
+Hebrew falls through per-glyph to **Assistant**, a clean Hebrew sans chosen to sit
+naturally beside Inter.
 
-- Heading font: **Alef** — distinctive, built for financial/data displays, exactly the
-  "instrument panel" register this product wants. Used for card titles and section
-  headers via the `font-heading` utility.
-- Body font: **Heebo** — clean workhorse, excellent number rendering, very legible in
-  dense tables (objection tracker, key moments, score breakdowns)
-- Numerals/Latin: **JetBrains Mono** — every score, percentage, date, and English string.
-  Tabular figures make score deltas and trend numbers scannable at a glance.
+- Latin + wordmark: **Inter** — weights 400/500/600/700, loaded via `next/font`.
+- Hebrew body + headings: **Assistant** — the visible workhorse for almost all UI text;
+  legible in dense tables (objection tracker, key moments, score breakdowns).
+- Numerals: **JetBrains Mono** — every score, percentage, date, and English/Latin string.
+  Applied with the `font-mono` utility + `tabular-nums` so score deltas and trend numbers
+  align and stay scannable.
 - Scale:
   - Hero / H1: 36px (landing page only)
   - H2 (section headers): 24px
   - H3 (card titles): 18px
-  - Body: 16px minimum
+  - Body: 16px minimum (14px for dense table/caption rows, line-height 1.6)
   - Caption / small (labels, timestamps): 13px
-  - Score display (gauge center number): 48px, JetBrains Mono
-- Line height: 1.7 for Hebrew body text
+  - Score display (gauge center number): 56px, JetBrains Mono (target band 48-64px)
+- Line height: 1.6-1.7 for Hebrew body text
 - NEVER add letter-spacing to Hebrew text
 - Word spacing: 0.05em for Hebrew body readability
 

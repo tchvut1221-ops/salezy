@@ -21,7 +21,7 @@ export function ExecutiveSummary({
 }) {
   return (
     <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
-      <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+      <p className="text-xs font-medium uppercase text-zinc-500">
         סיכום השיחה
       </p>
       <p className="mt-2 text-lg leading-relaxed text-zinc-100">{summary}</p>

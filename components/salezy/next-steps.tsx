@@ -7,18 +7,18 @@ const PRIORITY_META: Record<
 > = {
   urgent: {
     label: "דחוף",
-    dot: "bg-red-500",
-    cls: "bg-red-500/10 text-red-300 ring-red-500/25",
+    dot: "bg-score-low",
+    cls: "bg-score-low/10 text-score-low ring-score-low/25",
   },
   soon: {
     label: "בקרוב",
-    dot: "bg-amber-500",
-    cls: "bg-amber-500/10 text-amber-300 ring-amber-500/25",
+    dot: "bg-score-mid",
+    cls: "bg-score-mid/10 text-score-mid ring-score-mid/25",
   },
   "when-possible": {
     label: "כשאפשר",
-    dot: "bg-emerald-500",
-    cls: "bg-emerald-500/10 text-emerald-300 ring-emerald-500/25",
+    dot: "bg-score-high",
+    cls: "bg-score-high/10 text-score-high ring-score-high/25",
   },
 };
 
