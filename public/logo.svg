@@ -1,8 +1,14 @@
-<svg width="196" height="48" viewBox="0 0 196 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="210" height="64" viewBox="0 0 210 64" fill="none" xmlns="http://www.w3.org/2000/svg">
   <title>Salezy</title>
-  <g stroke="#4D7EFF" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M30 13H18V23H30V34H17" />
-    <path d="M33 31L40 24M40 24H34M40 24V30" />
+  <g fill="none" stroke="#4D7EFF" stroke-linecap="round" stroke-linejoin="round">
+    <!-- hexagonal frame -->
+    <path d="M32 6 L54 19 L54 45 L32 58 L10 45 L10 19 Z" stroke-width="2.5" opacity="0.85" />
+    <!-- parallel circuit traces -->
+    <path d="M13 33 L21 27" stroke-width="2.5" opacity="0.7" />
+    <path d="M13 39 L19 34.5" stroke-width="2.5" opacity="0.7" />
+    <!-- "S" monogram flowing up into a growth arrow that breaks out top-right -->
+    <path d="M22 46 H40 V32 H24 V22 L48 10" stroke-width="4" />
+    <path d="M48 10 L40 10 M48 10 L48 18" stroke-width="4" />
   </g>
-  <text x="56" y="33" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="27" font-weight="700" letter-spacing="-0.6" fill="#F0F0FF">Salezy</text>
+  <text x="74" y="42" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="32" font-weight="700" letter-spacing="-1" fill="#F0F0FF">Salezy</text>
 </svg>
