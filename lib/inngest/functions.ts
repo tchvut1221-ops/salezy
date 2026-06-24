@@ -1,6 +1,6 @@
 import { inngest } from "./client";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { splitIfNeeded, convertToMp3, capDurationIfTooLarge } from "@/lib/audio";
+import { splitIfNeeded, convertToMp3 } from "@/lib/audio";
 import { transcribeAudio } from "@/lib/whisper";
 import { reasonAboutCall, synthesizeAnalysis } from "@/lib/analysis";
 import { needsConversion } from "@/lib/constants";
@@ -48,7 +48,7 @@ export const analyzeCall = inngest.createFunction(
       return data.file_path as string;
     });
 
-    const { transcript, trimmed } = await step.run("transcribe", async () => {
+    const transcript = await step.run("transcribe", async () => {
       const { data: file, error } = await admin.storage
         .from("recordings")
         .download(filePath);
@@ -68,13 +68,6 @@ export const analyzeCall = inngest.createFunction(
         fileName = converted.name;
       }
 
-      // Guardrail: if the recording is still over the size cap, keep only the
-      // first 60 minutes (re-encoded to the ASR format). `trimmed` flows out so
-      // we can tell the user their call was shortened.
-      const capped = await capDurationIfTooLarge(buffer, fileName);
-      buffer = capped.buffer;
-      fileName = capped.name;
-
       await admin
         .from("analyses")
         .update({ status: "transcribing", error: null })
@@ -93,7 +86,7 @@ export const analyzeCall = inngest.createFunction(
         .from("analyses")
         .update({ transcript: full })
         .eq("id", analysisId);
-      return { transcript: full, trimmed: capped.trimmed };
+      return full;
     });
 
     // Hybrid analysis: Claude Sonnet 4.6 reasons, GPT-4o formats to JSON.
@@ -112,13 +105,6 @@ export const analyzeCall = inngest.createFunction(
     });
 
     await step.run("complete", async () => {
-      // Surface the trim, if any, on the result so the analysis page can tell the
-      // user (in Hebrew) that only the first hour was analyzed.
-      if (trimmed) {
-        result.processingNotice =
-          "ההקלטה ארוכה מ-60 דקות — נותחו 60 הדקות הראשונות בלבד.";
-      }
-
       // Flat numeric snapshot so the dashboard can aggregate scores without
       // parsing the full `result` blob. Mark the row "v2" only when the model
       // actually produced an overall score; otherwise it stays a v1-level result.

@@ -76,12 +76,6 @@ export interface AnalysisResult {
   };
 
   // ── v2 additions (all optional) ──
-  /**
-   * Pipeline-level note surfaced to the user in Hebrew (e.g. the recording was
-   * trimmed to the first 60 minutes before transcription). Not produced by the
-   * model — injected by the Inngest pipeline when it had to alter the input.
-   */
-  processingNotice?: string;
   /** TL;DR של השיחה ב-2-3 משפטים */
   executiveSummary?: string;
   /** ציון כולל לשיחה (0-100) */

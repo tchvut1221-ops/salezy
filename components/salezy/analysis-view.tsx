@@ -186,12 +186,6 @@ function Result({ result }: { result: NonNullable<Analysis["result"]> }) {
 
   return (
     <div className="mt-8 space-y-5">
-      {result.processingNotice && (
-        <p className="rounded-lg border border-score-mid/30 bg-score-mid/10 p-3 text-sm text-score-mid">
-          {result.processingNotice}
-        </p>
-      )}
-
       {/* ── v2 enriched cards — each guarded on its own data so v1-only results
           (no v2 fields at all) render none of this and fall through cleanly
           to the original 3-card view below. ── */}

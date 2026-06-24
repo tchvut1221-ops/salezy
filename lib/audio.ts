@@ -3,7 +3,6 @@ import { promises as fs, chmodSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import ffmpegPath from "ffmpeg-static";
-import { MAX_TRANSCODED_BYTES, MAX_DURATION_SECONDS } from "@/lib/constants";
 
 /** Keep each chunk safely under Whisper's 25MB limit. */
 const MAX_BYTES = 24 * 1024 * 1024;
@@ -47,57 +46,6 @@ export async function convertToMp3(
       outputPath,
     ]);
     return { buffer: await fs.readFile(outputPath), name: `${base}.mp3` };
-  } finally {
-    await fs.rm(workDir, { recursive: true, force: true });
-  }
-}
-
-/**
- * Guardrail against pathologically long recordings. If the (already-converted)
- * audio is still over MAX_TRANSCODED_BYTES, trim it to the first
- * MAX_DURATION_SECONDS and re-encode to the 16kHz-mono mp3 ASR format — this
- * also guarantees the result is small regardless of the source container (e.g.
- * an uncompressed WAV that copy-trimming alone wouldn't shrink). Files already
- * under the limit are returned untouched.
- *
- * Returns `trimmed: true` when the cap was applied so the caller can tell the
- * user (in Hebrew) that only the first hour was analyzed. MUST run inside an
- * Inngest step (uses ffmpeg + the OS temp dir).
- */
-export async function capDurationIfTooLarge(
-  buffer: Buffer,
-  fileName: string
-): Promise<AudioChunk & { trimmed: boolean }> {
-  if (buffer.length <= MAX_TRANSCODED_BYTES) {
-    return { buffer, name: fileName, trimmed: false };
-  }
-  if (!ffmpegPath) {
-    throw new Error("ffmpeg binary not found (ffmpeg-static)");
-  }
-
-  const ext = path.extname(fileName) || ".bin";
-  const base = path.basename(fileName, path.extname(fileName));
-  const workDir = await fs.mkdtemp(path.join(os.tmpdir(), "salezy-cap-"));
-  const inputPath = path.join(workDir, `input${ext}`);
-  const outputPath = path.join(workDir, `${base}.mp3`);
-
-  try {
-    await fs.writeFile(inputPath, buffer);
-    await runFfmpeg([
-      "-i", inputPath,
-      "-t", String(MAX_DURATION_SECONDS), // keep only the first N seconds
-      "-vn",
-      "-ac", "1", // mono
-      "-ar", "16000", // 16kHz
-      "-c:a", "libmp3lame",
-      "-q:a", "4",
-      outputPath,
-    ]);
-    return {
-      buffer: await fs.readFile(outputPath),
-      name: `${base}.mp3`,
-      trimmed: true,
-    };
   } finally {
     await fs.rm(workDir, { recursive: true, force: true });
   }
