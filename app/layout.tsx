@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Assistant, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/salezy/site-header";
+import { Toaster } from "@/components/salezy/toaster";
 
 // Inter carries Latin text and the wordmark. It has no Hebrew glyphs, so Hebrew
 // falls through (per-glyph) to Assistant — a clean Hebrew sans that sits well
@@ -43,6 +44,7 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <SiteHeader />
         {children}
+        <Toaster />
       </body>
     </html>
   );

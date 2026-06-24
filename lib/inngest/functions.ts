@@ -57,7 +57,7 @@ export const analyzeCall = inngest.createFunction(
       let buffer: Buffer = Buffer.from(await file.arrayBuffer());
       let fileName = filePath.split("/").pop() ?? "audio.mp3";
 
-      // Convert non-mp3/wav uploads (mp4/mov/ogg/m4a/aac/webm) to mp3 first.
+      // Convert non-mp3/wav uploads (mp4/mov/ogg/m4a/aac/webm/flac) to mp3 first.
       if (needsConversion(fileName)) {
         await admin
           .from("analyses")

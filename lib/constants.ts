@@ -1,4 +1,10 @@
-/** File-upload rules (mirrored client + server). */
+/**
+ * Max upload size. Supabase Storage's GLOBAL file size limit caps every
+ * upload method (standard, TUS resumable, signed URLs — enforced server-side,
+ * the same way regardless of method) at 50MB on the Free plan, with no
+ * per-bucket override above that. Raising this requires upgrading the
+ * Supabase project plan, not a code change.
+ */
 export const MAX_FILE_BYTES = 50 * 1024 * 1024; // 50MB
 
 /**
@@ -14,6 +20,7 @@ export const ALLOWED_EXTENSIONS = [
   "ogg",
   "aac",
   "webm",
+  "flac",
 ] as const;
 
 /** Extensions the transcription API accepts directly — everything else is converted. */
@@ -30,6 +37,8 @@ export const ALLOWED_MIME_TYPES = [
   "audio/aac",
   "audio/ogg",
   "audio/webm",
+  "audio/flac",
+  "audio/x-flac",
   "video/mp4",
   "video/quicktime", // .mov
   "video/webm",
