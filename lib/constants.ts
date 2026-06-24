@@ -1,5 +1,19 @@
-/** File-upload rules (mirrored client + server). */
-export const MAX_FILE_BYTES = 50 * 1024 * 1024; // 50MB
+/**
+ * Max ORIGINAL upload size (pre-processing). Generous on purpose: an hour of
+ * lossless FLAC is ~150MB, and the Inngest pipeline re-encodes everything down
+ * to 16kHz-mono mp3 before transcription, so the size that actually matters is
+ * the post-conversion one (MAX_TRANSCODED_BYTES below), not this.
+ */
+export const MAX_FILE_BYTES = 500 * 1024 * 1024; // 500MB
+
+/**
+ * After ffmpeg conversion, the recording must be under this size to go to
+ * transcription. Anything larger is trimmed to MAX_DURATION_SECONDS first (see
+ * lib/audio.ts), with a Hebrew notice surfaced to the user.
+ */
+export const MAX_TRANSCODED_BYTES = 70 * 1024 * 1024; // 70MB
+/** Cap applied when a converted recording is still too large: first 60 minutes. */
+export const MAX_DURATION_SECONDS = 3600;
 
 /**
  * Accepted upload formats. Anything that isn't already mp3/wav is converted to
@@ -14,6 +28,7 @@ export const ALLOWED_EXTENSIONS = [
   "ogg",
   "aac",
   "webm",
+  "flac",
 ] as const;
 
 /** Extensions the transcription API accepts directly — everything else is converted. */
@@ -30,6 +45,8 @@ export const ALLOWED_MIME_TYPES = [
   "audio/aac",
   "audio/ogg",
   "audio/webm",
+  "audio/flac",
+  "audio/x-flac",
   "video/mp4",
   "video/quicktime", // .mov
   "video/webm",

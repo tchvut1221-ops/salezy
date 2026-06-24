@@ -1,0 +1,49 @@
+"use client";
+
+import { useEffect } from "react";
+import Link from "next/link";
+
+/**
+ * Route-segment error boundary. Catches render/data errors anywhere under the
+ * root layout and shows a friendly Hebrew message instead of a raw stack trace.
+ * The SiteHeader (from the layout) stays visible above this. `reset` re-renders
+ * the segment; the dashboard link is the safe escape hatch.
+ */
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  useEffect(() => {
+    // Surface the real error to logs/monitoring without showing it to the user.
+    console.error(error);
+  }, [error]);
+
+  return (
+    <main className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center px-4 py-16 text-center">
+      <div className="w-full rounded-2xl border border-zinc-800 bg-zinc-900 p-8">
+        <h1 className="text-xl font-bold text-foreground">משהו השתבש</h1>
+        <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+          נתקלנו בתקלה בלתי צפויה. אפשר לנסות שוב — ואם זה חוזר, חזרו לדשבורד
+          ונסו שוב בעוד רגע.
+        </p>
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <button
+            onClick={reset}
+            className="rounded-lg bg-primary px-4 py-2.5 font-medium text-primary-foreground transition hover:bg-primary/90"
+          >
+            נסה שוב
+          </button>
+          <Link
+            href="/dashboard"
+            className="rounded-lg border border-zinc-700 px-4 py-2.5 font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-foreground"
+          >
+            חזרה לדשבורד
+          </Link>
+        </div>
+      </div>
+    </main>
+  );
+}

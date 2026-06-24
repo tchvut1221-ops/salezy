@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
+import { retryAnalysis } from "@/app/actions";
 import type { Analysis, AnalysisStatus } from "@/types";
 import { ExecutiveSummary } from "./executive-summary";
 import { ScoreGauge } from "./score-gauge";
@@ -26,9 +28,15 @@ function stepIndex(status: AnalysisStatus): number {
   return i === -1 ? 0 : i;
 }
 
+const TERMINAL: AnalysisStatus[] = ["completed", "failed"];
+
 export function AnalysisView({ initial }: { initial: Analysis }) {
   const [analysis, setAnalysis] = useState<Analysis>(initial);
+  const [retrying, startRetry] = useTransition();
 
+  const isDone = TERMINAL.includes(analysis.status);
+
+  // Primary live updates: Supabase Realtime pushes row UPDATEs instantly.
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase
@@ -55,6 +63,38 @@ export function AnalysisView({ initial }: { initial: Analysis }) {
     };
   }, [initial.id, initial.user_id]);
 
+  // Fallback: poll every 4s while the analysis is still in flight, in case the
+  // Realtime WebSocket dropped or never connected (proxies, flaky networks).
+  // Stops as soon as we reach a terminal state, so a finished analysis polls
+  // nothing.
+  useEffect(() => {
+    if (isDone) return;
+    const supabase = createClient();
+    const interval = setInterval(async () => {
+      const { data } = await supabase
+        .from("analyses")
+        .select("*")
+        .eq("id", initial.id)
+        .single();
+      if (data) setAnalysis(data as Analysis);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [initial.id, isDone]);
+
+  function onRetry() {
+    // Optimistically flip back to the progress view; the pipeline + live updates
+    // take over from here.
+    setAnalysis((a) => ({ ...a, status: "uploaded", error: null }));
+    startRetry(async () => {
+      try {
+        await retryAnalysis(initial.id);
+      } catch {
+        setAnalysis((a) => ({ ...a, status: "failed" }));
+        toast.error("לא הצלחנו להתחיל את הניתוח מחדש. נסו שוב.");
+      }
+    });
+  }
+
   const isReady = analysis.status === "completed" && Boolean(analysis.result);
 
   return (
@@ -76,9 +116,19 @@ export function AnalysisView({ initial }: { initial: Analysis }) {
         <h1 className="text-2xl font-bold text-foreground">{analysis.file_name}</h1>
 
         {analysis.status === "failed" ? (
-          <p className="mt-6 rounded-lg bg-score-low/10 p-4 text-sm text-score-low">
-            הניתוח נכשל. נסה להעלות את הקובץ שוב.
-          </p>
+          <div className="mt-6 rounded-lg border border-score-low/30 bg-score-low/10 p-5">
+            <p className="text-sm font-medium text-score-low">הניתוח נכשל</p>
+            <p className="mt-1 text-sm text-zinc-400">
+              נתקלנו בתקלה בעיבוד ההקלטה. אפשר לנסות שוב — הקובץ שכבר העליתם נשמר.
+            </p>
+            <button
+              onClick={onRetry}
+              disabled={retrying}
+              className="mt-4 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
+            >
+              {retrying ? "מתחיל מחדש..." : "נסה שוב"}
+            </button>
+          </div>
         ) : isReady && analysis.result ? (
           <Result result={analysis.result} />
         ) : (
@@ -136,6 +186,12 @@ function Result({ result }: { result: NonNullable<Analysis["result"]> }) {
 
   return (
     <div className="mt-8 space-y-5">
+      {result.processingNotice && (
+        <p className="rounded-lg border border-score-mid/30 bg-score-mid/10 p-3 text-sm text-score-mid">
+          {result.processingNotice}
+        </p>
+      )}
+
       {/* ── v2 enriched cards — each guarded on its own data so v1-only results
           (no v2 fields at all) render none of this and fall through cleanly
           to the original 3-card view below. ── */}

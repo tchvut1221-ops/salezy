@@ -1,13 +1,19 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { signOut } from "@/app/actions";
 import { computeStats, fetchScorePoints } from "@/lib/analytics";
 import { StatsBar } from "@/components/salezy/stats-bar";
 import { ScoreChart } from "@/components/salezy/score-chart";
+import { Pill, scoreColor } from "@/components/salezy/ui";
 import type { AnalysisStatus } from "@/types";
 
-type AnalysisListItem = { id: string; file_name: string; status: AnalysisStatus };
+type AnalysisListItem = {
+  id: string;
+  file_name: string;
+  status: AnalysisStatus;
+  created_at: string;
+  scores: { overall: number } | null;
+};
 
 const STATUS_LABELS: Record<AnalysisStatus, string> = {
   uploaded: "בתור",
@@ -18,14 +24,25 @@ const STATUS_LABELS: Record<AnalysisStatus, string> = {
   failed: "נכשל",
 };
 
-const STATUS_COLORS: Record<AnalysisStatus, string> = {
-  uploaded: "text-zinc-400",
-  converting: "text-score-mid",
-  transcribing: "text-score-mid",
-  analyzing: "text-score-mid",
-  completed: "text-score-high",
-  failed: "text-score-low",
+// Status → Pill tone. In-progress states share the amber "warn" tone; the two
+// terminal states get their semantic colors.
+const STATUS_TONE: Record<
+  AnalysisStatus,
+  "neutral" | "positive" | "negative" | "warn"
+> = {
+  uploaded: "neutral",
+  converting: "warn",
+  transcribing: "warn",
+  analyzing: "warn",
+  completed: "positive",
+  failed: "negative",
 };
+
+const dateFmt = new Intl.DateTimeFormat("he-IL", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+});
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -35,36 +52,24 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // List only needs these 3 fields — avoid pulling the full `result` jsonb
-  // (the entire AI analysis output) for every row just to render a status
-  // badge. Runs alongside the analytics query instead of after it; neither
-  // depends on the other's result.
+  // `created_at` (date column) and `scores` (per-row overall score) are needed
+  // by the list rows now — still avoiding the full `result` jsonb. Runs
+  // alongside the analytics query; neither depends on the other's result.
   const [{ data }, scorePoints] = await Promise.all([
     supabase
       .from("analyses")
-      .select("id, file_name, status")
+      .select("id, file_name, status, created_at, scores")
       .order("created_at", { ascending: false }),
     fetchScorePoints(supabase, user.id),
   ]);
 
   const analyses = (data ?? []) as AnalysisListItem[];
-
-  // Stats bar + trend chart reuse the same query/aggregation helper that
-  // backs app/api/analytics/route.ts (kept DRY). This is a server component,
-  // so it queries Supabase directly instead of round-tripping through our
-  // own HTTP route. Hidden entirely when the user has zero v2/scored calls
-  // (v1 analyses have no `scores`) so we never render an empty/broken chart.
   const stats = computeStats(scorePoints);
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-12">
+    <main className="mx-auto max-w-4xl px-4 py-8 sm:py-12">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">הניתוחים שלי</h1>
-        <form action={signOut}>
-          <button className="text-sm text-zinc-400 transition-colors hover:text-foreground">
-            התנתק
-          </button>
-        </form>
       </div>
 
       <Link
@@ -91,20 +96,50 @@ export default async function DashboardPage() {
               העלה הקלטה של שיחת מכירה ותקבל ניתוח אישיות הלקוח, ציון ביצועים
               מפורט וצעדים הבאים מומלצים — הכל אוטומטית, בתוך דקות.
             </p>
+            <Link
+              href="/upload"
+              className="mt-6 inline-block rounded-lg bg-primary px-4 py-2.5 font-medium text-primary-foreground transition hover:bg-primary/90"
+            >
+              העלאת השיחה הראשונה
+            </Link>
           </div>
         ) : (
-          analyses.map((a) => (
-            <Link
-              key={a.id}
-              href={`/analysis/${a.id}`}
-              className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-4 transition hover:border-zinc-700"
-            >
-              <span className="truncate text-zinc-200">{a.file_name}</span>
-              <span className={`text-sm ${STATUS_COLORS[a.status]}`}>
-                {STATUS_LABELS[a.status]}
-              </span>
-            </Link>
-          ))
+          analyses.map((a) => {
+            const score = a.scores?.overall;
+            const sc =
+              typeof score === "number" ? scoreColor(score) : null;
+            return (
+              <Link
+                key={a.id}
+                href={`/analysis/${a.id}`}
+                className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3.5 transition hover:border-zinc-700 sm:px-5 sm:py-4"
+              >
+                <div className="min-w-0 flex-1">
+                  <span className="block truncate text-zinc-200">
+                    {a.file_name}
+                  </span>
+                  <span
+                    dir="ltr"
+                    className="mt-0.5 block text-right font-mono text-xs tabular-nums text-zinc-500 sm:text-left"
+                  >
+                    {dateFmt.format(new Date(a.created_at))}
+                  </span>
+                </div>
+
+                {sc && typeof score === "number" && (
+                  <span
+                    dir="ltr"
+                    className={`font-mono text-lg font-bold tabular-nums ${sc.text}`}
+                    title="ציון השיחה"
+                  >
+                    {Math.round(score)}
+                  </span>
+                )}
+
+                <Pill tone={STATUS_TONE[a.status]}>{STATUS_LABELS[a.status]}</Pill>
+              </Link>
+            );
+          })
         )}
       </div>
     </main>

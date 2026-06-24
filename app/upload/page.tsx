@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 import * as tus from "tus-js-client";
 import { createClient } from "@/lib/supabase/client";
 import { isAllowedAudio, MAX_FILE_BYTES } from "@/lib/constants";
@@ -76,7 +77,7 @@ export default function UploadPage() {
     const f = e.target.files?.[0] ?? null;
     if (f && !isAllowedAudio(f)) {
       setError(
-        `קובץ לא נתמך. אפשר mp3 / wav / m4a / mp4 / mov / ogg / aac / webm, עד ${Math.round(
+        `קובץ לא נתמך. אפשר mp3 / wav / m4a / mp4 / mov / ogg / aac / webm / flac, עד ${Math.round(
           MAX_FILE_BYTES / 1024 / 1024
         )}MB.`
       );
@@ -125,7 +126,7 @@ export default function UploadPage() {
       router.push(`/analysis/${id}`);
     } catch (err) {
       console.error(err);
-      setError("ההעלאה נכשלה. נסה שוב.");
+      toast.error("ההעלאה נכשלה. בדקו את החיבור ונסו שוב.");
       setBusy(false);
     }
   }
@@ -134,7 +135,7 @@ export default function UploadPage() {
     <main className="mx-auto max-w-xl px-4 py-12">
       <h1 className="text-2xl font-bold text-foreground">העלאת שיחת מכירה</h1>
       <p className="mt-1 text-sm text-zinc-400">
-        העלה הקלטה (mp3 / wav / m4a / mp4 / mov / ogg / aac / webm, עד{" "}
+        העלה הקלטה (mp3 / wav / m4a / mp4 / mov / ogg / aac / webm / flac, עד{" "}
         {Math.round(MAX_FILE_BYTES / 1024 / 1024)}MB) ונתחיל לנתח אותה.
       </p>
 
@@ -142,7 +143,7 @@ export default function UploadPage() {
         <input
           id="file"
           type="file"
-          accept=".mp3,.wav,.m4a,.mp4,.mov,.ogg,.aac,.webm,audio/*,video/mp4,video/quicktime"
+          accept=".mp3,.wav,.m4a,.mp4,.mov,.ogg,.aac,.webm,.flac,audio/*,video/mp4,video/quicktime"
           onChange={onPick}
           disabled={busy}
           className="block w-full text-sm text-zinc-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary file:px-4 file:py-2 file:text-primary-foreground file:transition-colors hover:file:bg-primary/90"
