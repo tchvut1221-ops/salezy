@@ -6,10 +6,12 @@ import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 
 /**
  * Verifies our own OTP against its stored hash, then exchanges it for a real
- * Supabase session: admin.generateLink (creates the user if needed) returns a
- * hashed_token, which we redeem server-side via verifyOtp so the SSR client
- * below writes real session cookies onto this response — the same outcome as
- * Supabase's own OTP flow, just with our code/email as the front door.
+ * Supabase session: admin.generateLink (creates the user if needed) returns
+ * an email_otp — the raw OTP token meant for verifyOtp, as opposed to
+ * hashed_token which is only valid via the action_link redirect flow — which
+ * we redeem server-side so the SSR client below writes real session cookies
+ * onto this response, the same outcome as Supabase's own OTP flow, just with
+ * our code/email as the front door.
  */
 export async function POST(req: Request) {
   const ip = getClientIp(req);
@@ -63,7 +65,7 @@ export async function POST(req: Request) {
   const supabase = await createClient();
   const { error: verifyError } = await supabase.auth.verifyOtp({
     email,
-    token: link.properties.hashed_token,
+    token: link.properties.email_otp,
     type: "magiclink",
   });
   if (verifyError) {
