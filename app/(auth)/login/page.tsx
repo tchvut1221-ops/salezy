@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,15 +16,16 @@ export default function LoginPage() {
     setStatus("sending");
     setMessage("");
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { shouldCreateUser: true },
+    const res = await fetch("/api/auth/send-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
     });
+    const data = await res.json();
 
-    if (error) {
+    if (!res.ok) {
       setStatus("error");
-      setMessage("שליחת הקוד נכשלה. בדוק את כתובת המייל ונסה שוב.");
+      setMessage(data.error ?? "שליחת הקוד נכשלה. בדוק את כתובת המייל ונסה שוב.");
     } else {
       setStatus("idle");
       setStep("otp");
@@ -37,16 +37,16 @@ export default function LoginPage() {
     setStatus("sending");
     setMessage("");
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.verifyOtp({
-      email,
-      token: otp,
-      type: "email",
+    const res = await fetch("/api/auth/verify-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, code: otp }),
     });
+    const data = await res.json();
 
-    if (error) {
+    if (!res.ok) {
       setStatus("error");
-      setMessage("הקוד שגוי או שפג תוקפו. נסה שוב.");
+      setMessage(data.error ?? "הקוד שגוי או שפג תוקפו. נסה שוב.");
     } else {
       router.push("/dashboard");
     }
