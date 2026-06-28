@@ -99,7 +99,7 @@ export default function LoginPage() {
               autoComplete="one-time-code"
               required
               dir="ltr"
-              maxLength={10}
+              maxLength={8}
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
               placeholder="קוד מהמייל"
