@@ -48,16 +48,15 @@ export async function POST(req: Request) {
     return invalid();
   }
 
-  await admin
-    .from("otp_codes")
-    .update({ consumed_at: new Date().toISOString() })
-    .eq("id", row.id);
-
+  // Code is correct — exchange it for a real session before marking it
+  // consumed, so a transient failure below doesn't burn a valid code the
+  // user can't retry.
   const { data: link, error: linkError } = await admin.auth.admin.generateLink({
     type: "magiclink",
     email,
   });
   if (linkError || !link) {
+    console.error("[verify-otp] generateLink failed:", linkError);
     return NextResponse.json({ error: "ההתחברות נכשלה. נסה שוב." }, { status: 500 });
   }
 
@@ -68,8 +67,14 @@ export async function POST(req: Request) {
     type: "magiclink",
   });
   if (verifyError) {
+    console.error("[verify-otp] verifyOtp failed:", verifyError);
     return NextResponse.json({ error: "ההתחברות נכשלה. נסה שוב." }, { status: 500 });
   }
+
+  await admin
+    .from("otp_codes")
+    .update({ consumed_at: new Date().toISOString() })
+    .eq("id", row.id);
 
   return NextResponse.json({ success: true });
 }
