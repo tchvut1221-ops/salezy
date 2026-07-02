@@ -15,6 +15,27 @@ import { needsConversion } from "@/lib/constants";
 const MIN_TRANSCRIPT_CHARS = 10;
 
 /**
+ * Marks an analysis row as no_speech_detected. Throws on a failed write
+ * instead of swallowing it — the Supabase JS client resolves `{ error }`
+ * rather than rejecting on a constraint violation (e.g. migration
+ * 0006_add_no_speech_status.sql not yet applied), so silently ignoring it
+ * would leave the row stuck at its previous status with no onFailure
+ * trigger and no visible error. Throwing routes that failure back through
+ * Inngest's normal retry/onFailure path.
+ */
+async function markNoSpeech(
+  admin: ReturnType<typeof createAdminClient>,
+  analysisId: string,
+  diagnostic: string
+) {
+  const { error } = await admin
+    .from("analyses")
+    .update({ status: "no_speech_detected", error: diagnostic })
+    .eq("id", analysisId);
+  if (error) throw error;
+}
+
+/**
  * The Salezy pipeline. Triggered by the "analysis/requested" event after a
  * recording is uploaded. Each stage is a separate Inngest step so it stays
  * within the serverless time budget and retries independently.
@@ -72,13 +93,11 @@ export const analyzeCall = inngest.createFunction(
       // burn ffmpeg time re-encoding junk we're about to reject anyway.
       const speechCheck = await checkHasSpeech(buffer, fileName);
       if (!speechCheck.ok) {
-        await admin
-          .from("analyses")
-          .update({
-            status: "no_speech_detected",
-            error: `no_speech_detected: reason=${speechCheck.reason} duration=${speechCheck.durationSeconds ?? "?"}s meanVolume=${speechCheck.meanVolumeDb ?? "?"}dB`,
-          })
-          .eq("id", analysisId);
+        await markNoSpeech(
+          admin,
+          analysisId,
+          `no_speech_detected: reason=${speechCheck.reason} duration=${speechCheck.durationSeconds ?? "?"}s meanVolume=${speechCheck.meanVolumeDb ?? "?"}dB`
+        );
         return { ok: false as const };
       }
 
@@ -111,13 +130,7 @@ export const analyzeCall = inngest.createFunction(
       // came back with nothing usable — e.g. pure music/noise. Stop here
       // rather than let the analysis stage fabricate a report.
       if (full.length < MIN_TRANSCRIPT_CHARS) {
-        await admin
-          .from("analyses")
-          .update({
-            status: "no_speech_detected",
-            error: `no_speech_detected: reason=empty_transcript length=${full.length}`,
-          })
-          .eq("id", analysisId);
+        await markNoSpeech(admin, analysisId, `no_speech_detected: reason=empty_transcript length=${full.length}`);
         return { ok: false as const };
       }
 
