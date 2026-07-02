@@ -22,6 +22,7 @@ const MESSAGES_BY_STATUS: Record<AnalysisStatus, string[]> = {
   ],
   completed: ["מוכן!"],
   failed: [],
+  no_speech_detected: [],
 };
 
 const ETA_BY_STATUS: Record<AnalysisStatus, string> = {
@@ -31,6 +32,7 @@ const ETA_BY_STATUS: Record<AnalysisStatus, string> = {
   analyzing: "כמעט סיימנו — עוד דקה-שתיים",
   completed: "",
   failed: "",
+  no_speech_detected: "",
 };
 
 export function LoadingMessages({ status }: { status: AnalysisStatus }) {

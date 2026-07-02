@@ -22,9 +22,10 @@ const STATUS_LABELS: Record<AnalysisStatus, string> = {
   analyzing: "מנתח",
   completed: "מוכן",
   failed: "נכשל",
+  no_speech_detected: "לא זוהה דיבור",
 };
 
-// Status → Pill tone. In-progress states share the amber "warn" tone; the two
+// Status → Pill tone. In-progress states share the amber "warn" tone; the
 // terminal states get their semantic colors.
 const STATUS_TONE: Record<
   AnalysisStatus,
@@ -36,6 +37,7 @@ const STATUS_TONE: Record<
   analyzing: "warn",
   completed: "positive",
   failed: "negative",
+  no_speech_detected: "negative",
 };
 
 const dateFmt = new Intl.DateTimeFormat("he-IL", {
