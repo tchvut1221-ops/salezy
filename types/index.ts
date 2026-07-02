@@ -26,6 +26,23 @@ export type MomentType =
   | "breakthrough";
 export type NextStepPriority = "urgent" | "soon" | "when-possible";
 
+export type ScorecardCategoryKey =
+  | "opening"
+  | "discovery"
+  | "pitch"
+  | "objectionHandling"
+  | "closing";
+export type TalkRatioVerdict = "optimal" | "below_optimal" | "above_optimal";
+export type CoachingPriority = "high" | "medium" | "low";
+
+export interface ScorecardCategory {
+  /** 1-5, or null if not applicable (no supporting quote found in the transcript). */
+  score: number | null;
+  rationale: string;
+  /** Verbatim transcript quote backing the score; null when score is null. */
+  quote: string | null;
+}
+
 /**
  * Structured output of the hybrid analysis pipeline (Claude reasoning → GPT-4o JSON).
  *
@@ -116,6 +133,39 @@ export interface AnalysisResult {
       middle: "positive" | "neutral" | "negative";
       end: "positive" | "neutral" | "negative";
     };
+  };
+  /**
+   * Salesperson performance scorecard — SEPARATE from salespersonPerformance
+   * (the existing block above) and from overallScore / salespersonPerformance.overallScore.
+   * Never merge these: this is a distinct, quote-anchored, additive concept.
+   */
+  salespersonScorecard?: {
+    opening: ScorecardCategory;
+    discovery: ScorecardCategory;
+    pitch: ScorecardCategory;
+    objectionHandling: ScorecardCategory;
+    closing: ScorecardCategory;
+    /** Derived from callMetrics.talkRatioSalesperson in code — null if that wasn't estimable. */
+    talkRatio: {
+      repPercentage: number;
+      customerPercentage: number;
+      benchmarkRepPercentage: 43;
+      verdict: TalkRatioVerdict;
+    } | null;
+    /** Average of the non-null category scores above, 2dp; null if all 5 are null. */
+    overallScorecardScore: number | null;
+    strengths: string[];
+    improvementAreas: string[];
+  };
+  coachingActions?: Array<{
+    action: string;
+    why: string;
+    how: string;
+    priority: CoachingPriority;
+  }>;
+  weeklyFocus?: {
+    primaryGoal: string;
+    successMetric: string;
   };
 }
 

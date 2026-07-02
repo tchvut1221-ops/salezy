@@ -15,6 +15,19 @@ type AnalyzeCallStep = GetStepTools<typeof inngest>;
 // case the result degrades to v1-level richness; it never hard-fails.
 const sentimentValue = z.enum(["positive", "neutral", "negative"]);
 
+const scorecardCategory = z.object({
+  score: z.number().min(1).max(5).nullable(),
+  rationale: z.string(),
+  quote: z.string().nullable(),
+});
+
+const coachingActionSchema = z.object({
+  action: z.string(),
+  why: z.string(),
+  how: z.string(),
+  priority: z.enum(["high", "medium", "low"]),
+});
+
 const resultSchema = z.object({
   customerPersonality: z.object({
     type: z.enum(["Analytical", "Driver", "Amiable", "Expressive"]),
@@ -134,6 +147,40 @@ const resultSchema = z.object({
     })
     .optional()
     .catch(undefined),
+  salespersonScorecard: z
+    .object({
+      opening: scorecardCategory,
+      discovery: scorecardCategory,
+      pitch: scorecardCategory,
+      objectionHandling: scorecardCategory,
+      closing: scorecardCategory,
+      talkRatio: z
+        .object({
+          repPercentage: z.number(),
+          customerPercentage: z.number(),
+          benchmarkRepPercentage: z.literal(43),
+          verdict: z.enum(["optimal", "below_optimal", "above_optimal"]),
+        })
+        .nullable(),
+      overallScorecardScore: z.number().nullable(),
+      strengths: z.array(z.string()).min(1).max(3),
+      improvementAreas: z.array(z.string()).min(1).max(3),
+    })
+    .optional()
+    .catch(undefined),
+  coachingActions: z
+    .array(coachingActionSchema)
+    .min(2)
+    .max(3)
+    .optional()
+    .catch(undefined),
+  weeklyFocus: z
+    .object({
+      primaryGoal: z.string(),
+      successMetric: z.string(),
+    })
+    .optional()
+    .catch(undefined),
 });
 
 /**
@@ -186,6 +233,19 @@ export async function reasonAboutCall(
 11. צעדים הבאים — לפחות 2 פעולות קונקרטיות עם עדיפות (urgent / soon / when-possible) ונימוק.
 12. ציון כולל לשיחה (0-100) לפי ה-rubric.
 13. מדדי שיחה (רק אם ניתן להעריך מהתמלול): משך משוער בדקות, יחס הדיבור של איש המכירות באחוזים (אמוד לפי כמות הדיבור של כל דובר), רמת אנרגיה, קצב, וסנטימנט בתחילת/אמצע/סוף השיחה. אם אי אפשר להעריך מדד מסוים — דלג עליו ואל תנחש.
+14. כרטיס ביצועים מפורט של איש המכירות (Scorecard) — ניתוח נפרד ומוסף על סעיף 8, אל תמזג אותם. דרג את איש המכירות בנפרד בכל אחת מ-5 הקטגוריות, בסולם 1-5:
+   - opening (פתיחה): בניית מערכת יחסים, אג'נדה ברורה, שליטה מקצועית בפתיחת השיחה.
+   - discovery (גילוי צרכים): עומק השאלות, האם נחשפו צרכים אמיתיים ולא רק פני שטח.
+   - pitch (הצגת פתרון): התאמת ההצעה לצרכים שעלו בגילוי, מיקוד בערך ולא רק בפיצ'רים.
+   - objection_handling (טיפול בהתנגדויות): התייחסות עניינית ולא הגנתית, שינוי תפיסה אמיתי אצל הלקוח.
+   - closing (סגירה): בקשה ברורה לצעד הבא, יצירת מחויבות קונקרטית, לא משאיר את השיחה באוויר.
+
+   ⚠️ כלל אנטי-פברוקציה: ציון לקטגוריה מותר רק אם יש רגע קונקרטי בתמלול התומך בו, עם ציטוט מילולי קצר. אם אין רגע רלוונטי (למשל השיחה נקטעה לפני שלב הסגירה, או לא עלתה אף התנגדות) — אל תמציא ציטוט ואל תיתן ציון; ציין זאת בנימוק בקצרה בלי ציון ובלי ציטוט מומצא.
+
+   לכל קטגוריה שניתן לדרג: תן ציון 1-5, נימוק קצר, וציטוט מילולי תומך. בנוסף:
+   - זהה 1-3 חוזקות ספציפיות עם ראיה מהשיחה (לא כלליות — למשל "שיקף ללקוח את הכאב שלו במילים שלו לפני שהציג פתרון", לא "תקשורת טובה").
+   - זהה 1-3 תחומי שיפור ספציפיים עם ראיה (לא "לשפר סגירה" — אלא למשל "לא ביקש צעד הבא מוגדר בסיום השיחה, השיחה הסתיימה בלי תאריך פולו-אפ").
+15. תוכנית אימון שבועית — בהתבסס על הקטגוריה עם הציון הנמוך ביותר בסעיף 14 (או תחום השיפור הבולט ביותר אם אין מספיק ציונים למדד סטטיסטי), הגדר יעד מרכזי אחד לשבוע הקרוב עם מדד הצלחה מדיד וקונקרטי. הצע גם 2-3 פעולות אימון: לכל אחת — פעולה ברורה (מה לעשות), נימוק מבוסס-תצפית (למה זה חשוב לפי מה שנצפה בשיחה הזו), הנחיה מעשית לשיחה הבאה (איך בפועל), ורמת עדיפות (high / medium / low). לפחות פעולה אחת חייבת להיות high priority. אסור ניסוח גנרי ("תשפר את השאלות שלך") — כל פעולה חייבת להיות ספציפית וניתנת ליישום מיידי (למשל: "בפתיחת השיחה הבאה, שאל את הלקוח 'מה גרם לך להתחיל לחפש פתרון עכשיו ולא לפני חצי שנה?' כדי לחשוף דחיפות אמיתית").
 
 הסתמך על הידע המקצועי הבא:
 
@@ -305,6 +365,22 @@ export async function synthesizeAnalysis(
     "energyLevel": "low | medium | high",
     "callPace": "rushed | optimal | slow",
     "sentiment": { "start": "positive | neutral | negative", "middle": "positive | neutral | negative", "end": "positive | neutral | negative" }
+  },
+  "salespersonScorecard": {
+    "opening": { "score": 1-5 or null, "rationale": "נימוק קצר", "quote": "ציטוט מהתמלול או null" },
+    "discovery": { "score": 1-5 or null, "rationale": "...", "quote": "... או null" },
+    "pitch": { "score": 1-5 or null, "rationale": "...", "quote": "... או null" },
+    "objectionHandling": { "score": 1-5 or null, "rationale": "...", "quote": "... או null" },
+    "closing": { "score": 1-5 or null, "rationale": "...", "quote": "... או null" },
+    "strengths": ["חוזקה ספציפית עם ראיה", "..."],
+    "improvementAreas": ["תחום שיפור ספציפי עם ראיה", "..."]
+  },
+  "coachingActions": [
+    { "action": "מה לעשות", "why": "למה (מבוסס תצפית)", "how": "הנחיה מעשית", "priority": "high | medium | low" }
+  ],
+  "weeklyFocus": {
+    "primaryGoal": "יעד מרכזי לשבוע הקרוב",
+    "successMetric": "איך נמדוד הצלחה"
   }
 }
 
@@ -314,6 +390,9 @@ export async function synthesizeAnalysis(
 - כל שאר ערכי ה-enum (callObjectiveAchieved, dealStage, objections[].score, keyMoments[].type, nextSteps[].priority, energyLevel, callPace, sentiment) חייבים להיות בדיוק באנגלית כפי שמופיע למעלה.
 - כל שאר הטקסט בתוך ה-JSON חייב להיות בעברית.
 - השדות whatWorked, whatDidnt, tips, explicit, implicit ו-customerPersonality חובה תמיד.
+- salespersonScorecard.*.score (בכל אחת מ-5 הקטגוריות) חייב להיות מספר שלם 1-5 **או null**. לעולם אל תיתן score בלי quote תומך — אם אין quote אמיתי, גם score וגם quote צריכים להיות null.
+- coachingActions.*.priority חייב להיות בדיוק "high", "medium" או "low" (באנגלית). לפחות פריט אחד חייב להיות "high".
+- אל תכלול overallScorecardScore ואל תכלול talkRatio בתוך salespersonScorecard — הם מחושבים אוטומטית מחוץ ל-JSON שלך, אל תמציא אותם.
 - שמור על נאמנות מוחלטת לניתוח שקיבלת — אל תוסיף מידע שלא נמצא בו. החזר JSON בלבד.`;
 
   const res = await openai.chat.completions.create({
@@ -348,6 +427,9 @@ export async function synthesizeAnalysis(
     const secondary = normalizeDiscType(personality.secondaryType);
     if (secondary) personality.secondaryType = secondary;
   }
+  if (raw?.salespersonScorecard) {
+    raw.salespersonScorecard = normalizeScorecard(raw.salespersonScorecard, raw.callMetrics);
+  }
   return resultSchema.parse(raw);
 }
 
@@ -375,3 +457,63 @@ const DISC_TYPE_MAP: Record<string, PersonalityType> = {
   אקספרסיב: "Expressive",
   ביטויי: "Expressive",
 };
+
+/**
+ * Defensive post-processing for the scorecard, mirroring normalizeDiscType():
+ * fix up the model's raw output in code before Zod validation, rather than
+ * trusting prompt discipline alone for anything fabrication-sensitive or
+ * arithmetic.
+ *  1. Anti-fabrication: a category score is only valid alongside a non-empty
+ *     quote. If the model emits a score with no real quote, null the score.
+ *  2. talkRatio is derived entirely from callMetrics.talkRatioSalesperson
+ *     (never taken from the model's own guess) so the UI never has to
+ *     reconcile two disagreeing "talk ratio" numbers for one call.
+ *  3. overallScorecardScore is recomputed as the average of the non-null
+ *     category scores — never trusted from the model — eliminating
+ *     arithmetic drift on the feature's headline number.
+ */
+function normalizeScorecard(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- raw model JSON, shape-checked here then Zod-validated by resultSchema
+  raw: any,
+  callMetrics: { talkRatioSalesperson?: number } | undefined
+): Record<string, unknown> | undefined {
+  if (!raw) return undefined;
+  const categories = ["opening", "discovery", "pitch", "objectionHandling", "closing"] as const;
+
+  for (const key of categories) {
+    const cat = raw[key];
+    if (!cat) continue;
+    const hasRealQuote = typeof cat.quote === "string" && cat.quote.trim().length > 0;
+    if (!hasRealQuote) cat.score = null;
+  }
+
+  const scores = categories
+    .map((key) => raw[key]?.score)
+    .filter((s): s is number => typeof s === "number");
+  raw.overallScorecardScore =
+    scores.length > 0
+      ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100
+      : null;
+
+  const repPct = callMetrics?.talkRatioSalesperson;
+  const BENCHMARK = 43;
+  const TOLERANCE = 5; // +/-5pp around the benchmark still counts as "optimal"
+  if (typeof repPct === "number") {
+    const verdict =
+      repPct > BENCHMARK + TOLERANCE
+        ? "above_optimal"
+        : repPct < BENCHMARK - TOLERANCE
+          ? "below_optimal"
+          : "optimal";
+    raw.talkRatio = {
+      repPercentage: repPct,
+      customerPercentage: Math.round((100 - repPct) * 10) / 10,
+      benchmarkRepPercentage: BENCHMARK,
+      verdict,
+    };
+  } else {
+    raw.talkRatio = null;
+  }
+
+  return raw;
+}
