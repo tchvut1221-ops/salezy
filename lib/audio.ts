@@ -110,12 +110,9 @@ const MIN_DURATION_SECONDS = 1;
 /** Mean volume at or below this is treated as silence (dBFS). */
 const SILENCE_THRESHOLD_DB = -50;
 
-export interface SpeechCheckResult {
-  ok: boolean;
-  durationSeconds: number | null;
-  meanVolumeDb: number | null;
-  reason?: "empty" | "no_audio" | "silent";
-}
+export type SpeechCheckResult =
+  | { ok: true; durationSeconds: number; meanVolumeDb: number }
+  | { ok: false; durationSeconds: number | null; meanVolumeDb: number | null; reason: "empty" | "no_audio" | "silent" };
 
 /**
  * Cheap local pre-check (ffmpeg volumedetect, no API calls) that catches
