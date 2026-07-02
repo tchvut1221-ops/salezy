@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import { Panel, scoreColor } from "./ui";
+import { useCountUp } from "./use-count-up";
 
 type SubScores = {
   needsDiscovery: number;
@@ -18,39 +18,6 @@ const SUBSCORES: { key: keyof SubScores; label: string }[] = [
 ];
 
 const clamp = (n: number) => Math.max(0, Math.min(100, n));
-
-/**
- * Animates a number from 0 to `target` once, with an easeOutCubic curve (calm,
- * no overshoot/bounce). Respects prefers-reduced-motion by jumping straight to
- * the final value.
- */
-function useCountUp(target: number, duration = 800) {
-  const [value, setValue] = useState(0);
-  const rafRef = useRef(0);
-
-  useEffect(() => {
-    const reduce =
-      typeof window !== "undefined" &&
-      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) {
-      setValue(target);
-      return;
-    }
-
-    const start = performance.now();
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / duration);
-      const eased = 1 - Math.pow(1 - t, 3);
-      setValue(target * eased);
-      if (t < 1) rafRef.current = requestAnimationFrame(tick);
-      else setValue(target);
-    };
-    rafRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [target, duration]);
-
-  return value;
-}
 
 /**
  * The signature element: a semicircular gauge for the overall call score, with the

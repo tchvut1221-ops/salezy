@@ -11,6 +11,8 @@ import { DealIntelligence } from "./deal-intelligence";
 import { ObjectionTracker } from "./objection-tracker";
 import { KeyMoments } from "./key-moments";
 import { NextSteps } from "./next-steps";
+import { Scorecard } from "./scorecard";
+import { CoachingPlan } from "./coaching-plan";
 import { PersonalityCard } from "./personality-card";
 import { LoadingMessages } from "./loading-messages";
 import { ResultSkeleton } from "./result-skeleton";
@@ -226,6 +228,14 @@ function Result({ result }: { result: NonNullable<Analysis["result"]> }) {
 
       {result.nextSteps && result.nextSteps.length > 0 && (
         <NextSteps steps={result.nextSteps} />
+      )}
+
+      {result.salespersonScorecard && (
+        <Scorecard scorecard={result.salespersonScorecard} />
+      )}
+
+      {(result.coachingActions?.length || result.weeklyFocus) && (
+        <CoachingPlan actions={result.coachingActions} weeklyFocus={result.weeklyFocus} />
       )}
 
       {/* ── v1 core — always present. The personality card self-degrades when the

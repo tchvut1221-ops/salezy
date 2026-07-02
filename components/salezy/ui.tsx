@@ -4,6 +4,16 @@ import type { ReactNode } from "react";
  * Shared presentational primitives for the premium analysis view. They follow the
  * design system (bg-base page, bg-surface cards, blue accent, score-* signals, RTL)
  * defined in DESIGN.md / globals.css.
+ *
+ * NOTE: this file must stay free of React hook imports (useState/useEffect/useRef).
+ * Several consumers (e.g. app/dashboard/page.tsx) import Panel/Pill/scoreColor from
+ * here without their own "use client" directive — they're Server Components. Since
+ * Next.js's Server/Client boundary check is per-module (not per-symbol-usage), any
+ * hook import at this file's top level would force this whole file, and therefore
+ * every Server Component that imports from it, into the client bundle and fail the
+ * build ("You're importing a module that depends on useState/useEffect/useRef into
+ * a React Server Component module"). useCountUp lives in ./use-count-up instead for
+ * this reason — see that file.
  */
 
 /**
@@ -29,6 +39,13 @@ export function scoreColor(score: number) {
     bar: "bg-score-low",
     stroke: "#FF4D6A",
   };
+}
+
+/** Color bands for the 1-5 scorecard scale: 4-5 high, 3 mid, 1-2 low. */
+export function scorecardScoreColor(score: number) {
+  if (score >= 4) return { text: "text-score-high", dot: "bg-score-high" };
+  if (score === 3) return { text: "text-score-mid", dot: "bg-score-mid" };
+  return { text: "text-score-low", dot: "bg-score-low" };
 }
 
 /** Card section matching the existing analysis cards. */
