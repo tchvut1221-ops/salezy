@@ -28,7 +28,7 @@ function stepIndex(status: AnalysisStatus): number {
   return i === -1 ? 0 : i;
 }
 
-const TERMINAL: AnalysisStatus[] = ["completed", "failed"];
+const TERMINAL: AnalysisStatus[] = ["completed", "failed", "no_speech_detected"];
 
 export function AnalysisView({ initial }: { initial: Analysis }) {
   const [analysis, setAnalysis] = useState<Analysis>(initial);
@@ -115,11 +115,15 @@ export function AnalysisView({ initial }: { initial: Analysis }) {
       <div id="analysis-content">
         <h1 className="text-2xl font-bold text-foreground">{analysis.file_name}</h1>
 
-        {analysis.status === "failed" ? (
+        {analysis.status === "failed" || analysis.status === "no_speech_detected" ? (
           <div className="mt-6 rounded-lg border border-score-low/30 bg-score-low/10 p-5">
-            <p className="text-sm font-medium text-score-low">הניתוח נכשל</p>
+            <p className="text-sm font-medium text-score-low">
+              {analysis.status === "no_speech_detected" ? "לא זוהה דיבור" : "הניתוח נכשל"}
+            </p>
             <p className="mt-1 text-sm text-zinc-400">
-              נתקלנו בתקלה בעיבוד ההקלטה. אפשר לנסות שוב — הקובץ שכבר העליתם נשמר.
+              {analysis.status === "no_speech_detected"
+                ? "לא זוהה דיבור בהקלטה הזו. ודא שהקובץ מכיל שיחה אמיתית ונסה שוב."
+                : "נתקלנו בתקלה בעיבוד ההקלטה. אפשר לנסות שוב — הקובץ שכבר העליתם נשמר."}
             </p>
             <button
               onClick={onRetry}
