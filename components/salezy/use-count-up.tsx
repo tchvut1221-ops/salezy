@@ -13,17 +13,17 @@ import { useEffect, useRef, useState } from "react";
  * pull useState/useEffect/useRef into their module graph and fail the build.
  */
 export function useCountUp(target: number, duration = 800) {
-  const [value, setValue] = useState(0);
+  const prefersReduced =
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+  const [value, setValue] = useState(prefersReduced ? target : 0);
   const rafRef = useRef(0);
 
   useEffect(() => {
-    const reduce =
-      typeof window !== "undefined" &&
-      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) {
-      setValue(target);
-      return;
-    }
+    // Reduced-motion case is already rendered directly (initial state + return
+    // value below) — nothing to animate, so the effect has nothing to do.
+    if (prefersReduced) return;
 
     const start = performance.now();
     const tick = (now: number) => {
@@ -35,7 +35,7 @@ export function useCountUp(target: number, duration = 800) {
     };
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [target, duration]);
+  }, [target, duration, prefersReduced]);
 
-  return value;
+  return prefersReduced ? target : value;
 }
