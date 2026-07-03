@@ -37,6 +37,12 @@ export async function SiteHeader() {
             >
               הניתוחים שלי
             </Link>
+            <Link
+              href="/patterns"
+              className="text-sm text-zinc-400 transition-colors hover:text-foreground"
+            >
+              דפוסים
+            </Link>
             <form action={signOut}>
               <button
                 type="submit"

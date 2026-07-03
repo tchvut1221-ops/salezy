@@ -18,6 +18,8 @@ export function ResultSkeleton() {
       <ObjectionTrackerSkeleton />
       <KeyMomentsSkeleton />
       <NextStepsSkeleton />
+      <ScorecardSkeleton />
+      <CoachingPlanSkeleton />
     </div>
   );
 }
@@ -145,6 +147,46 @@ function NextStepsSkeleton() {
           </li>
         ))}
       </ul>
+    </Panel>
+  );
+}
+
+function ScorecardSkeleton() {
+  return (
+    <Panel title="ניתוח ביצועים — איש המכירות">
+      <div className="mb-6 flex justify-center">
+        <div className={`h-12 w-24 ${shimmer}`} />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="rounded-[12px] border border-zinc-800 bg-zinc-900 p-5">
+            <div className={`h-4 w-24 ${shimmer}`} />
+            <div className="mt-3 flex gap-1.5">
+              {[0, 1, 2, 3, 4].map((d) => (
+                <div key={d} className={`h-2.5 w-2.5 rounded-full ${shimmer}`} />
+              ))}
+            </div>
+            <div className={`mt-3 h-4 w-full ${shimmer}`} />
+            <div className={`mt-3 h-10 w-full rounded-lg ${shimmer}`} />
+          </div>
+        ))}
+      </div>
+    </Panel>
+  );
+}
+
+function CoachingPlanSkeleton() {
+  return (
+    <Panel title="תוכנית אימון לשבוע הקרוב">
+      <div className={`mb-5 h-20 w-full rounded-[12px] ${shimmer}`} />
+      <div className="space-y-3">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4">
+            <div className={`h-4 w-1/2 ${shimmer}`} />
+            <div className={`mt-2 h-3 w-full ${shimmer}`} />
+          </div>
+        ))}
+      </div>
     </Panel>
   );
 }
