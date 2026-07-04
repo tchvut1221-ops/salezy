@@ -19,6 +19,11 @@ const scorecardCategory = z.object({
   score: z.number().min(1).max(5).nullable(),
   rationale: z.string(),
   quote: z.string().nullable(),
+  // Per-stage additions for the Stage Analysis timeline. Tolerant like every
+  // other v2 field: an off-enum sentiment or bad failurePoint is dropped, not
+  // fatal, and legacy/scorecard-era analyses (which have neither) still validate.
+  sentiment: sentimentValue.optional().catch(undefined),
+  failurePoint: z.string().nullable().optional().catch(undefined),
 });
 
 const coachingActionSchema = z.object({
@@ -242,6 +247,8 @@ export async function reasonAboutCall(
 
    ⚠️ כלל אנטי-פברוקציה: ציון לקטגוריה מותר רק אם יש רגע קונקרטי בתמלול התומך בו, עם ציטוט מילולי קצר. אם אין רגע רלוונטי (למשל השיחה נקטעה לפני שלב הסגירה, או לא עלתה אף התנגדות) — אל תמציא ציטוט ואל תיתן ציון; ציין זאת בנימוק בקצרה בלי ציון ובלי ציטוט מומצא.
 
+   לכל אחד מ-5 השלבים, גם כשאין ציון: קבע סנטימנט (sentiment) — positive / neutral / negative — שמשקף את האווירה הרגשית של הלקוח באותו שלב ספציפי של השיחה (זה שונה מהסנטימנט בסעיף 13, שהוא לפי ציר זמן: תחילת/אמצע/סוף השיחה). כמו כן זהה נקודת כשל לשלב (failurePoint): משפט עברית קצר וקונקרטי שמצביע היכן השלב נחלש, פוספס או נכשל (למשל "עבר להצגת המחיר לפני שווידא צורך", או "השיחה הסתיימה בלי בקשת צעד הבא") — או null אם השלב היה חזק ולא זוהתה נקודת כשל.
+
    לכל קטגוריה שניתן לדרג: תן ציון 1-5, נימוק קצר, וציטוט מילולי תומך. בנוסף:
    - זהה 1-3 חוזקות ספציפיות עם ראיה מהשיחה (לא כלליות — למשל "שיקף ללקוח את הכאב שלו במילים שלו לפני שהציג פתרון", לא "תקשורת טובה").
    - זהה 1-3 תחומי שיפור ספציפיים עם ראיה (לא "לשפר סגירה" — אלא למשל "לא ביקש צעד הבא מוגדר בסיום השיחה, השיחה הסתיימה בלי תאריך פולו-אפ").
@@ -369,11 +376,11 @@ export async function synthesizeAnalysis(
     "sentiment": { "start": "positive | neutral | negative", "middle": "positive | neutral | negative", "end": "positive | neutral | negative" }
   },
   "salespersonScorecard": {
-    "opening": { "score": 1-5 or null, "rationale": "נימוק קצר", "quote": "ציטוט מהתמלול או null" },
-    "discovery": { "score": 1-5 or null, "rationale": "...", "quote": "... או null" },
-    "pitch": { "score": 1-5 or null, "rationale": "...", "quote": "... או null" },
-    "objectionHandling": { "score": 1-5 or null, "rationale": "...", "quote": "... או null" },
-    "closing": { "score": 1-5 or null, "rationale": "...", "quote": "... או null" },
+    "opening": { "score": 1-5 or null, "rationale": "נימוק קצר", "quote": "ציטוט מהתמלול או null", "sentiment": "positive | neutral | negative", "failurePoint": "נקודת כשל קצרה בעברית או null" },
+    "discovery": { "score": 1-5 or null, "rationale": "...", "quote": "... או null", "sentiment": "positive | neutral | negative", "failurePoint": "... או null" },
+    "pitch": { "score": 1-5 or null, "rationale": "...", "quote": "... או null", "sentiment": "positive | neutral | negative", "failurePoint": "... או null" },
+    "objectionHandling": { "score": 1-5 or null, "rationale": "...", "quote": "... או null", "sentiment": "positive | neutral | negative", "failurePoint": "... או null" },
+    "closing": { "score": 1-5 or null, "rationale": "...", "quote": "... או null", "sentiment": "positive | neutral | negative", "failurePoint": "... או null" },
     "strengths": ["חוזקה ספציפית עם ראיה", "..."],
     "improvementAreas": ["תחום שיפור ספציפי עם ראיה", "..."]
   },
@@ -393,6 +400,7 @@ export async function synthesizeAnalysis(
 - כל שאר הטקסט בתוך ה-JSON חייב להיות בעברית.
 - השדות whatWorked, whatDidnt, tips, explicit, implicit ו-customerPersonality חובה תמיד.
 - salespersonScorecard.*.score (בכל אחת מ-5 הקטגוריות) חייב להיות מספר שלם 1-5 **או null**. לעולם אל תיתן score בלי quote תומך — אם אין quote אמיתי, גם score וגם quote צריכים להיות null.
+- salespersonScorecard.*.sentiment חייב להיות בדיוק אחד מ: "positive", "neutral", "negative" (באנגלית). salespersonScorecard.*.failurePoint הוא משפט עברית קצר או null — קבע null כשהשלב היה חזק ולא הייתה נקודת כשל.
 - coachingActions.*.priority חייב להיות בדיוק "high", "medium" או "low" (באנגלית). לפחות פריט אחד חייב להיות "high".
 - אל תכלול overallScorecardScore ואל תכלול talkRatio בתוך salespersonScorecard — הם מחושבים אוטומטית מחוץ ל-JSON שלך, אל תמציא אותם.
 - שמור על נאמנות מוחלטת לניתוח שקיבלת — אל תוסיף מידע שלא נמצא בו.

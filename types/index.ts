@@ -41,6 +41,17 @@ export interface ScorecardCategory {
   rationale: string;
   /** Verbatim transcript quote backing the score; null when score is null. */
   quote: string | null;
+  /**
+   * Emotional read of THIS stage, for the Stage Analysis timeline. Distinct from
+   * callMetrics.sentiment (which is temporal — start/middle/end of the whole call).
+   * Optional so pre-stage-analysis scorecards still satisfy the type.
+   */
+  sentiment?: "positive" | "neutral" | "negative";
+  /**
+   * Short Hebrew description of where this stage broke down, if it did.
+   * null/omitted when the stage went fine.
+   */
+  failurePoint?: string | null;
 }
 
 /**

@@ -11,6 +11,7 @@ import { DealIntelligence } from "./deal-intelligence";
 import { ObjectionTracker } from "./objection-tracker";
 import { KeyMoments } from "./key-moments";
 import { NextSteps } from "./next-steps";
+import { StageAnalysis } from "./stage-analysis";
 import { Scorecard } from "./scorecard";
 import { CoachingPlan } from "./coaching-plan";
 import { PersonalityCard } from "./personality-card";
@@ -190,6 +191,17 @@ function Result({ result }: { result: NonNullable<Analysis["result"]> }) {
   // dashboard still counts as v2.
   const overallScore = result.overallScore ?? result.salespersonPerformance.overallScore;
 
+  // Show the stage-by-stage timeline only when the scorecard actually carries the
+  // per-stage sentiment/failurePoint added by Stage Analysis — otherwise it would
+  // just re-list the scorecard's scores/quotes. Legacy + scorecard-era analyses
+  // therefore render the Scorecard but not this card.
+  const scorecard = result.salespersonScorecard;
+  const hasStageAnalysis =
+    scorecard != null &&
+    (["opening", "discovery", "pitch", "objectionHandling", "closing"] as const).some(
+      (k) => scorecard[k]?.sentiment != null || scorecard[k]?.failurePoint != null
+    );
+
   return (
     <div className="mt-8 space-y-5">
       {/* ── v2 enriched cards — each guarded on its own data so v1-only results
@@ -228,6 +240,10 @@ function Result({ result }: { result: NonNullable<Analysis["result"]> }) {
 
       {result.nextSteps && result.nextSteps.length > 0 && (
         <NextSteps steps={result.nextSteps} />
+      )}
+
+      {hasStageAnalysis && scorecard && (
+        <StageAnalysis scorecard={scorecard} />
       )}
 
       {result.salespersonScorecard && (
