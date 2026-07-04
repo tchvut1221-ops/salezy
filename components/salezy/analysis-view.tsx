@@ -17,6 +17,7 @@ import { CoachingPlan } from "./coaching-plan";
 import { PersonalityCard } from "./personality-card";
 import { LoadingMessages } from "./loading-messages";
 import { ResultSkeleton } from "./result-skeleton";
+import { StopAnalysisButton, DeleteAnalysisButton } from "./analysis-actions";
 
 const STEPS: { key: AnalysisStatus; label: string }[] = [
   { key: "uploaded", label: "הועלה" },
@@ -31,7 +32,12 @@ function stepIndex(status: AnalysisStatus): number {
   return i === -1 ? 0 : i;
 }
 
-const TERMINAL: AnalysisStatus[] = ["completed", "failed", "no_speech_detected"];
+const TERMINAL: AnalysisStatus[] = [
+  "completed",
+  "failed",
+  "no_speech_detected",
+  "cancelled",
+];
 
 export function AnalysisView({ initial }: { initial: Analysis }) {
   const [analysis, setAnalysis] = useState<Analysis>(initial);
@@ -100,11 +106,15 @@ export function AnalysisView({ initial }: { initial: Analysis }) {
 
   const isReady = analysis.status === "completed" && Boolean(analysis.result);
 
+  const isCancelled = analysis.status === "cancelled";
+
   return (
     <div>
-      {/* כפתור "הורד PDF" — מחוץ ל-#analysis-content ומוסתר בהדפסה. */}
-      {isReady && (
-        <div className="mb-4 flex justify-end">
+      {/* כפתורי פעולה — מחוץ ל-#analysis-content ומוסתרים בהדפסה. מחיקה זמינה
+          תמיד; PDF רק כשהניתוח מוכן. */}
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <DeleteAnalysisButton analysisId={initial.id} />
+        {isReady && (
           <button
             type="button"
             onClick={() => window.print()}
@@ -112,41 +122,57 @@ export function AnalysisView({ initial }: { initial: Analysis }) {
           >
             הורד PDF
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       <div id="analysis-content">
         <h1 className="text-2xl font-bold text-foreground">{analysis.file_name}</h1>
 
-        {analysis.status === "failed" || analysis.status === "no_speech_detected" ? (
+        {analysis.status === "failed" ||
+        analysis.status === "no_speech_detected" ||
+        isCancelled ? (
           <div className="mt-6 rounded-lg border border-score-low/30 bg-score-low/10 p-5">
             <p className="text-sm font-medium text-score-low">
-              {analysis.status === "no_speech_detected" ? "לא זוהה דיבור" : "הניתוח נכשל"}
+              {isCancelled
+                ? "הניתוח בוטל"
+                : analysis.status === "no_speech_detected"
+                  ? "לא זוהה דיבור"
+                  : "הניתוח נכשל"}
             </p>
             <p className="mt-1 text-sm text-zinc-400">
-              {analysis.status === "no_speech_detected"
-                ? "לא זוהה דיבור בהקלטה הזו. ודא שהקובץ מכיל שיחה אמיתית ונסה שוב."
-                : "נתקלנו בתקלה בעיבוד ההקלטה. אפשר לנסות שוב — הקובץ שכבר העליתם נשמר."}
+              {isCancelled
+                ? "עצרת את הניתוח הזה לפני שהסתיים."
+                : analysis.status === "no_speech_detected"
+                  ? "לא זוהה דיבור בהקלטה הזו. ודא שהקובץ מכיל שיחה אמיתית ונסה שוב."
+                  : "נתקלנו בתקלה בעיבוד ההקלטה. אפשר לנסות שוב — הקובץ שכבר העליתם נשמר."}
             </p>
-            <button
-              onClick={onRetry}
-              disabled={retrying}
-              className="mt-4 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
-            >
-              {retrying ? "מתחיל מחדש..." : "נסה שוב"}
-            </button>
+            {!isCancelled && (
+              <button
+                onClick={onRetry}
+                disabled={retrying}
+                className="mt-4 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
+              >
+                {retrying ? "מתחיל מחדש..." : "נסה שוב"}
+              </button>
+            )}
           </div>
         ) : isReady && analysis.result ? (
           <Result result={analysis.result} />
         ) : (
-          <Progress status={analysis.status} />
+          <Progress status={analysis.status} analysisId={initial.id} />
         )}
       </div>
     </div>
   );
 }
 
-function Progress({ status }: { status: AnalysisStatus }) {
+function Progress({
+  status,
+  analysisId,
+}: {
+  status: AnalysisStatus;
+  analysisId: string;
+}) {
   const current = stepIndex(status);
   return (
     <div className="mt-8">
@@ -172,6 +198,10 @@ function Progress({ status }: { status: AnalysisStatus }) {
       <p className="mt-2 text-center text-xs text-zinc-600">
         אפשר להישאר בדף, הוא יתעדכן אוטומטית.
       </p>
+      <div className="mt-4 flex justify-center gap-3">
+        <StopAnalysisButton analysisId={analysisId} />
+        <DeleteAnalysisButton analysisId={analysisId} />
+      </div>
       <ResultSkeleton />
     </div>
   );

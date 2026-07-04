@@ -48,6 +48,13 @@ export const analyzeCall = inngest.createFunction(
     id: "analyze-call",
     retries: 2,
     triggers: [{ event: "analysis/requested" }],
+    // User-initiated stop (app/actions.ts's cancelAnalysis/deleteAnalysis send
+    // this event). `match` scopes cancellation to the run whose triggering
+    // event carries the same analysisId — cancellation is a distinct Inngest
+    // lifecycle from failure (inngest/function.cancelled, not
+    // inngest/function.failed), so it does NOT run onFailure below; the
+    // caller is responsible for flipping the row to "cancelled" itself.
+    cancelOn: [{ event: "analysis/cancel-requested", match: "data.analysisId" }],
     onFailure: async ({ event }) => {
       // `event` here is the inngest/function.failed event.
       const failure = event as unknown as {

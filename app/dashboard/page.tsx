@@ -5,6 +5,7 @@ import { computeStats, fetchScorePoints } from "@/lib/analytics";
 import { StatsBar } from "@/components/salezy/stats-bar";
 import { ScoreChart } from "@/components/salezy/score-chart";
 import { Pill, scoreColor } from "@/components/salezy/ui";
+import { DeleteAnalysisButton } from "@/components/salezy/analysis-actions";
 import type { AnalysisStatus } from "@/types";
 
 type AnalysisListItem = {
@@ -23,6 +24,7 @@ const STATUS_LABELS: Record<AnalysisStatus, string> = {
   completed: "מוכן",
   failed: "נכשל",
   no_speech_detected: "לא זוהה דיבור",
+  cancelled: "בוטל",
 };
 
 // Status → Pill tone. In-progress states share the amber "warn" tone; the
@@ -38,6 +40,7 @@ const STATUS_TONE: Record<
   completed: "positive",
   failed: "negative",
   no_speech_detected: "negative",
+  cancelled: "neutral",
 };
 
 const dateFmt = new Intl.DateTimeFormat("he-IL", {
@@ -111,35 +114,41 @@ export default async function DashboardPage() {
             const sc =
               typeof score === "number" ? scoreColor(score) : null;
             return (
-              <Link
+              <div
                 key={a.id}
-                href={`/analysis/${a.id}`}
                 className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3.5 transition hover:border-zinc-700 sm:px-5 sm:py-4"
               >
-                <div className="min-w-0 flex-1">
-                  <span className="block truncate text-zinc-200">
-                    {a.file_name}
-                  </span>
-                  <span
-                    dir="ltr"
-                    className="mt-0.5 block text-right font-mono text-xs tabular-nums text-zinc-500 sm:text-left"
-                  >
-                    {dateFmt.format(new Date(a.created_at))}
-                  </span>
-                </div>
+                <Link
+                  href={`/analysis/${a.id}`}
+                  className="flex min-w-0 flex-1 items-center gap-3"
+                >
+                  <div className="min-w-0 flex-1">
+                    <span className="block truncate text-zinc-200">
+                      {a.file_name}
+                    </span>
+                    <span
+                      dir="ltr"
+                      className="mt-0.5 block text-right font-mono text-xs tabular-nums text-zinc-500 sm:text-left"
+                    >
+                      {dateFmt.format(new Date(a.created_at))}
+                    </span>
+                  </div>
 
-                {sc && typeof score === "number" && (
-                  <span
-                    dir="ltr"
-                    className={`font-mono text-lg font-bold tabular-nums ${sc.text}`}
-                    title="ציון השיחה"
-                  >
-                    {Math.round(score)}
-                  </span>
-                )}
+                  {sc && typeof score === "number" && (
+                    <span
+                      dir="ltr"
+                      className={`font-mono text-lg font-bold tabular-nums ${sc.text}`}
+                      title="ציון השיחה"
+                    >
+                      {Math.round(score)}
+                    </span>
+                  )}
 
-                <Pill tone={STATUS_TONE[a.status]}>{STATUS_LABELS[a.status]}</Pill>
-              </Link>
+                  <Pill tone={STATUS_TONE[a.status]}>{STATUS_LABELS[a.status]}</Pill>
+                </Link>
+
+                <DeleteAnalysisButton analysisId={a.id} compact />
+              </div>
             );
           })
         )}

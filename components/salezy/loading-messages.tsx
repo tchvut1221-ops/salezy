@@ -23,6 +23,11 @@ const MESSAGES_BY_STATUS: Record<AnalysisStatus, string[]> = {
   completed: ["מוכן!"],
   failed: [],
   no_speech_detected: [],
+  // Terminal, like failed/no_speech_detected above — Progress (the only
+  // caller of LoadingMessages) never renders once a status reaches TERMINAL,
+  // so this is unreachable at runtime; present only to satisfy the
+  // exhaustive Record type.
+  cancelled: [],
 };
 
 const ETA_BY_STATUS: Record<AnalysisStatus, string> = {
@@ -33,6 +38,7 @@ const ETA_BY_STATUS: Record<AnalysisStatus, string> = {
   completed: "",
   failed: "",
   no_speech_detected: "",
+  cancelled: "",
 };
 
 export function LoadingMessages({ status }: { status: AnalysisStatus }) {

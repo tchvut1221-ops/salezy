@@ -5,7 +5,8 @@ export type AnalysisStatus =
   | "analyzing"
   | "completed"
   | "failed"
-  | "no_speech_detected";
+  | "no_speech_detected"
+  | "cancelled";
 
 export type PersonalityType = "Analytical" | "Driver" | "Amiable" | "Expressive";
 
