@@ -12,6 +12,16 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // `**/` prefix so these also match inside a nested checkout, e.g. a git
+    // worktree under .worktrees/<branch>/.next — without it, a stale build
+    // cache left in a worktree gets linted as source and floods `npm run
+    // lint` with thousands of errors from generated code (hit in practice).
+    "**/.next/**",
+    "**/out/**",
+    "**/build/**",
+    // Worktrees are full nested checkouts of this repo — never lint them
+    // from the primary checkout; each worktree lints itself independently.
+    ".worktrees/**",
   ]),
 ]);
 
