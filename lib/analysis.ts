@@ -315,7 +315,9 @@ ${SALES_SYSTEM_KNOWLEDGE}`;
 export async function synthesizeAnalysis(
   reasoning: string
 ): Promise<AnalysisResult> {
-  const system = `קיבלת ניתוח מקצועי של שיחת מכירה בעברית. המר אותו ל-JSON תקין בלבד (ללא טקסט נוסף) במבנה הבא. כלול שדה רק אם המידע קיים בניתוח — אם אין מידע למימד מסוים, השמט את השדה לגמרי (אל תמציא ערכים ואל תכתוב null).
+  const system = `החזר אך ורק JSON תקין (Return ONLY valid JSON) — בלי טקסט לפני או אחרי האובייקט, ובלי עיצוב markdown כמו גדרות קוד (\`\`\`json ... \`\`\`). כל תו מחוץ לאובייקט ה-JSON עצמו ישבור את הפרסור אצלנו.
+
+קיבלת ניתוח מקצועי של שיחת מכירה בעברית. המר אותו ל-JSON תקין בלבד (ללא טקסט נוסף) במבנה הבא. כלול שדה רק אם המידע קיים בניתוח — אם אין מידע למימד מסוים, השמט את השדה לגמרי (אל תמציא ערכים ואל תכתוב null).
 
 {
   "executiveSummary": "תקציר 2-3 משפטים",
@@ -393,12 +395,18 @@ export async function synthesizeAnalysis(
 - salespersonScorecard.*.score (בכל אחת מ-5 הקטגוריות) חייב להיות מספר שלם 1-5 **או null**. לעולם אל תיתן score בלי quote תומך — אם אין quote אמיתי, גם score וגם quote צריכים להיות null.
 - coachingActions.*.priority חייב להיות בדיוק "high", "medium" או "low" (באנגלית). לפחות פריט אחד חייב להיות "high".
 - אל תכלול overallScorecardScore ואל תכלול talkRatio בתוך salespersonScorecard — הם מחושבים אוטומטית מחוץ ל-JSON שלך, אל תמציא אותם.
-- שמור על נאמנות מוחלטת לניתוח שקיבלת — אל תוסיף מידע שלא נמצא בו. החזר JSON בלבד.`;
+- שמור על נאמנות מוחלטת לניתוח שקיבלת — אל תוסיף מידע שלא נמצא בו.
+- תזכורת אחרונה: החזר אך ורק את אובייקט ה-JSON. בלי גדרות markdown, בלי טקסט הסבר לפני או אחרי. Return ONLY the JSON object — no markdown code fences, no text before or after.`;
 
   const res = await openai.chat.completions.create({
     model: "gpt-4o",
     temperature: 0.1,
-    max_tokens: 4096,
+    // Raised from 4096: the salespersonScorecard/coachingActions/weeklyFocus
+    // additions (6 quote-anchored categories + up to 3 coaching actions on
+    // top of everything already in this schema) can push a richly-populated
+    // analysis past the old budget, truncating the JSON mid-object instead of
+    // erroring — hit in production once the scorecard fields shipped.
+    max_tokens: 8192,
     response_format: { type: "json_object" },
     messages: [
       { role: "system", content: system },
@@ -406,18 +414,23 @@ export async function synthesizeAnalysis(
     ],
   });
 
-  const content = res.choices[0]?.message?.content;
+  const choice = res.choices[0];
+  const content = choice?.message?.content;
   if (!content) {
     throw new Error("Empty synthesis response from the model");
   }
+  if (choice.finish_reason === "length") {
+    // Even at the raised budget, an unusually rich call can still exhaust it —
+    // this pinpoints truncation specifically (vs. some other malformed-JSON
+    // cause) in the logs so a future max_tokens bump is an easy diagnosis.
+    console.error(
+      "[synthesizeAnalysis] Completion hit max_tokens and was likely truncated (finish_reason=length). Last 500 chars:",
+      content.slice(-500)
+    );
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- raw model JSON, shape-checked below then Zod-validated
-  let raw: any;
-  try {
-    raw = JSON.parse(content);
-  } catch {
-    throw new Error("תשובת המודל לא הייתה JSON תקין");
-  }
+  const raw: any = parseModelJson(content);
   // Defensive: the model occasionally translates/varies the DISC type even when
   // told not to. Map common variants back to the canonical enum before Zod, for
   // both the primary type and the (optional) secondary/blend type.
@@ -431,6 +444,57 @@ export async function synthesizeAnalysis(
     raw.salespersonScorecard = normalizeScorecard(raw.salespersonScorecard, raw.callMetrics);
   }
   return resultSchema.parse(raw);
+}
+
+/**
+ * Parses GPT-4o's synthesis response into a raw object, tolerating the
+ * failure modes a `json_object`-mode completion can still hit in practice:
+ * markdown code fences wrapped around the JSON despite being told not to,
+ * stray text before/after the object, or the object being cut off mid-
+ * generation by hitting max_tokens on a long, richly-populated analysis.
+ * Tries increasingly aggressive recovery steps before giving up; logs the
+ * start/end of the raw response (not the whole, potentially large payload)
+ * so a real failure is debuggable from Inngest/Vercel logs.
+ */
+function parseModelJson(content: string): unknown {
+  const stripFences = (s: string) =>
+    s
+      .trim()
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/```\s*$/, "")
+      .trim();
+
+  const extractBraces = (s: string) => {
+    const start = s.indexOf("{");
+    const end = s.lastIndexOf("}");
+    return start !== -1 && end !== -1 && end > start ? s.slice(start, end + 1) : s;
+  };
+
+  const stripTrailingCommas = (s: string) => s.replace(/,(\s*[}\]])/g, "$1");
+
+  const attempts: Array<() => string> = [
+    () => content,
+    () => stripFences(content),
+    () => extractBraces(stripFences(content)),
+    () => stripTrailingCommas(extractBraces(stripFences(content))),
+  ];
+
+  for (const attempt of attempts) {
+    try {
+      return JSON.parse(attempt());
+    } catch {
+      // fall through to the next, more aggressive recovery step
+    }
+  }
+
+  console.error(
+    "[synthesizeAnalysis] Failed to parse model JSON after all recovery attempts.",
+    "First 500 chars:",
+    content.slice(0, 500),
+    "Last 500 chars:",
+    content.slice(-500)
+  );
+  throw new Error("תשובת המודל לא הייתה JSON תקין");
 }
 
 /** Normalize a single DISC value (Hebrew/variant/typo) to the canonical enum, or undefined. */
