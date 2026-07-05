@@ -14,6 +14,58 @@ import { needsConversion } from "@/lib/constants";
  */
 const MIN_TRANSCRIPT_CHARS = 10;
 
+/** Statuses a running pipeline should never write over once reached. */
+const TERMINAL_STATUSES = [
+  "completed",
+  "failed",
+  "no_speech_detected",
+  "cancelled",
+];
+
+/**
+ * Applies a STATUS change only if the row hasn't already reached a terminal
+ * state. Inngest's `cancelOn` can only stop a run BETWEEN steps, never
+ * mid-flight — if a user cancels while a step (e.g. transcription, Claude's
+ * reasoning) is already executing, that step still finishes and would
+ * otherwise overwrite the "cancelled" row with stale progress (e.g. the
+ * final "complete" step declaring status: "completed" after the user
+ * already stopped it). Every status-changing write in this pipeline goes
+ * through this guard instead of a plain `.update()`.
+ *
+ * Deliberately status-only: the transcript/reasoning/completed_steps
+ * progress data persisted by persistProgress() below is NOT gated the same
+ * way — that data should land even if the row was cancelled mid-step, so a
+ * later resume can actually skip the stage that quietly finished anyway.
+ */
+async function updateIfNotTerminal(
+  admin: ReturnType<typeof createAdminClient>,
+  analysisId: string,
+  updates: Record<string, unknown>
+) {
+  const { error } = await admin
+    .from("analyses")
+    .update(updates)
+    .eq("id", analysisId)
+    .not("status", "in", `(${TERMINAL_STATUSES.join(",")})`);
+  if (error) throw error;
+}
+
+/**
+ * Persists resume-relevant progress (transcript/reasoning + completed_steps)
+ * unconditionally — never gated on the row's current status. See the note
+ * on updateIfNotTerminal above for why: this is what lets a stage that
+ * finished just after a cancel still count toward a later resume, instead
+ * of being silently discarded along with the status write it's paired with.
+ */
+async function persistProgress(
+  admin: ReturnType<typeof createAdminClient>,
+  analysisId: string,
+  updates: Record<string, unknown>
+) {
+  const { error } = await admin.from("analyses").update(updates).eq("id", analysisId);
+  if (error) throw error;
+}
+
 /**
  * Marks an analysis row as no_speech_detected. Throws on a failed write
  * instead of swallowing it — the Supabase JS client resolves `{ error }`
@@ -28,17 +80,26 @@ async function markNoSpeech(
   analysisId: string,
   diagnostic: string
 ) {
-  const { error } = await admin
-    .from("analyses")
-    .update({ status: "no_speech_detected", error: diagnostic })
-    .eq("id", analysisId);
-  if (error) throw error;
+  await updateIfNotTerminal(admin, analysisId, {
+    status: "no_speech_detected",
+    error: diagnostic,
+  });
 }
 
 /**
  * The Salezy pipeline. Triggered by the "analysis/requested" event after a
- * recording is uploaded. Each stage is a separate Inngest step so it stays
- * within the serverless time budget and retries independently.
+ * recording is uploaded (or after a user resumes a previously-stopped
+ * analysis — see app/actions.ts's resumeAnalysis). Each stage is a separate
+ * Inngest step so it stays within the serverless time budget and retries
+ * independently.
+ *
+ * Resume support: `completed_steps` + the persisted `transcript`/`reasoning`
+ * columns let a resumed run skip stages that already finished before the
+ * stop, rather than restarting from scratch. This isn't gated on the
+ * `isResume` event flag specifically — it's driven entirely by what's
+ * actually persisted on the row, so a plain retry (app/actions.ts's
+ * retryAnalysis) benefits from the same skip logic for free, and a resume
+ * whose transcript step never actually finished correctly re-runs it.
  *
  * All heavy work (ffmpeg chunking, Whisper, GPT-4o) lives here — never in an
  * API route.
@@ -62,107 +123,131 @@ export const analyzeCall = inngest.createFunction(
       };
       const analysisId = failure.data.event.data.analysisId;
       const admin = createAdminClient();
-      await admin
-        .from("analyses")
-        .update({
-          status: "failed",
-          error: failure.data.error?.message ?? "אירעה שגיאה בעיבוד",
-        })
-        .eq("id", analysisId);
+      await updateIfNotTerminal(admin, analysisId, {
+        status: "failed",
+        error: failure.data.error?.message ?? "אירעה שגיאה בעיבוד",
+      });
     },
   },
   async ({ event, step }) => {
     const analysisId = event.data.analysisId as string;
     const admin = createAdminClient();
 
-    const filePath = await step.run("load-analysis", async () => {
+    const row = await step.run("load-analysis", async () => {
       const { data, error } = await admin
         .from("analyses")
-        .select("file_path")
+        .select("file_path, transcript, reasoning, completed_steps")
         .eq("id", analysisId)
         .single();
       if (error) throw error;
-      return data.file_path as string;
+      return data as {
+        file_path: string;
+        transcript: string | null;
+        reasoning: string | null;
+        completed_steps: string[] | null;
+      };
     });
 
-    const transcribeResult = await step.run("transcribe", async () => {
-      const { data: file, error } = await admin.storage
-        .from("recordings")
-        .download(filePath);
-      if (error || !file) throw error ?? new Error("הקובץ לא נמצא ב-Storage");
+    const initialCompletedSteps = row.completed_steps ?? [];
+    const filePath = row.file_path;
 
-      let buffer: Buffer = Buffer.from(await file.arrayBuffer());
-      let fileName = filePath.split("/").pop() ?? "audio.mp3";
+    let transcript: string;
+    if (initialCompletedSteps.includes("transcribe") && row.transcript) {
+      // Already transcribed before a previous stop — skip straight to reasoning.
+      transcript = row.transcript;
+    } else {
+      const transcribeResult = await step.run("transcribe", async () => {
+        const { data: file, error } = await admin.storage
+          .from("recordings")
+          .download(filePath);
+        if (error || !file) throw error ?? new Error("הקובץ לא נמצא ב-Storage");
 
-      // Pre-transcription guard: catches empty/truncated/silent/audio-less
-      // uploads with a cheap local ffmpeg check BEFORE the expensive Whisper
-      // call. Runs on the RAW upload — checking after conversion would still
-      // burn ffmpeg time re-encoding junk we're about to reject anyway.
-      const speechCheck = await checkHasSpeech(buffer, fileName);
-      if (!speechCheck.ok) {
-        await markNoSpeech(
-          admin,
-          analysisId,
-          `no_speech_detected: reason=${speechCheck.reason} duration=${speechCheck.durationSeconds ?? "?"}s meanVolume=${speechCheck.meanVolumeDb ?? "?"}dB`
+        let buffer: Buffer = Buffer.from(await file.arrayBuffer());
+        let fileName = filePath.split("/").pop() ?? "audio.mp3";
+
+        // Pre-transcription guard: catches empty/truncated/silent/audio-less
+        // uploads with a cheap local ffmpeg check BEFORE the expensive Whisper
+        // call. Runs on the RAW upload — checking after conversion would still
+        // burn ffmpeg time re-encoding junk we're about to reject anyway.
+        const speechCheck = await checkHasSpeech(buffer, fileName);
+        if (!speechCheck.ok) {
+          await markNoSpeech(
+            admin,
+            analysisId,
+            `no_speech_detected: reason=${speechCheck.reason} duration=${speechCheck.durationSeconds ?? "?"}s meanVolume=${speechCheck.meanVolumeDb ?? "?"}dB`
+          );
+          return { ok: false as const };
+        }
+
+        // Convert non-mp3/wav uploads (mp4/mov/ogg/m4a/aac/webm/flac) to mp3 first.
+        if (needsConversion(fileName)) {
+          await updateIfNotTerminal(admin, analysisId, {
+            status: "converting",
+            error: null,
+          });
+          const converted = await convertToMp3(buffer, fileName);
+          buffer = converted.buffer;
+          fileName = converted.name;
+        }
+
+        await updateIfNotTerminal(admin, analysisId, {
+          status: "transcribing",
+          error: null,
+        });
+
+        const chunks = await splitIfNeeded(buffer, fileName);
+        // Transcribe chunks concurrently — sequential transcription of a long
+        // (split) call overruns the serverless time budget. Promise.all preserves
+        // order, so the joined transcript stays in sequence.
+        const parts = await Promise.all(
+          chunks.map((chunk) => transcribeAudio(chunk.buffer, chunk.name))
         );
-        return { ok: false as const };
+        const full = parts.join("\n").trim();
+
+        // Defense in depth: real audio (passed the guard above) but Whisper
+        // came back with nothing usable — e.g. pure music/noise. Stop here
+        // rather than let the analysis stage fabricate a report.
+        if (full.length < MIN_TRANSCRIPT_CHARS) {
+          await markNoSpeech(admin, analysisId, `no_speech_detected: reason=empty_transcript length=${full.length}`);
+          return { ok: false as const };
+        }
+
+        await persistProgress(admin, analysisId, {
+          transcript: full,
+          completed_steps: [...initialCompletedSteps, "transcribe"],
+        });
+        return { ok: true as const, transcript: full };
+      });
+
+      if (!transcribeResult.ok) {
+        return { analysisId, status: "no_speech_detected" };
       }
-
-      // Convert non-mp3/wav uploads (mp4/mov/ogg/m4a/aac/webm/flac) to mp3 first.
-      if (needsConversion(fileName)) {
-        await admin
-          .from("analyses")
-          .update({ status: "converting", error: null })
-          .eq("id", analysisId);
-        const converted = await convertToMp3(buffer, fileName);
-        buffer = converted.buffer;
-        fileName = converted.name;
-      }
-
-      await admin
-        .from("analyses")
-        .update({ status: "transcribing", error: null })
-        .eq("id", analysisId);
-
-      const chunks = await splitIfNeeded(buffer, fileName);
-      // Transcribe chunks concurrently — sequential transcription of a long
-      // (split) call overruns the serverless time budget. Promise.all preserves
-      // order, so the joined transcript stays in sequence.
-      const parts = await Promise.all(
-        chunks.map((chunk) => transcribeAudio(chunk.buffer, chunk.name))
-      );
-      const full = parts.join("\n").trim();
-
-      // Defense in depth: real audio (passed the guard above) but Whisper
-      // came back with nothing usable — e.g. pure music/noise. Stop here
-      // rather than let the analysis stage fabricate a report.
-      if (full.length < MIN_TRANSCRIPT_CHARS) {
-        await markNoSpeech(admin, analysisId, `no_speech_detected: reason=empty_transcript length=${full.length}`);
-        return { ok: false as const };
-      }
-
-      await admin
-        .from("analyses")
-        .update({ transcript: full })
-        .eq("id", analysisId);
-      return { ok: true as const, transcript: full };
-    });
-
-    if (!transcribeResult.ok) {
-      return { analysisId, status: "no_speech_detected" };
+      transcript = transcribeResult.transcript;
     }
-    const transcript = transcribeResult.transcript;
 
     // Hybrid analysis: Claude Sonnet 4.6 reasons, GPT-4o formats to JSON.
     // reasonAboutCall dispatches step.ai.infer itself, which is already a
     // tracked Inngest step — it can't be nested inside another step.run.
     await step.run("set-analyzing", async () => {
-      await admin
-        .from("analyses")
-        .update({ status: "analyzing" })
-        .eq("id", analysisId);
+      await updateIfNotTerminal(admin, analysisId, { status: "analyzing" });
     });
-    const reasoning = await reasonAboutCall(transcript, step);
+
+    let reasoning: string;
+    if (initialCompletedSteps.includes("reason") && row.reasoning) {
+      // Claude already finished reasoning before a previous stop — skip
+      // straight to GPT-4o synthesis.
+      reasoning = row.reasoning;
+    } else {
+      reasoning = await reasonAboutCall(transcript, step);
+      await step.run("mark-reason-complete", async () => {
+        await persistProgress(admin, analysisId, {
+          reasoning,
+          completed_steps: [
+            ...new Set([...initialCompletedSteps, "transcribe", "reason"]),
+          ],
+        });
+      });
+    }
 
     const result = await step.run("synthesize", async () => {
       return synthesizeAnalysis(reasoning);
@@ -183,15 +268,12 @@ export const analyzeCall = inngest.createFunction(
             }
           : null;
 
-      await admin
-        .from("analyses")
-        .update({
-          status: "completed",
-          result,
-          analysis_version: scores ? "v2" : "v1",
-          scores,
-        })
-        .eq("id", analysisId);
+      await updateIfNotTerminal(admin, analysisId, {
+        status: "completed",
+        result,
+        analysis_version: scores ? "v2" : "v1",
+        scores,
+      });
     });
 
     return { analysisId, status: "completed" };

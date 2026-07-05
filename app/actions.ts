@@ -93,6 +93,53 @@ export async function cancelAnalysis(analysisId: string) {
 }
 
 /**
+ * Resumes a cancelled analysis from where it stopped, instead of restarting
+ * from scratch. Doesn't reset `completed_steps`/`transcript`/`reasoning` —
+ * analyzeCall (lib/inngest/functions.ts) reads those from the row itself and
+ * skips whichever stages already finished before the stop. `isResume: true`
+ * on the event is informational only (visible in Inngest's dashboard/logs);
+ * the actual skip logic is driven by what's persisted, not this flag.
+ */
+export async function resumeAnalysis(analysisId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { data, error } = await supabase
+    .from("analyses")
+    .select("id, user_id, status, completed_steps")
+    .eq("id", analysisId)
+    .single();
+
+  if (error || !data || data.user_id !== user.id) {
+    throw new Error("Analysis not found");
+  }
+  if (data.status !== "cancelled") {
+    throw new Error("Analysis is not cancelled");
+  }
+
+  // Reflects which stage is about to run so the UI doesn't show a misleading
+  // "transcribing" progress step when transcription already finished.
+  const completedSteps: string[] = data.completed_steps ?? [];
+  const nextStatus = completedSteps.includes("transcribe")
+    ? "analyzing"
+    : "transcribing";
+
+  const { error: updateError } = await supabase
+    .from("analyses")
+    .update({ status: nextStatus, error: null })
+    .eq("id", analysisId);
+  if (updateError) throw updateError;
+
+  await inngest.send({
+    name: "analysis/requested",
+    data: { analysisId, isResume: true },
+  });
+}
+
+/**
  * Permanently deletes an analysis: cancels it first if still running (best
  * effort — Inngest cancellation isn't synchronous, but dispatching it before
  * deleting the row it would otherwise try to update is the correct order),

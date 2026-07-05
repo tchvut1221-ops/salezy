@@ -202,6 +202,19 @@ export interface Analysis {
     closing?: number;
     personalityType?: PersonalityType;
   } | null;
+  /**
+   * Pipeline stages already completed (e.g. "transcribe", "reason") — lets a
+   * resumed run (after a user-initiated stop) skip stages that already
+   * finished instead of restarting from scratch. Empty for every analysis
+   * that has never been stopped/resumed.
+   */
+  completed_steps: string[];
+  /**
+   * Claude's persisted free-form reasoning output, so a resumed run can skip
+   * re-calling Claude when it already completed before the stop. Null until
+   * that stage finishes.
+   */
+  reasoning: string | null;
   created_at: string;
   updated_at: string;
 }

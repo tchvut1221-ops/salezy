@@ -17,7 +17,11 @@ import { CoachingPlan } from "./coaching-plan";
 import { PersonalityCard } from "./personality-card";
 import { LoadingMessages } from "./loading-messages";
 import { ResultSkeleton } from "./result-skeleton";
-import { StopAnalysisButton, DeleteAnalysisButton } from "./analysis-actions";
+import {
+  StopAnalysisButton,
+  DeleteAnalysisButton,
+  ResumeAnalysisButton,
+} from "./analysis-actions";
 
 const STEPS: { key: AnalysisStatus; label: string }[] = [
   { key: "uploaded", label: "הועלה" },
@@ -146,7 +150,11 @@ export function AnalysisView({ initial }: { initial: Analysis }) {
                   ? "לא זוהה דיבור בהקלטה הזו. ודא שהקובץ מכיל שיחה אמיתית ונסה שוב."
                   : "נתקלנו בתקלה בעיבוד ההקלטה. אפשר לנסות שוב — הקובץ שכבר העליתם נשמר."}
             </p>
-            {!isCancelled && (
+            {isCancelled ? (
+              <div className="mt-4">
+                <ResumeAnalysisButton analysisId={initial.id} />
+              </div>
+            ) : (
               <button
                 onClick={onRetry}
                 disabled={retrying}
