@@ -1,13 +1,10 @@
 import OpenAI from "openai";
 import { toFile } from "openai/uploads";
+import { formatDiarizedSegments, type DiarizedSegment } from "@/lib/transcription/providers";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-/** A single diarized segment as returned by gpt-4o-transcribe-diarize. */
-interface DiarizedSegment {
-  speaker?: string;
-  text?: string;
-}
+/** The gpt-4o-transcribe-diarize response (diarized_json). */
 interface DiarizedResponse {
   text?: string;
   segments?: DiarizedSegment[];
@@ -39,37 +36,5 @@ export async function transcribeAudio(
     chunking_strategy: "auto",
   } as never)) as unknown as DiarizedResponse;
 
-  return formatDiarized(res);
-}
-
-/** Merge consecutive same-speaker segments into a labeled Hebrew transcript. */
-function formatDiarized(res: DiarizedResponse): string {
-  const segments = res.segments;
-  if (!segments?.length) {
-    return (res.text ?? "").trim();
-  }
-
-  const speakerNames = new Map<string, string>();
-  const labelFor = (raw: string | undefined): string => {
-    const key = raw ?? "?";
-    if (!speakerNames.has(key)) {
-      speakerNames.set(key, `דובר ${speakerNames.size + 1}`);
-    }
-    return speakerNames.get(key)!;
-  };
-
-  const lines: string[] = [];
-  let lastSpeaker: string | null = null;
-  for (const seg of segments) {
-    const text = (seg.text ?? "").trim();
-    if (!text) continue;
-    const label = labelFor(seg.speaker);
-    if (label === lastSpeaker) {
-      lines[lines.length - 1] += ` ${text}`;
-    } else {
-      lines.push(`${label}: ${text}`);
-      lastSpeaker = label;
-    }
-  }
-  return lines.join("\n").trim();
+  return formatDiarizedSegments(res.segments, res.text);
 }

@@ -1,7 +1,13 @@
 import { inngest } from "./client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { splitIfNeeded, convertToMp3, checkHasSpeech } from "@/lib/audio";
-import { transcribeAudio } from "@/lib/whisper";
+import { transcribeWithIvrit } from "@/lib/transcription/ivrit-provider";
+import { transcribeWithOpenAI } from "@/lib/transcription/openai-provider";
+import {
+  loadTranscriptionConfig,
+  mergeResults,
+  type TranscriptionResult,
+} from "@/lib/transcription/providers";
 import { reasonAboutCall, synthesizeAnalysis } from "@/lib/analysis";
 import { needsConversion } from "@/lib/constants";
 
@@ -196,17 +202,45 @@ export const analyzeCall = inngest.createFunction(
         });
 
         const chunks = await splitIfNeeded(buffer, fileName);
-        // Transcribe chunks concurrently — sequential transcription of a long
-        // (split) call overruns the serverless time budget. Promise.all preserves
-        // order, so the joined transcript stays in sequence.
-        const parts = await Promise.all(
-          chunks.map((chunk) => transcribeAudio(chunk.buffer, chunk.name))
-        );
-        const full = parts.join("\n").trim();
 
-        // Defense in depth: real audio (passed the guard above) but Whisper
-        // came back with nothing usable — e.g. pure music/noise. Stop here
-        // rather than let the analysis stage fabricate a report.
+        // ivrit.ai (Runpod) is the primary transcription engine when configured;
+        // if it fails for ANY reason (missing config, network, job error, or
+        // timeout) we fall back to OpenAI automatically — both emit the same
+        // דובר N: diarized format, so the downstream scorecard is unaffected.
+        // Kept as a try/catch inside this single step (not separate Inngest
+        // steps) because the ffmpeg-produced Buffers can't cross step boundaries.
+        // Chunks are transcribed concurrently — Promise.all preserves order, so
+        // the joined transcript stays in sequence.
+        const providerPref =
+          process.env.TRANSCRIPTION_PROVIDER === "ivrit" ? "ivrit" : "openai";
+        let result: TranscriptionResult;
+        if (providerPref === "ivrit") {
+          try {
+            const cfg = loadTranscriptionConfig();
+            const parts = await Promise.all(
+              chunks.map((chunk) =>
+                transcribeWithIvrit(chunk.buffer.toString("base64"), cfg)
+              )
+            );
+            result = mergeResults(parts, "ivrit", speechCheck.durationSeconds);
+          } catch (err) {
+            console.error("[transcribe] ivrit failed — falling back to OpenAI:", err);
+            const parts = await Promise.all(
+              chunks.map((chunk) => transcribeWithOpenAI(chunk.buffer, chunk.name))
+            );
+            result = mergeResults(parts, "openai", speechCheck.durationSeconds);
+          }
+        } else {
+          const parts = await Promise.all(
+            chunks.map((chunk) => transcribeWithOpenAI(chunk.buffer, chunk.name))
+          );
+          result = mergeResults(parts, "openai", speechCheck.durationSeconds);
+        }
+        const full = result.text;
+
+        // Defense in depth: real audio (passed the guard above) but transcription
+        // came back with nothing usable — e.g. pure music/noise. Stop here rather
+        // than let the analysis stage fabricate a report.
         if (full.length < MIN_TRANSCRIPT_CHARS) {
           await markNoSpeech(admin, analysisId, `no_speech_detected: reason=empty_transcript length=${full.length}`);
           return { ok: false as const };
@@ -214,6 +248,7 @@ export const analyzeCall = inngest.createFunction(
 
         await persistProgress(admin, analysisId, {
           transcript: full,
+          transcription_provider: result.provider,
           completed_steps: [...initialCompletedSteps, "transcribe"],
         });
         return { ok: true as const, transcript: full };
