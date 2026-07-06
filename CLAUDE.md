@@ -5,7 +5,7 @@
 - Tailwind CSS + shadcn/ui
 - Supabase (DB + Storage, RLS on every table)
 - Inngest (background jobs)
-- Transcription: ivrit.ai/whisper-large-v3 + pyannote on Runpod serverless (primary), OpenAI `gpt-4o-transcribe-diarize` fallback — both Hebrew, speaker-labeled (`דובר N:`). Provider abstraction in `lib/transcription/`, selected via `TRANSCRIPTION_PROVIDER`
+- Transcription: ivrit.ai/whisper-large-v3 + pyannote on Runpod serverless (primary, polled across step.sleep-separated Inngest steps with a duration-scaled ceiling — see `computeRunpodPollCeilingMs`), OpenAI `gpt-4o-transcribe-diarize` fallback (auto-triggered + Runpod job cancelled on failure/timeout) — both Hebrew, speaker-labeled (`דובר N:`). Provider abstraction in `lib/transcription/`, selected via `TRANSCRIPTION_PROVIDER`
 - Analysis (hybrid): Claude Sonnet 4.6 reasons → GPT-4o formats to JSON (Zod-validated). Sales-domain knowledge injected from `lib/sales-knowledge.ts`
 - Audio conversion: non-mp3/wav uploads are converted to 16kHz mono mp3 with ffmpeg (inside Inngest)
 - Charts: Recharts (dashboard score trend, `components/salezy/score-chart.tsx`)
