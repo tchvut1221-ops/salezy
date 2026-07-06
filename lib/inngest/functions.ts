@@ -1,10 +1,19 @@
 import { inngest } from "./client";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { splitIfNeeded, convertToMp3, checkHasSpeech } from "@/lib/audio";
-import { transcribeWithIvrit } from "@/lib/transcription/ivrit-provider";
+import { splitIfNeeded, convertToMp3, checkHasSpeech, type AudioChunk } from "@/lib/audio";
+import {
+  submitRunpodJob,
+  checkRunpodJobs,
+  cancelRunpodJobs,
+  aggregatePollResults,
+  type RunpodJobRecord,
+  type RunpodPollVerdict,
+} from "@/lib/transcription/ivrit-provider";
 import { transcribeWithOpenAI } from "@/lib/transcription/openai-provider";
 import {
   loadTranscriptionConfig,
+  computeRunpodPollCeilingMs,
+  RUNPOD_POLL_INTERVAL_MS,
   mergeResults,
   type TranscriptionResult,
 } from "@/lib/transcription/providers";
@@ -93,6 +102,48 @@ async function markNoSpeech(
 }
 
 /**
+ * Guard + convert + split result for one raw upload — shared by the ivrit
+ * submission step AND the OpenAI fallback step below, since ffmpeg output
+ * (Buffers) can't cross an Inngest step boundary (4MB output cap — see
+ * lib/transcription/ivrit-provider.ts's header comment) and must therefore
+ * be regenerated fresh inside whichever step actually needs it.
+ */
+async function prepareAudio(
+  admin: ReturnType<typeof createAdminClient>,
+  analysisId: string,
+  filePath: string
+): Promise<
+  | { ok: false; reason: string }
+  | { ok: true; chunks: AudioChunk[]; durationSeconds: number }
+> {
+  const { data: file, error } = await admin.storage.from("recordings").download(filePath);
+  if (error || !file) throw error ?? new Error("הקובץ לא נמצא ב-Storage");
+
+  let buffer: Buffer = Buffer.from(await file.arrayBuffer());
+  let fileName = filePath.split("/").pop() ?? "audio.mp3";
+
+  const speechCheck = await checkHasSpeech(buffer, fileName);
+  if (!speechCheck.ok) {
+    return {
+      ok: false,
+      reason: `no_speech_detected: reason=${speechCheck.reason} duration=${speechCheck.durationSeconds ?? "?"}s meanVolume=${speechCheck.meanVolumeDb ?? "?"}dB`,
+    };
+  }
+
+  if (needsConversion(fileName)) {
+    await updateIfNotTerminal(admin, analysisId, { status: "converting", error: null });
+    const converted = await convertToMp3(buffer, fileName);
+    buffer = converted.buffer;
+    fileName = converted.name;
+  }
+
+  await updateIfNotTerminal(admin, analysisId, { status: "transcribing", error: null });
+
+  const chunks = await splitIfNeeded(buffer, fileName);
+  return { ok: true, chunks, durationSeconds: speechCheck.durationSeconds };
+}
+
+/**
  * The Salezy pipeline. Triggered by the "analysis/requested" event after a
  * recording is uploaded (or after a user resumes a previously-stopped
  * analysis — see app/actions.ts's resumeAnalysis). Each stage is a separate
@@ -159,105 +210,142 @@ export const analyzeCall = inngest.createFunction(
 
     let transcript: string;
     if (initialCompletedSteps.includes("transcribe") && row.transcript) {
-      // Already transcribed before a previous stop — skip straight to reasoning.
       transcript = row.transcript;
     } else {
-      const transcribeResult = await step.run("transcribe", async () => {
-        const { data: file, error } = await admin.storage
-          .from("recordings")
-          .download(filePath);
-        if (error || !file) throw error ?? new Error("הקובץ לא נמצא ב-Storage");
+      const providerPref =
+        process.env.TRANSCRIPTION_PROVIDER === "ivrit" ? "ivrit" : "openai";
 
-        let buffer: Buffer = Buffer.from(await file.arrayBuffer());
-        let fileName = filePath.split("/").pop() ?? "audio.mp3";
+      if (providerPref !== "ivrit") {
+        // OpenAI-only configuration — unchanged single-step shape. OpenAI's
+        // own Whisper call already completes within budget for calls this
+        // pipeline supports; the timeout/double-billing bug this plan fixes
+        // is specific to Runpod's much longer processing time.
+        const transcribeResult = await step.run("transcribe-openai", async () => {
+          const prep = await prepareAudio(admin, analysisId, filePath);
+          if (!prep.ok) {
+            await markNoSpeech(admin, analysisId, prep.reason);
+            return { ok: false as const };
+          }
+          const parts = await Promise.all(
+            prep.chunks.map((chunk) => transcribeWithOpenAI(chunk.buffer, chunk.name))
+          );
+          const result = mergeResults(parts, "openai", prep.durationSeconds);
+          if (result.text.length < MIN_TRANSCRIPT_CHARS) {
+            await markNoSpeech(
+              admin,
+              analysisId,
+              `no_speech_detected: reason=empty_transcript length=${result.text.length}`
+            );
+            return { ok: false as const };
+          }
+          await persistProgress(admin, analysisId, {
+            transcript: result.text,
+            transcription_provider: result.provider,
+            completed_steps: [...initialCompletedSteps, "transcribe"],
+          });
+          return { ok: true as const, transcript: result.text };
+        });
+        if (!transcribeResult.ok) {
+          return { analysisId, status: "no_speech_detected" };
+        }
+        transcript = transcribeResult.transcript;
+      } else {
+        // ivrit (Runpod) primary path — submit, then poll across SEPARATE
+        // Inngest steps (step.sleep in between) so a long call's wait never
+        // occupies a single serverless invocation. See ivrit-provider.ts's
+        // header comment for why submission shares a step with audio prep,
+        // and why there's no separate "fetch result" step.
+        const submitResult = await step.run("prepare-and-submit-runpod", async () => {
+          const prep = await prepareAudio(admin, analysisId, filePath);
+          if (!prep.ok) {
+            await markNoSpeech(admin, analysisId, prep.reason);
+            return { ok: false as const };
+          }
+          const cfg = loadTranscriptionConfig();
+          const jobIds = await Promise.all(
+            prep.chunks.map((chunk) => submitRunpodJob(chunk.buffer.toString("base64"), cfg))
+          );
+          const records: RunpodJobRecord[] = jobIds.map((jobId, chunkIndex) => ({
+            jobId,
+            chunkIndex,
+          }));
+          console.log(
+            `[transcribe] analysis ${analysisId}: submitted ${records.length} ivrit job(s): ${records.map((r) => r.jobId).join(", ")}`
+          );
+          return { ok: true as const, records, durationSeconds: prep.durationSeconds };
+        });
 
-        // Pre-transcription guard: catches empty/truncated/silent/audio-less
-        // uploads with a cheap local ffmpeg check BEFORE the expensive Whisper
-        // call. Runs on the RAW upload — checking after conversion would still
-        // burn ffmpeg time re-encoding junk we're about to reject anyway.
-        const speechCheck = await checkHasSpeech(buffer, fileName);
-        if (!speechCheck.ok) {
+        if (!submitResult.ok) {
+          return { analysisId, status: "no_speech_detected" };
+        }
+        const { records, durationSeconds } = submitResult;
+
+        const ceilingMs = computeRunpodPollCeilingMs(durationSeconds);
+        const maxAttempts = Math.ceil(ceilingMs / RUNPOD_POLL_INTERVAL_MS);
+
+        let verdict: RunpodPollVerdict = { done: false, ok: false };
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+          await step.sleep(`wait-for-runpod-${attempt}`, "15s");
+          verdict = await step.run(`check-runpod-status-${attempt}`, async () => {
+            const cfg = loadTranscriptionConfig();
+            const states = await checkRunpodJobs(records, cfg);
+            return aggregatePollResults(states);
+          });
+          console.log(
+            `[transcribe] analysis ${analysisId}: poll attempt ${attempt + 1}/${maxAttempts} — done=${verdict.done} ok=${verdict.ok}`
+          );
+          if (verdict.done) break;
+        }
+
+        let result: TranscriptionResult;
+        if (verdict.done && verdict.ok && verdict.text) {
+          result = { text: verdict.text, provider: "ivrit", durationSeconds, language: "he" };
+        } else {
+          const reason = verdict.done
+            ? `ivrit job failed: ${verdict.errorMessage ?? "unknown"}`
+            : `ivrit poll ceiling exceeded after ${maxAttempts} attempts (~${Math.round(ceilingMs / 1000)}s)`;
+          await step.run("cancel-and-fallback-openai", async () => {
+            console.error(
+              `[transcribe] analysis ${analysisId}: ${reason} — cancelling remaining Runpod job(s) and falling back to OpenAI`
+            );
+            const cfg = loadTranscriptionConfig();
+            await cancelRunpodJobs(records, cfg);
+          });
+          const fallback = await step.run("transcribe-openai-fallback", async () => {
+            const prep = await prepareAudio(admin, analysisId, filePath);
+            if (!prep.ok) {
+              await markNoSpeech(admin, analysisId, prep.reason);
+              return { ok: false as const };
+            }
+            const parts = await Promise.all(
+              prep.chunks.map((chunk) => transcribeWithOpenAI(chunk.buffer, chunk.name))
+            );
+            return { ok: true as const, result: mergeResults(parts, "openai", prep.durationSeconds) };
+          });
+          if (!fallback.ok) {
+            return { analysisId, status: "no_speech_detected" };
+          }
+          result = fallback.result;
+        }
+
+        if (result.text.length < MIN_TRANSCRIPT_CHARS) {
           await markNoSpeech(
             admin,
             analysisId,
-            `no_speech_detected: reason=${speechCheck.reason} duration=${speechCheck.durationSeconds ?? "?"}s meanVolume=${speechCheck.meanVolumeDb ?? "?"}dB`
+            `no_speech_detected: reason=empty_transcript length=${result.text.length}`
           );
-          return { ok: false as const };
+          return { analysisId, status: "no_speech_detected" };
         }
 
-        // Convert non-mp3/wav uploads (mp4/mov/ogg/m4a/aac/webm/flac) to mp3 first.
-        if (needsConversion(fileName)) {
-          await updateIfNotTerminal(admin, analysisId, {
-            status: "converting",
-            error: null,
+        await step.run("persist-transcript", async () => {
+          await persistProgress(admin, analysisId, {
+            transcript: result.text,
+            transcription_provider: result.provider,
+            completed_steps: [...initialCompletedSteps, "transcribe"],
           });
-          const converted = await convertToMp3(buffer, fileName);
-          buffer = converted.buffer;
-          fileName = converted.name;
-        }
-
-        await updateIfNotTerminal(admin, analysisId, {
-          status: "transcribing",
-          error: null,
         });
-
-        const chunks = await splitIfNeeded(buffer, fileName);
-
-        // ivrit.ai (Runpod) is the primary transcription engine when configured;
-        // if it fails for ANY reason (missing config, network, job error, or
-        // timeout) we fall back to OpenAI automatically — both emit the same
-        // דובר N: diarized format, so the downstream scorecard is unaffected.
-        // Kept as a try/catch inside this single step (not separate Inngest
-        // steps) because the ffmpeg-produced Buffers can't cross step boundaries.
-        // Chunks are transcribed concurrently — Promise.all preserves order, so
-        // the joined transcript stays in sequence.
-        const providerPref =
-          process.env.TRANSCRIPTION_PROVIDER === "ivrit" ? "ivrit" : "openai";
-        let result: TranscriptionResult;
-        if (providerPref === "ivrit") {
-          try {
-            const cfg = loadTranscriptionConfig();
-            const parts = await Promise.all(
-              chunks.map((chunk) =>
-                transcribeWithIvrit(chunk.buffer.toString("base64"), cfg)
-              )
-            );
-            result = mergeResults(parts, "ivrit", speechCheck.durationSeconds);
-          } catch (err) {
-            console.error("[transcribe] ivrit failed — falling back to OpenAI:", err);
-            const parts = await Promise.all(
-              chunks.map((chunk) => transcribeWithOpenAI(chunk.buffer, chunk.name))
-            );
-            result = mergeResults(parts, "openai", speechCheck.durationSeconds);
-          }
-        } else {
-          const parts = await Promise.all(
-            chunks.map((chunk) => transcribeWithOpenAI(chunk.buffer, chunk.name))
-          );
-          result = mergeResults(parts, "openai", speechCheck.durationSeconds);
-        }
-        const full = result.text;
-
-        // Defense in depth: real audio (passed the guard above) but transcription
-        // came back with nothing usable — e.g. pure music/noise. Stop here rather
-        // than let the analysis stage fabricate a report.
-        if (full.length < MIN_TRANSCRIPT_CHARS) {
-          await markNoSpeech(admin, analysisId, `no_speech_detected: reason=empty_transcript length=${full.length}`);
-          return { ok: false as const };
-        }
-
-        await persistProgress(admin, analysisId, {
-          transcript: full,
-          transcription_provider: result.provider,
-          completed_steps: [...initialCompletedSteps, "transcribe"],
-        });
-        return { ok: true as const, transcript: full };
-      });
-
-      if (!transcribeResult.ok) {
-        return { analysisId, status: "no_speech_detected" };
+        transcript = result.text;
       }
-      transcript = transcribeResult.transcript;
     }
 
     // Hybrid analysis: Claude Sonnet 4.6 reasons, GPT-4o formats to JSON.
