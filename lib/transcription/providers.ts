@@ -29,8 +29,6 @@ export interface TranscriptionConfig {
   runpodApiKey: string;
   runpodEndpointId: string;
   runpodBaseUrl: string;
-  /** Hard ceiling on the Runpod poll before we cancel the job + fall back (ms). */
-  timeoutMs: number;
 }
 
 /** One diarized segment — the shape both OpenAI and ivrit outputs reduce to. */
@@ -40,15 +38,6 @@ export interface DiarizedSegment {
 }
 
 const DEFAULT_RUNPOD_BASE_URL = "https://api.runpod.ai/v2";
-
-/**
- * The Inngest route caps the whole invocation at maxDuration=300s. Keep the
- * ivrit poll ceiling comfortably below that so a failed/timed-out ivrit attempt
- * still leaves budget for the in-invocation OpenAI fallback. Override with
- * IVRIT_TIMEOUT_MS (e.g. if the providers are ever split into separate steps,
- * where each gets its own 300s budget).
- */
-const DEFAULT_IVRIT_TIMEOUT_MS = 210_000;
 
 /**
  * Reads transcription config from the environment. Throws when
@@ -64,19 +53,39 @@ export function loadTranscriptionConfig(): TranscriptionConfig {
   const runpodEndpointId = process.env.RUNPOD_ENDPOINT_ID ?? "";
   const runpodBaseUrl = process.env.RUNPOD_BASE_URL ?? DEFAULT_RUNPOD_BASE_URL;
 
-  const parsedTimeout = Number(process.env.IVRIT_TIMEOUT_MS);
-  const timeoutMs =
-    Number.isFinite(parsedTimeout) && parsedTimeout > 0
-      ? parsedTimeout
-      : DEFAULT_IVRIT_TIMEOUT_MS;
-
   if (provider === "ivrit" && (!runpodApiKey || !runpodEndpointId)) {
     throw new Error(
       "TRANSCRIPTION_PROVIDER=ivrit but RUNPOD_API_KEY / RUNPOD_ENDPOINT_ID are not set"
     );
   }
 
-  return { provider, runpodApiKey, runpodEndpointId, runpodBaseUrl, timeoutMs };
+  return { provider, runpodApiKey, runpodEndpointId, runpodBaseUrl };
+}
+
+/** Fixed interval between Runpod status polls — driven by Inngest's step.sleep, not a blocking wait. */
+export const RUNPOD_POLL_INTERVAL_MS = 15_000;
+
+/**
+ * Default poll ceiling: 50 minutes (200 polls @ 15s). Comfortably covers a
+ * 60-minute call at whisperx+diarization's ~0.3-0.5x realtime speed on a
+ * 16GB GPU (worst case ~30min processing) plus up to a minute of cold start.
+ */
+const DEFAULT_POLL_CEILING_MS = 50 * 60 * 1000;
+
+/**
+ * Per-call poll ceiling before giving up on Runpod, cancelling the job(s),
+ * and falling back to OpenAI. Defaults to max(50min, audio_duration*0.6 +
+ * 2min buffer) so long calls get a ceiling proportional to their own length
+ * instead of the previous fixed 210s, which cut Runpod off before it could
+ * finish anything but the shortest clips. IVRIT_TIMEOUT_MS, if set, overrides
+ * the computed value entirely — an escape hatch, not required for normal use.
+ */
+export function computeRunpodPollCeilingMs(durationSeconds: number | null): number {
+  const override = Number(process.env.IVRIT_TIMEOUT_MS);
+  if (Number.isFinite(override) && override > 0) return override;
+  if (!durationSeconds) return DEFAULT_POLL_CEILING_MS;
+  const proportional = durationSeconds * 0.6 * 1000 + 120_000;
+  return Math.max(DEFAULT_POLL_CEILING_MS, proportional);
 }
 
 /**
