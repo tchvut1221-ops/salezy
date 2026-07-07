@@ -104,7 +104,7 @@ export async function submitRunpodJob(
     headers: runpodHeaders(cfg),
     body: JSON.stringify({
       input: {
-        audio: audioBase64,
+        audio_base64: audioBase64,
         language: "he",
         model: "ivrit-ai/whisper-large-v3-ct2",
         diarize: true,
