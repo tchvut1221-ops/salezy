@@ -1,6 +1,13 @@
 import { inngest } from "./client";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { splitIfNeeded, convertToMp3, checkHasSpeech, type AudioChunk } from "@/lib/audio";
+import {
+  splitIfNeeded,
+  convertToMp3,
+  checkHasSpeech,
+  RUNPOD_MAX_RAW_BYTES,
+  RUNPOD_SEGMENT_SECONDS,
+  type AudioChunk,
+} from "@/lib/audio";
 import {
   submitRunpodJob,
   checkRunpodJobs,
@@ -111,7 +118,8 @@ async function markNoSpeech(
 async function prepareAudio(
   admin: ReturnType<typeof createAdminClient>,
   analysisId: string,
-  filePath: string
+  filePath: string,
+  chunkLimits?: { maxBytes: number; segmentSeconds: number }
 ): Promise<
   | { ok: false; reason: string }
   | { ok: true; chunks: AudioChunk[]; durationSeconds: number }
@@ -139,7 +147,9 @@ async function prepareAudio(
 
   await updateIfNotTerminal(admin, analysisId, { status: "transcribing", error: null });
 
-  const chunks = await splitIfNeeded(buffer, fileName);
+  const chunks = chunkLimits
+    ? await splitIfNeeded(buffer, fileName, chunkLimits.maxBytes, chunkLimits.segmentSeconds)
+    : await splitIfNeeded(buffer, fileName);
   return { ok: true, chunks, durationSeconds: speechCheck.durationSeconds };
 }
 
@@ -256,7 +266,10 @@ export const analyzeCall = inngest.createFunction(
         // header comment for why submission shares a step with audio prep,
         // and why there's no separate "fetch result" step.
         const submitResult = await step.run("prepare-and-submit-runpod", async () => {
-          const prep = await prepareAudio(admin, analysisId, filePath);
+          const prep = await prepareAudio(admin, analysisId, filePath, {
+            maxBytes: RUNPOD_MAX_RAW_BYTES,
+            segmentSeconds: RUNPOD_SEGMENT_SECONDS,
+          });
           if (!prep.ok) {
             await markNoSpeech(admin, analysisId, prep.reason);
             return { ok: false as const };
