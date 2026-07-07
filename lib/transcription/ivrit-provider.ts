@@ -106,7 +106,7 @@ export async function submitRunpodJob(
       input: {
         audio: audioBase64,
         language: "he",
-        model: "ivrit-ai/whisper-large-v3",
+        model: "ivrit-ai/whisper-large-v3-ct2",
         diarize: true,
       },
     }),
