@@ -1,27 +1,21 @@
 /**
  * Live stability check for the DISC engine (lib/disc.ts): pulls one real,
- * already-transcribed call by analysis id and runs the DISC scoring call
- * N times (default 4), printing type/secondaryType/confidence/axis-scores
- * each run. The whole point of the calibration work this supports is that
- * the SAME transcript must produce the SAME type every run — this is the
- * verification for that requirement, run before merging feature/disc-calibration.
+ * already-transcribed call by analysis id and runs the DISC scoring N times
+ * (default 4), printing type/secondaryType/confidence/axis-scores each run.
+ * The whole point of the calibration work this supports is that the SAME
+ * transcript must produce the SAME type every run — this is the verification
+ * for that requirement, run before merging feature/disc-calibration.
  *
- * Calls the Anthropic SDK directly (not step.ai.infer, which requires a live
- * Inngest function execution context this standalone script doesn't have) but
- * sends the identical prompt/params via buildDiscRequestBody() — see that
- * function's comment in lib/disc.ts for why this is safe to trust as
- * representative of the real pipeline path.
+ * Each "run" here is a full self-consistency ensemble: it calls the exact same
+ * ensembleDetectSigns() + computeDiscResult() the production pipeline uses
+ * (lib/disc.ts), so this script is now a faithful mirror of the real path — no
+ * re-implemented dispatch to drift. Total Anthropic calls = runs × K passes
+ * (K = DISC_ENSEMBLE_PASSES, default 5).
  *
  * Usage:
  *   npx tsx --env-file=.env.local scripts/disc-stability.ts <analysisId> [runs]
  */
-import Anthropic from "@anthropic-ai/sdk";
-import {
-  buildDiscRequestBody,
-  parseDiscResponse,
-  computeDiscResult,
-  DISC_MODEL_ID,
-} from "../lib/disc";
+import { ensembleDetectSigns, computeDiscResult, getDiscEnsemblePasses } from "../lib/disc";
 
 async function fetchTranscript(analysisId: string): Promise<string> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -41,16 +35,10 @@ async function fetchTranscript(analysisId: string): Promise<string> {
   return row.transcript;
 }
 
-async function runOnce(anthropic: Anthropic, transcript: string) {
-  const body = buildDiscRequestBody(transcript);
-  const res = await anthropic.messages.create({ model: DISC_MODEL_ID, ...body });
-  const text = res.content
-    .filter((b): b is Anthropic.TextBlock => b.type === "text")
-    .map((b) => b.text)
-    .join("\n")
-    .trim();
-  const raw = parseDiscResponse(text, transcript);
-  return computeDiscResult(raw);
+async function runOnce(transcript: string) {
+  const passes = getDiscEnsemblePasses();
+  const raw = await ensembleDetectSigns(transcript, passes);
+  return computeDiscResult(raw, passes);
 }
 
 async function main() {
@@ -66,12 +54,15 @@ async function main() {
   }
 
   const transcript = await fetchTranscript(analysisId);
-  console.log(`Loaded transcript for analysis ${analysisId} (${transcript.length} chars). Running ${runs}x...\n`);
+  const passes = getDiscEnsemblePasses();
+  console.log(
+    `Loaded transcript for analysis ${analysisId} (${transcript.length} chars). ` +
+      `Running ${runs}x (K=${passes} passes/run → ${runs * passes} Anthropic calls)...\n`
+  );
 
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const results = [];
   for (let i = 1; i <= runs; i++) {
-    const r = await runOnce(anthropic, transcript);
+    const r = await runOnce(transcript);
     results.push(r);
     console.log(
       `run ${i}: type=${r.type}${r.secondaryType ? `+${r.secondaryType}` : ""} ` +

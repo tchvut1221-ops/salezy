@@ -256,12 +256,12 @@ export const analyzeCall = inngest.createFunction(
 
     // Dedicated DISC engine: quantitative, quote-anchored axis scoring (lib/disc.ts)
     // replaces whatever GPT-4o's synthesis put in customerPersonality (a throwaway
-    // placeholder — see lib/analysis.ts). computeCustomerPersonality dispatches
-    // step.ai.infer itself, so — like reasonAboutCall — it can't be nested inside
-    // step.run. Not resume-gated: it's deterministic (temperature 0) given the
-    // already-persisted transcript, so recomputing on a resumed run is cheap and
-    // always safe, unlike the "reason"/"transcribe" stages it doesn't need the
-    // same completed_steps skip-logic.
+    // placeholder — see lib/analysis.ts). computeCustomerPersonality owns its own
+    // "score-disc" step.run internally (a self-consistency ensemble of K parallel
+    // detection passes), so it must NOT be wrapped in another step.run here. Not
+    // resume-gated: given the already-persisted transcript it's cheap and safe to
+    // recompute on a resumed run, so unlike "reason"/"transcribe" it skips the
+    // completed_steps logic.
     result.customerPersonality = await computeCustomerPersonality(transcript, step);
 
     await step.run("complete", async () => {
