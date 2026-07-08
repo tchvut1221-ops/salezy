@@ -82,6 +82,19 @@ export interface AnalysisResult {
     howToSellToThisType?: string[];
     /** מה להימנע מולו */
     redFlags?: string[];
+    /**
+     * True when the quantitative DISC engine (lib/disc.ts) found too few
+     * verified transcript signs to classify confidently. `type`/`confidence`
+     * are still populated (a low-confidence best guess) but the UI should
+     * show a "cannot determine" state instead of the confident headline, and
+     * the flat scores.personalityType snapshot should omit this call.
+     */
+    indeterminate?: boolean;
+    /** Raw 0-18 axis scores from the DISC engine, for transparency in the UI. */
+    discAxes?: {
+      formalInformal: { score: number; signalCount: number };
+      dominantPassive: { score: number; signalCount: number };
+    };
   };
   /** ביצועי איש המכירות */
   salespersonPerformance: {

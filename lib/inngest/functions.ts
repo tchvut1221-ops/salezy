@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { splitIfNeeded, convertToMp3, checkHasSpeech } from "@/lib/audio";
 import { transcribeAudio } from "@/lib/whisper";
 import { reasonAboutCall, synthesizeAnalysis } from "@/lib/analysis";
+import { computeCustomerPersonality } from "@/lib/disc";
 import { needsConversion } from "@/lib/constants";
 
 /**
@@ -253,6 +254,16 @@ export const analyzeCall = inngest.createFunction(
       return synthesizeAnalysis(reasoning);
     });
 
+    // Dedicated DISC engine: quantitative, quote-anchored axis scoring (lib/disc.ts)
+    // replaces whatever GPT-4o's synthesis put in customerPersonality (a throwaway
+    // placeholder — see lib/analysis.ts). computeCustomerPersonality dispatches
+    // step.ai.infer itself, so — like reasonAboutCall — it can't be nested inside
+    // step.run. Not resume-gated: it's deterministic (temperature 0) given the
+    // already-persisted transcript, so recomputing on a resumed run is cheap and
+    // always safe, unlike the "reason"/"transcribe" stages it doesn't need the
+    // same completed_steps skip-logic.
+    result.customerPersonality = await computeCustomerPersonality(transcript, step);
+
     await step.run("complete", async () => {
       // Flat numeric snapshot so the dashboard can aggregate scores without
       // parsing the full `result` blob. Mark the row "v2" only when the model
@@ -264,7 +275,12 @@ export const analyzeCall = inngest.createFunction(
           ? {
               overall,
               ...(perf.scores ?? {}),
-              personalityType: result.customerPersonality.type,
+              // Omit personalityType when the DISC engine couldn't classify
+              // confidently — analytics.ts already skips missing values, so no
+              // downstream dashboard/analytics change is needed for this.
+              ...(result.customerPersonality.indeterminate
+                ? {}
+                : { personalityType: result.customerPersonality.type }),
             }
           : null;
 
