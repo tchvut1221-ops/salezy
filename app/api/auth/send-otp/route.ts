@@ -12,19 +12,19 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * for how the code is redeemed for a real Supabase session.
  */
 export async function POST(req: Request) {
-  const ip = getClientIp(req);
-  if (!(await checkRateLimit(ip, "send"))) {
-    return NextResponse.json(
-      { error: "יותר מדי בקשות. נסה שוב בעוד דקה." },
-      { status: 429 }
-    );
-  }
-
   const body = await req.json().catch(() => null);
   const email =
     typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
   if (!EMAIL_RE.test(email)) {
     return NextResponse.json({ error: "כתובת מייל לא תקינה." }, { status: 400 });
+  }
+
+  const ip = getClientIp(req);
+  if (!(await checkRateLimit("send", { ip, email }))) {
+    return NextResponse.json(
+      { error: "יותר מדי בקשות. נסה שוב בעוד דקה." },
+      { status: 429 }
+    );
   }
 
   const admin = createAdminClient();

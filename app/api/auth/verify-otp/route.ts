@@ -14,14 +14,6 @@ import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
  * our code/email as the front door.
  */
 export async function POST(req: Request) {
-  const ip = getClientIp(req);
-  if (!(await checkRateLimit(ip, "verify"))) {
-    return NextResponse.json(
-      { error: "יותר מדי ניסיונות. נסה שוב בעוד דקה." },
-      { status: 429 }
-    );
-  }
-
   const body = await req.json().catch(() => null);
   const email =
     typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
@@ -31,6 +23,14 @@ export async function POST(req: Request) {
     NextResponse.json({ error: "קוד שגוי או שפג תוקפו." }, { status: 400 });
 
   if (!email || !code) return invalid();
+
+  const ip = getClientIp(req);
+  if (!(await checkRateLimit("verify", { ip, email }))) {
+    return NextResponse.json(
+      { error: "יותר מדי ניסיונות. נסה שוב בעוד דקה." },
+      { status: 429 }
+    );
+  }
 
   const admin = createAdminClient();
   const { data: row } = await admin
