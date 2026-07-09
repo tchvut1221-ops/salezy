@@ -7,6 +7,7 @@ import {
   FORMAL_INFORMAL_PAIRS,
   DOMINANT_PASSIVE_PAIRS,
   STYLE_PROFILES,
+  PERSONALITY_TYPE_META,
   QUADRANT_MAP,
   renderDiscPrompt,
 } from "@/lib/disc-reference";
@@ -275,11 +276,12 @@ export function computeDiscResult(raw: RawDiscSigns, passes = 1): DiscComputatio
     effectiveSignals < MIN_TOTAL_SIGNALS || confidence < INDETERMINATE_CONFIDENCE_FLOOR;
 
   const profile = STYLE_PROFILES[type];
+  const meta = PERSONALITY_TYPE_META[type];
   const responsivenessLabel = responsiveness === "task" ? "ממוקד-משימה" : "ממוקד-אנשים";
   const assertivenessLabel = assertiveness === "high" ? "אסרטיביות גבוהה" : "אסרטיביות נמוכה";
   const explanation = indeterminate
     ? `נמצאו מעט מדי סימנים לשוניים בתמלול (${totalSignals} סה"כ) כדי לקבוע סגנון תקשורת בביטחון.`
-    : `${profile.he} (${profile.colorName}) — זוהה על בסיס ${totalSignals} סימנים לשוניים בתמלול: נטייה ל${responsivenessLabel} (${formalInformalScore}/18) ו${assertivenessLabel} (${dominantPassiveScore}/18).`;
+    : `${meta.he} (${meta.colorName}) — זוהה על בסיס ${totalSignals} סימנים לשוניים בתמלול: נטייה ל${responsivenessLabel} (${formalInformalScore}/18) ו${assertivenessLabel} (${dominantPassiveScore}/18).`;
 
   const signals = [
     ...raw.formalInformalSigns.map((s) => ({

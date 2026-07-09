@@ -1,12 +1,6 @@
 import { Panel, scoreColor } from "./ui";
+import { PERSONALITY_TYPE_META } from "@/lib/disc-reference";
 import type { AnalyticsStats } from "@/lib/analytics";
-
-const PERSONALITY_LABELS: Record<string, string> = {
-  Analytical: "אנליטי",
-  Driver: "תוצאתי",
-  Amiable: "חברותי",
-  Expressive: "אקספרסיבי",
-};
 
 function Metric({
   label,
@@ -61,7 +55,7 @@ export function StatsBar({ stats }: { stats: AnalyticsStats }) {
           : "text-zinc-400";
 
   const personalityText = stats.mostCommonPersonality
-    ? PERSONALITY_LABELS[stats.mostCommonPersonality] ?? stats.mostCommonPersonality
+    ? PERSONALITY_TYPE_META[stats.mostCommonPersonality].he
     : "—";
 
   return (

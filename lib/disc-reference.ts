@@ -69,10 +69,34 @@ export const DOMINANT_PASSIVE_PAIRS: WordPair[] = [
   { pole1: "מתרחב", pole2: "מצטמצם" },
 ];
 
-export interface StyleProfile {
-  /** Hebrew display label — MUST stay in sync with personality-card.tsx's TYPE_META. */
+export interface PersonalityTypeMeta {
+  /** Hebrew display label. */
   he: string;
+  /** Short one-line description for the result-card headline. */
+  tagline: string;
+  /** Hebrew name of the mapped color, from the Red/Yellow/Green/Blue framework Israeli reps know. */
   colorName: string;
+  /** Tailwind dot-color class, keyed to the --color-disc-* tokens in app/globals.css. */
+  dot: string;
+  /** Tailwind text-color class, keyed to the --color-disc-* tokens in app/globals.css. */
+  text: string;
+}
+
+/**
+ * Single source of truth for the 4 PersonalityType Hebrew labels + Red/Yellow/
+ * Green/Blue color mapping. Was previously duplicated independently in
+ * personality-card.tsx's TYPE_META and stats-bar.tsx's PERSONALITY_LABELS, which
+ * had drifted out of sync (e.g. Driver showed "משימתי" on the result card but
+ * "תוצאתי" on the dashboard tile) — both now import this instead.
+ */
+export const PERSONALITY_TYPE_META: Record<PersonalityType, PersonalityTypeMeta> = {
+  Driver: { he: "משימתי", tagline: "תוצאות ושליטה", colorName: "אדום", dot: "bg-disc-d", text: "text-disc-d" },
+  Expressive: { he: "מבטא", tagline: "השפעה ורגש", colorName: "צהוב", dot: "bg-disc-i", text: "text-disc-i" },
+  Amiable: { he: "תומך", tagline: "יחסים ויציבות", colorName: "ירוק", dot: "bg-disc-s", text: "text-disc-s" },
+  Analytical: { he: "אנליטי", tagline: "דיוק ונתונים", colorName: "כחול", dot: "bg-disc-c", text: "text-disc-c" },
+};
+
+export interface StyleProfile {
   /** Positive, actionable guidance for selling to this type. */
   howToCommunicate: string[];
   /** Cautionary "what not to do" items, kept separate from howToCommunicate. */
@@ -88,8 +112,6 @@ export interface StyleProfile {
  */
 export const STYLE_PROFILES: Record<PersonalityType, StyleProfile> = {
   Amiable: {
-    he: "תומך",
-    colorName: "ירוק",
     howToCommunicate: [
       "לשבור את הקרח בתחילת השיחה",
       "להתחבר ברמה רגשית",
@@ -108,8 +130,6 @@ export const STYLE_PROFILES: Record<PersonalityType, StyleProfile> = {
     ],
   },
   Expressive: {
-    he: "מבטא",
-    colorName: "צהוב",
     howToCommunicate: [
       "קצב מהיר",
       "לעזור לו להרגיש טוב בתהליך — גם במכירה וגם בשירות או במוצר עצמו",
@@ -136,8 +156,6 @@ export const STYLE_PROFILES: Record<PersonalityType, StyleProfile> = {
     ],
   },
   Analytical: {
-    he: "אנליטי",
-    colorName: "כחול",
     howToCommunicate: [
       "לדבר תהליך, צעדים, פרטים ונתונים",
       "לצפות שהוא יבקש הרבה נתונים ולאפשר לו לקבל אותם במידה סבירה",
@@ -163,8 +181,6 @@ export const STYLE_PROFILES: Record<PersonalityType, StyleProfile> = {
     ],
   },
   Driver: {
-    he: "משימתי",
-    colorName: "אדום",
     howToCommunicate: [
       "קצר, ענייני",
       "לדבר תוצאות, שורה תחתונה",

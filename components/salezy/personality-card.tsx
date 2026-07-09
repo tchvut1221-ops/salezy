@@ -1,5 +1,6 @@
 import { Panel, Pill, scoreColor } from "./ui";
-import type { AnalysisResult, PersonalityType } from "@/types";
+import { PERSONALITY_TYPE_META as TYPE_META } from "@/lib/disc-reference";
+import type { AnalysisResult } from "@/types";
 
 /**
  * Customer DISC personality. Upgraded from the old type+explanation card to
@@ -8,42 +9,6 @@ import type { AnalysisResult, PersonalityType } from "@/types";
  * per-type selling guidance. Every enriched field is guarded so a legacy
  * analysis (type+explanation only) still renders cleanly.
  */
-
-// Color overlay from the popular 4-type framework Israeli reps know: Red /
-// Yellow / Green / Blue. Derived deterministically from `type` — no schema field.
-const TYPE_META: Record<
-  PersonalityType,
-  { he: string; tagline: string; colorName: string; dot: string; text: string }
-> = {
-  Driver: {
-    he: "משימתי",
-    tagline: "תוצאות ושליטה",
-    colorName: "אדום",
-    dot: "bg-disc-d",
-    text: "text-disc-d",
-  },
-  Expressive: {
-    he: "מבטא",
-    tagline: "השפעה ורגש",
-    colorName: "צהוב",
-    dot: "bg-disc-i",
-    text: "text-disc-i",
-  },
-  Amiable: {
-    he: "תומך",
-    tagline: "יחסים ויציבות",
-    colorName: "ירוק",
-    dot: "bg-disc-s",
-    text: "text-disc-s",
-  },
-  Analytical: {
-    he: "אנליטי",
-    tagline: "דיוק ונתונים",
-    colorName: "כחול",
-    dot: "bg-disc-c",
-    text: "text-disc-c",
-  },
-};
 
 const AXIS_LABEL = {
   assertiveness: { high: "אסרטיביות גבוהה", low: "אסרטיביות נמוכה" },
