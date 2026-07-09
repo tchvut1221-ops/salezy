@@ -137,11 +137,12 @@ export const analyzeCall = inngest.createFunction(
     const row = await step.run("load-analysis", async () => {
       const { data, error } = await admin
         .from("analyses")
-        .select("file_path, transcript, reasoning, completed_steps")
+        .select("user_id, file_path, transcript, reasoning, completed_steps")
         .eq("id", analysisId)
         .single();
       if (error) throw error;
       return data as {
+        user_id: string;
         file_path: string;
         transcript: string | null;
         reasoning: string | null;
@@ -151,6 +152,18 @@ export const analyzeCall = inngest.createFunction(
 
     const initialCompletedSteps = row.completed_steps ?? [];
     const filePath = row.file_path;
+
+    // Defense in depth: app/upload/actions.ts already rejects a file_path
+    // outside the caller's own folder before this event is ever sent, but
+    // this download uses the service-role client (bypasses storage RLS), so
+    // the invariant is re-checked here regardless of how the row was created.
+    if (!filePath.startsWith(`${row.user_id}/`)) {
+      await updateIfNotTerminal(admin, analysisId, {
+        status: "failed",
+        error: "Invalid file path for this analysis.",
+      });
+      return { analysisId, status: "failed" };
+    }
 
     let transcript: string;
     if (initialCompletedSteps.includes("transcribe") && row.transcript) {
