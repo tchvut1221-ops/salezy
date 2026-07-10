@@ -4,6 +4,8 @@ import type { AiAdapter, GetStepTools } from "inngest";
 import { inngest } from "@/lib/inngest/client";
 import type { AnalysisResult, PersonalityType } from "@/types";
 import { SALES_SYSTEM_KNOWLEDGE } from "@/lib/sales-knowledge";
+import { normalizeForMatch, isVerbatimQuote } from "@/lib/verbatim";
+import { computeRepPercentage } from "@/lib/talk-ratio";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -144,7 +146,7 @@ const resultSchema = z.object({
   callMetrics: z
     .object({
       estimatedDurationMinutes: z.number().optional().catch(undefined),
-      talkRatioSalesperson: z.number().optional().catch(undefined),
+      salespersonSpeakerLabel: z.string().optional().catch(undefined),
       energyLevel: z.enum(["low", "medium", "high"]).optional().catch(undefined),
       callPace: z
         .enum(["rushed", "optimal", "slow"])
@@ -241,7 +243,7 @@ export async function reasonAboutCall(
 10. רגעי מפתח — לפחות 3 ציטוטים משמעותיים, כל אחד עם סוג (buying_signal / objection / pain_point / breakthrough) ולמה הוא חשוב.
 11. צעדים הבאים — לפחות 2 פעולות קונקרטיות עם עדיפות (urgent / soon / when-possible) ונימוק.
 12. ציון כולל לשיחה (0-100) לפי ה-rubric.
-13. מדדי שיחה (רק אם ניתן להעריך מהתמלול): משך משוער בדקות, יחס הדיבור של איש המכירות באחוזים (אמוד לפי כמות הדיבור של כל דובר), רמת אנרגיה, קצב, וסנטימנט בתחילת/אמצע/סוף השיחה. אם אי אפשר להעריך מדד מסוים — דלג עליו ואל תנחש.
+13. מדדי שיחה (רק אם ניתן להעריך מהתמלול): משך משוער בדקות, זיהוי איזו תווית דובר (למשל 'דובר 1') היא איש המכירות — על סמך מי מוביל את השיחה, שואל שאלות גילוי, מציג פתרון ומטפל בהתנגדויות (ציין זאת בבירור בטקסט, למשל 'איש המכירות הוא דובר 1'; אם לא ניתן לזהות בבירור — ציין זאת ואל תנחש), רמת אנרגיה, קצב, וסנטימנט בתחילת/אמצע/סוף השיחה. אם אי אפשר להעריך מדד מסוים — דלג עליו ואל תנחש.
 14. כרטיס ביצועים מפורט של איש המכירות (Scorecard) — ניתוח נפרד ומוסף על סעיף 8, אל תמזג אותם. דרג את איש המכירות בנפרד בכל אחת מ-5 הקטגוריות, בסולם 1-5:
    - opening (פתיחה): בניית מערכת יחסים, אג'נדה ברורה, שליטה מקצועית בפתיחת השיחה.
    - discovery (גילוי צרכים): עומק השאלות, האם נחשפו צרכים אמיתיים ולא רק פני שטח.
@@ -324,7 +326,8 @@ ${SALES_SYSTEM_KNOWLEDGE}`;
  * Validates against Zod before returning. Runs inside an Inngest step only.
  */
 export async function synthesizeAnalysis(
-  reasoning: string
+  reasoning: string,
+  transcript: string
 ): Promise<AnalysisResult> {
   const system = `החזר אך ורק JSON תקין (Return ONLY valid JSON) — בלי טקסט לפני או אחרי האובייקט, ובלי עיצוב markdown כמו גדרות קוד (\`\`\`json ... \`\`\`). כל תו מחוץ לאובייקט ה-JSON עצמו ישבור את הפרסור אצלנו.
 
@@ -362,7 +365,7 @@ export async function synthesizeAnalysis(
   ],
   "callMetrics": {
     "estimatedDurationMinutes": 0,
-    "talkRatioSalesperson": 0-100,
+    "salespersonSpeakerLabel": "דובר 1",
     "energyLevel": "low | medium | high",
     "callPace": "rushed | optimal | slow",
     "sentiment": { "start": "positive | neutral | negative", "middle": "positive | neutral | negative", "end": "positive | neutral | negative" }
@@ -394,6 +397,7 @@ export async function synthesizeAnalysis(
 - salespersonScorecard.*.sentiment חייב להיות בדיוק אחד מ: "positive", "neutral", "negative" (באנגלית). salespersonScorecard.*.failurePoint הוא משפט עברית קצר או null — קבע null כשהשלב היה חזק ולא הייתה נקודת כשל.
 - coachingActions.*.priority חייב להיות בדיוק "high", "medium" או "low" (באנגלית). לפחות פריט אחד חייב להיות "high".
 - אל תכלול overallScorecardScore ואל תכלול talkRatio בתוך salespersonScorecard — הם מחושבים אוטומטית מחוץ ל-JSON שלך, אל תמציא אותם.
+- callMetrics.salespersonSpeakerLabel חייב להיות בדיוק כפי שמופיע בתמלול (למשל "דובר 1" או "דובר 2") ורק אם זוהה בבירור בניתוח; אם לא זוהה, השמט את השדה לגמרי ואל תנחש.
 - שמור על נאמנות מוחלטת לניתוח שקיבלת — אל תוסיף מידע שלא נמצא בו.
 - תזכורת אחרונה: החזר אך ורק את אובייקט ה-JSON. בלי גדרות markdown, בלי טקסט הסבר לפני או אחרי. Return ONLY the JSON object — no markdown code fences, no text before or after.`;
 
@@ -446,7 +450,7 @@ export async function synthesizeAnalysis(
     raw.customerPersonality = { type: "Analytical", explanation: "" };
   }
   if (raw?.salespersonScorecard) {
-    raw.salespersonScorecard = normalizeScorecard(raw.salespersonScorecard, raw.callMetrics);
+    raw.salespersonScorecard = normalizeScorecard(raw.salespersonScorecard, raw.callMetrics, transcript);
   }
   return resultSchema.parse(raw);
 }
@@ -528,15 +532,18 @@ const DISC_TYPE_MAP: Record<string, PersonalityType> = {
 };
 
 /**
- * Defensive post-processing for the scorecard, mirroring normalizeDiscType():
+ * Defensive post-processing for the scorecard, mirroring normalizeDiscType()
+ * and DISC's own anti-fabrication gate (lib/disc.ts filterVerbatimSigns):
  * fix up the model's raw output in code before Zod validation, rather than
  * trusting prompt discipline alone for anything fabrication-sensitive or
  * arithmetic.
- *  1. Anti-fabrication: a category score is only valid alongside a non-empty
- *     quote. If the model emits a score with no real quote, null the score.
- *  2. talkRatio is derived entirely from callMetrics.talkRatioSalesperson
- *     (never taken from the model's own guess) so the UI never has to
- *     reconcile two disagreeing "talk ratio" numbers for one call.
+ *  1. Anti-fabrication: a category's score AND quote are both nulled unless
+ *     the quote can actually be found (loosely normalized) in the
+ *     transcript — never trust the model's claim that a quote is verbatim.
+ *  2. talkRatio.repPercentage is computed by counting transcript characters
+ *     per speaker label (lib/talk-ratio.ts), using only the model's
+ *     identification of *which* label is the salesperson — never an LLM
+ *     percentage guess.
  *  3. overallScorecardScore is recomputed as the average of the non-null
  *     category scores — never trusted from the model — eliminating
  *     arithmetic drift on the feature's headline number.
@@ -544,16 +551,22 @@ const DISC_TYPE_MAP: Record<string, PersonalityType> = {
 function normalizeScorecard(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- raw model JSON, shape-checked here then Zod-validated by resultSchema
   raw: any,
-  callMetrics: { talkRatioSalesperson?: number } | undefined
+  callMetrics: { salespersonSpeakerLabel?: string } | undefined,
+  transcript: string
 ): Record<string, unknown> | undefined {
   if (!raw) return undefined;
   const categories = ["opening", "discovery", "pitch", "objectionHandling", "closing"] as const;
 
+  const normalizedTranscript = normalizeForMatch(transcript);
   for (const key of categories) {
     const cat = raw[key];
     if (!cat) continue;
-    const hasRealQuote = typeof cat.quote === "string" && cat.quote.trim().length > 0;
-    if (!hasRealQuote) cat.score = null;
+    const hasRealQuote =
+      typeof cat.quote === "string" && isVerbatimQuote(cat.quote, normalizedTranscript);
+    if (!hasRealQuote) {
+      cat.score = null;
+      cat.quote = null;
+    }
   }
 
   const scores = categories
@@ -564,7 +577,7 @@ function normalizeScorecard(
       ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100
       : null;
 
-  const repPct = callMetrics?.talkRatioSalesperson;
+  const repPct = computeRepPercentage(transcript, callMetrics?.salespersonSpeakerLabel);
   const BENCHMARK = 43;
   const TOLERANCE = 5; // +/-5pp around the benchmark still counts as "optimal"
   if (typeof repPct === "number") {

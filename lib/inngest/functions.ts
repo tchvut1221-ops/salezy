@@ -264,7 +264,7 @@ export const analyzeCall = inngest.createFunction(
     }
 
     const result = await step.run("synthesize", async () => {
-      return synthesizeAnalysis(reasoning);
+      return synthesizeAnalysis(reasoning, transcript);
     });
 
     // Dedicated DISC engine: quantitative, quote-anchored axis scoring (lib/disc.ts)
