@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { GetStepTools } from "inngest";
 import { inngest } from "@/lib/inngest/client";
 import { parseModelJson } from "@/lib/analysis";
+import { normalizeForMatch, isVerbatimQuote } from "@/lib/verbatim";
 import {
   FORMAL_INFORMAL_PAIRS,
   DOMINANT_PASSIVE_PAIRS,
@@ -146,16 +147,6 @@ export async function ensembleDetectSigns(
   return ok.length > 0 ? poolSigns(ok) : EMPTY_RAW_SIGNS;
 }
 
-/** Strips Hebrew niqqud/cantillation and common punctuation for loose substring matching. */
-function normalizeForMatch(s: string): string {
-  return s
-    .normalize("NFKC")
-    .replace(/[֑-ׇ]/g, "")
-    .replace(/["'׳״.,!?;:()\-–—]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 /**
  * Anti-fabrication gate, mirroring normalizeScorecard()'s pattern in
  * lib/analysis.ts: a detected sign is only trusted if its quote can actually be
@@ -164,10 +155,7 @@ function normalizeForMatch(s: string): string {
  */
 function filterVerbatimSigns(raw: RawDiscSigns, transcript: string): RawDiscSigns {
   const normalizedTranscript = normalizeForMatch(transcript);
-  const isVerbatim = (quote: string) => {
-    const q = normalizeForMatch(quote);
-    return q.length >= 2 && normalizedTranscript.includes(q);
-  };
+  const isVerbatim = (quote: string) => isVerbatimQuote(quote, normalizedTranscript);
   return {
     formalInformalSigns: raw.formalInformalSigns.filter((s) => isVerbatim(s.quote)),
     dominantPassiveSigns: raw.dominantPassiveSigns.filter((s) => isVerbatim(s.quote)),
