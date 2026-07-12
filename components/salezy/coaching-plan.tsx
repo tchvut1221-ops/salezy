@@ -22,7 +22,7 @@ export function CoachingPlan({
   return (
     <Panel title="תוכנית אימון לשבוע הקרוב">
       {weeklyFocus && (
-        <div className="mb-5 rounded-[12px] border border-primary/25 bg-primary/5 p-5">
+        <div className="mb-5 rounded-xl border border-primary/25 bg-primary/5 p-5">
           <p className="text-sm font-medium text-primary">היעד המרכזי לשבוע</p>
           <p className="mt-1 text-zinc-100">{weeklyFocus.primaryGoal}</p>
           <p className="mt-2 text-sm text-zinc-400">

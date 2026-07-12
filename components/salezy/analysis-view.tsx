@@ -22,6 +22,7 @@ import {
   DeleteAnalysisButton,
   ResumeAnalysisButton,
 } from "./analysis-actions";
+import { Button, Panel } from "./ui";
 
 const STEPS: { key: AnalysisStatus; label: string }[] = [
   { key: "uploaded", label: "הועלה" },
@@ -119,13 +120,7 @@ export function AnalysisView({ initial }: { initial: Analysis }) {
       <div className="mb-4 flex items-center justify-between gap-3">
         <DeleteAnalysisButton analysisId={initial.id} />
         {isReady && (
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            הורד PDF
-          </button>
+          <Button onClick={() => window.print()}>הורד PDF</Button>
         )}
       </div>
 
@@ -155,13 +150,9 @@ export function AnalysisView({ initial }: { initial: Analysis }) {
                 <ResumeAnalysisButton analysisId={initial.id} />
               </div>
             ) : (
-              <button
-                onClick={onRetry}
-                disabled={retrying}
-                className="mt-4 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
-              >
+              <Button onClick={onRetry} disabled={retrying} className="mt-4">
                 {retrying ? "מתחיל מחדש..." : "נסה שוב"}
-              </button>
+              </Button>
             )}
           </div>
         ) : isReady && analysis.result ? (
@@ -311,12 +302,7 @@ function Result({ result }: { result: NonNullable<Analysis["result"]> }) {
 }
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
-      <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-      <div className="mt-3">{children}</div>
-    </section>
-  );
+  return <Panel title={title}>{children}</Panel>;
 }
 
 function List({ label, items }: { label: string; items: string[] }) {

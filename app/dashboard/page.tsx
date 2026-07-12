@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { computeStats, fetchScorePoints } from "@/lib/analytics";
 import { StatsBar } from "@/components/salezy/stats-bar";
 import { ScoreChart } from "@/components/salezy/score-chart";
-import { Pill, scoreColor } from "@/components/salezy/ui";
+import { Pill, buttonVariants, scoreColor } from "@/components/salezy/ui";
 import { DeleteAnalysisButton } from "@/components/salezy/analysis-actions";
 import type { AnalysisStatus } from "@/types";
 
@@ -79,7 +79,7 @@ export default async function DashboardPage() {
 
       <Link
         href="/upload"
-        className="mt-6 block rounded-lg bg-primary px-4 py-3 text-center font-medium text-primary-foreground transition hover:bg-primary/90"
+        className={`mt-6 w-full ${buttonVariants({ size: "lg" })}`}
       >
         + העלאת שיחה חדשה
       </Link>
@@ -93,7 +93,7 @@ export default async function DashboardPage() {
 
       <div className="mt-8 space-y-3">
         {analyses.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-900/40 px-6 py-10 text-center">
+          <div className="rounded-xl border border-dashed border-zinc-800 bg-zinc-900/40 px-6 py-10 text-center">
             <p className="font-medium text-zinc-200">
               עדיין אין לך ניתוחים — הניתוח הראשון שלך מחכה לקובץ
             </p>
@@ -101,10 +101,7 @@ export default async function DashboardPage() {
               העלה הקלטה של שיחת מכירה ותקבל ניתוח אישיות הלקוח, ציון ביצועים
               מפורט וצעדים הבאים מומלצים — הכל אוטומטית, בתוך דקות.
             </p>
-            <Link
-              href="/upload"
-              className="mt-6 inline-block rounded-lg bg-primary px-4 py-2.5 font-medium text-primary-foreground transition hover:bg-primary/90"
-            >
+            <Link href="/upload" className={`mt-6 ${buttonVariants()}`}>
               העלאת השיחה הראשונה
             </Link>
           </div>

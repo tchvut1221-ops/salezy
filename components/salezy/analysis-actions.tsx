@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { cancelAnalysis, deleteAnalysis, resumeAnalysis } from "@/app/actions";
+import { Button } from "./ui";
 
 /** Shown only while an analysis is still running (next to the progress indicator). */
 export function StopAnalysisButton({ analysisId }: { analysisId: string }) {
@@ -28,14 +29,9 @@ export function StopAnalysisButton({ analysisId }: { analysisId: string }) {
   }
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={pending}
-      className="rounded-lg border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-foreground disabled:opacity-50"
-    >
+    <Button variant="secondary" onClick={onClick} disabled={pending}>
       {pending ? "עוצר..." : "עצור ניתוח"}
-    </button>
+    </Button>
   );
 }
 
@@ -55,14 +51,9 @@ export function ResumeAnalysisButton({ analysisId }: { analysisId: string }) {
   }
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={pending}
-      className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
-    >
+    <Button onClick={onClick} disabled={pending}>
       {pending ? "ממשיך..." : "המשך ניתוח"}
-    </button>
+    </Button>
   );
 }
 
@@ -106,19 +97,16 @@ export function DeleteAnalysisButton({
   }
 
   return (
-    <button
-      type="button"
+    <Button
+      variant="danger"
+      size={compact ? "sm" : "md"}
       onClick={onClick}
       disabled={pending}
       aria-label="מחק ניתוח"
       title="מחק ניתוח"
-      className={
-        compact
-          ? "shrink-0 rounded-lg border border-score-low/30 px-2.5 py-1.5 text-xs font-medium text-score-low transition hover:bg-score-low/10 disabled:opacity-50"
-          : "rounded-lg border border-score-low/30 px-4 py-2 text-sm font-medium text-score-low transition hover:bg-score-low/10 disabled:opacity-50"
-      }
+      className={compact ? "shrink-0" : undefined}
     >
       {compact ? (pending ? "מוחק..." : "מחק") : pending ? "מוחק..." : "מחק ניתוח"}
-    </button>
+    </Button>
   );
 }

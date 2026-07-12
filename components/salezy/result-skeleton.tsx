@@ -26,7 +26,7 @@ export function ResultSkeleton() {
 
 function ExecutiveSummarySkeleton() {
   return (
-    <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
+    <Panel>
       <div className={`h-3 w-24 ${shimmer}`} />
       <div className={`mt-3 h-5 w-full ${shimmer}`} />
       <div className={`mt-2 h-5 w-4/5 ${shimmer}`} />
@@ -35,7 +35,7 @@ function ExecutiveSummarySkeleton() {
         <div className={`h-3 w-32 ${shimmer}`} />
         <div className={`ms-auto h-6 w-24 rounded-full ${shimmer}`} />
       </div>
-    </section>
+    </Panel>
   );
 }
 
@@ -159,7 +159,7 @@ function ScorecardSkeleton() {
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         {[0, 1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="rounded-[12px] border border-zinc-800 bg-zinc-900 p-5">
+          <div key={i} className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
             <div className={`h-4 w-24 ${shimmer}`} />
             <div className="mt-3 flex gap-1.5">
               {[0, 1, 2, 3, 4].map((d) => (
@@ -178,7 +178,7 @@ function ScorecardSkeleton() {
 function CoachingPlanSkeleton() {
   return (
     <Panel title="תוכנית אימון לשבוע הקרוב">
-      <div className={`mb-5 h-20 w-full rounded-[12px] ${shimmer}`} />
+      <div className={`mb-5 h-20 w-full rounded-xl ${shimmer}`} />
       <div className="space-y-3">
         {[0, 1, 2].map((i) => (
           <div key={i} className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4">

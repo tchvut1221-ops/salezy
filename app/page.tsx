@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { buttonVariants } from "@/components/salezy/ui";
 
 const FEATURES = [
   {
@@ -44,7 +45,7 @@ export default async function Home() {
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
             href="/login"
-            className="inline-flex w-full items-center justify-center rounded-lg bg-primary px-8 py-3 text-base font-medium text-primary-foreground transition hover:bg-primary/90 sm:w-auto"
+            className={`w-full sm:w-auto ${buttonVariants({ size: "lg" })}`}
           >
             התחל בחינם
           </Link>
@@ -57,7 +58,7 @@ export default async function Home() {
           {FEATURES.map((f) => (
             <div
               key={f.title}
-              className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6 transition-colors hover:border-zinc-700"
+              className="rounded-xl border border-zinc-800 bg-zinc-900 p-6 transition-colors hover:border-zinc-700"
             >
               <h2 className="text-lg font-semibold text-foreground">{f.title}</h2>
               <p className="mt-2 text-sm leading-relaxed text-zinc-400">
@@ -70,7 +71,7 @@ export default async function Home() {
 
       {/* Social proof */}
       <section className="mx-auto max-w-3xl px-4 py-12">
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900 px-8 py-10 text-center">
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-8 py-10 text-center">
           <p className="text-lg leading-relaxed text-zinc-200">
             מנהלי מכירות כבר משתמשים ב-Salezy לשיפור הביצועים של הצוות שלהם —
             ניתוח אובייקטיבי לכל שיחה, בלי להאזין שעות להקלטות.
@@ -84,10 +85,7 @@ export default async function Home() {
           מוכנים להבין מה קורה בשיחות שלכם?
         </h2>
         <div className="mt-6">
-          <Link
-            href="/login"
-            className="inline-flex items-center justify-center rounded-lg bg-primary px-8 py-3 text-base font-medium text-primary-foreground transition hover:bg-primary/90"
-          >
+          <Link href="/login" className={buttonVariants({ size: "lg" })}>
             התחל בחינם
           </Link>
         </div>

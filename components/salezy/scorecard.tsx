@@ -53,7 +53,7 @@ function CategoryCard({
   const meta = CATEGORY_META[categoryKey];
   const Icon = meta.icon;
   return (
-    <div className="rounded-[12px] border border-zinc-800 bg-zinc-900 p-5">
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
       <div className="flex items-center gap-2">
         <Icon className="h-4 w-4 text-zinc-500" strokeWidth={1.5} />
         <span className="font-medium text-zinc-200">{meta.label}</span>
@@ -85,13 +85,13 @@ function CategoryCard({
 function TalkRatioCard({ talkRatio }: { talkRatio: Scorecard["talkRatio"] }) {
   if (!talkRatio) {
     return (
-      <div className="flex items-center justify-center rounded-[12px] border border-zinc-800 bg-zinc-900 p-5 text-center text-sm text-zinc-500 sm:col-span-2">
+      <div className="flex items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 p-5 text-center text-sm text-zinc-500 sm:col-span-2">
         לא ניתן היה להעריך יחס דיבור לשיחה זו
       </div>
     );
   }
   return (
-    <div className="rounded-[12px] border border-zinc-800 bg-zinc-900 p-5 sm:col-span-2">
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5 sm:col-span-2">
       <div className="flex items-baseline justify-between">
         <span className="font-medium text-zinc-200">יחס דיבור / הקשבה</span>
         <span dir="ltr" className="font-mono text-3xl font-bold tabular-nums text-primary">
@@ -152,7 +152,7 @@ export function Scorecard({ scorecard }: { scorecard: Scorecard }) {
       </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
-        <div className="rounded-[12px] border border-score-high/25 bg-score-high/5 p-5">
+        <div className="rounded-xl border border-score-high/25 bg-score-high/5 p-5">
           <p className="mb-2 text-sm font-medium text-score-high">חוזקות</p>
           <ul className="space-y-1.5 text-sm text-zinc-300">
             {scorecard.strengths.map((s, i) => (
@@ -160,7 +160,7 @@ export function Scorecard({ scorecard }: { scorecard: Scorecard }) {
             ))}
           </ul>
         </div>
-        <div className="rounded-[12px] border border-score-low/25 bg-score-low/5 p-5">
+        <div className="rounded-xl border border-score-low/25 bg-score-low/5 p-5">
           <p className="mb-2 text-sm font-medium text-score-low">תחומים לשיפור</p>
           <ul className="space-y-1.5 text-sm text-zinc-300">
             {scorecard.improvementAreas.map((s, i) => (

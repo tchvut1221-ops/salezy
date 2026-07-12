@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Button } from "@/components/salezy/ui";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -61,7 +62,7 @@ export default function LoginPage() {
 
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-16">
-      <div className="w-full max-w-sm rounded-2xl border border-zinc-800 bg-zinc-900 p-8">
+      <div className="w-full max-w-sm rounded-xl border border-zinc-800 bg-zinc-900 p-8">
         <h1 className="text-2xl font-bold text-foreground">התחברות</h1>
         <p className="mt-1 text-sm text-zinc-400">
           {step === "email"
@@ -80,13 +81,9 @@ export default function LoginPage() {
               placeholder="you@example.com"
               className="w-full rounded-lg border border-zinc-700 bg-elevated px-4 py-2.5 font-mono text-foreground placeholder-zinc-500 outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-ring/40"
             />
-            <button
-              type="submit"
-              disabled={status === "sending"}
-              className="w-full rounded-lg bg-primary px-4 py-2.5 font-medium text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
-            >
+            <Button type="submit" disabled={status === "sending"} className="w-full">
               {status === "sending" ? "שולח..." : "שלח לי קוד"}
-            </button>
+            </Button>
             {status === "error" && (
               <p className="text-sm text-score-low">{message}</p>
             )}
@@ -105,23 +102,19 @@ export default function LoginPage() {
               placeholder="קוד מהמייל"
               className="w-full rounded-lg border border-zinc-700 bg-elevated px-4 py-2.5 text-center font-mono text-lg tracking-widest text-foreground placeholder-zinc-500 outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-ring/40"
             />
-            <button
+            <Button
               type="submit"
               disabled={status === "sending" || otp.length === 0}
-              className="w-full rounded-lg bg-primary px-4 py-2.5 font-medium text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
+              className="w-full"
             >
               {status === "sending" ? "מאמת..." : "אישור"}
-            </button>
+            </Button>
             {status === "error" && (
               <p className="text-sm text-score-low">{message}</p>
             )}
-            <button
-              type="button"
-              onClick={handleChangeEmail}
-              className="w-full text-center text-sm text-zinc-400 transition-colors hover:text-foreground"
-            >
+            <Button variant="ghost" onClick={handleChangeEmail} className="w-full">
               שינוי כתובת מייל
-            </button>
+            </Button>
           </form>
         )}
       </div>

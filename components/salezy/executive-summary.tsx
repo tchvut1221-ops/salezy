@@ -1,4 +1,4 @@
-import { Pill } from "./ui";
+import { Panel, Pill } from "./ui";
 
 const ACHIEVED = {
   yes: { label: "המטרה הושגה", tone: "positive" },
@@ -20,7 +20,7 @@ export function ExecutiveSummary({
   achieved?: "yes" | "partial" | "no";
 }) {
   return (
-    <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
+    <Panel>
       <p className="text-xs font-medium uppercase text-zinc-500">
         סיכום השיחה
       </p>
@@ -41,6 +41,6 @@ export function ExecutiveSummary({
           )}
         </div>
       )}
-    </section>
+    </Panel>
   );
 }
