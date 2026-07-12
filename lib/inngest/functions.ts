@@ -191,9 +191,14 @@ export const analyzeCall = inngest.createFunction(
       };
       const analysisId = failure.data.event.data.analysisId;
       const admin = createAdminClient();
+      // Raw upstream error (OpenAI/Anthropic/Runpod/ffmpeg) stays server-side
+      // only — this row's `error` column is selected with select("*") and
+      // shipped to the owning client, so it must never carry provider
+      // internals, only a safe generic message.
+      console.error(`[analyzeCall] analysis ${analysisId} failed:`, failure.data.error?.message);
       await updateIfNotTerminal(admin, analysisId, {
         status: "failed",
-        error: failure.data.error?.message ?? "אירעה שגיאה בעיבוד",
+        error: "אירעה שגיאה בעיבוד",
       });
     },
   },
