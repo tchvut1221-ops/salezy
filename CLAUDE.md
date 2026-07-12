@@ -9,7 +9,7 @@
 - Analysis (hybrid): Claude Sonnet 4.6 reasons → GPT-4o formats to JSON (Zod-validated). Sales-domain knowledge injected from `lib/sales-knowledge.ts`
 - Audio conversion: non-mp3/wav uploads are converted to 16kHz mono mp3 with ffmpeg (inside Inngest)
 - Charts: Recharts (dashboard score trend, `components/salezy/score-chart.tsx`)
-- Auth: Magic Link via Supabase Auth
+- Auth: custom OTP (8-digit code generated server-side, emailed via Resend, redeemed for a real Supabase session — see `app/api/auth/send-otp`/`verify-otp`)
 - Deployment: Vercel
 
 ## Architecture Rules
@@ -33,15 +33,18 @@
 - Loading states on every async action
 - User-facing text in Hebrew
 
-## Current MVP Scope
-1. Public landing page (`app/page.tsx`) → magic-link login → upload audio file → store in Supabase Storage
-2. Inngest pipeline: convert (if needed) → transcribe with ivrit.ai on Runpod (OpenAI `gpt-4o-transcribe-diarize` fallback) → reason with Claude Sonnet 4.6 → synthesize to JSON with GPT-4o (Zod-validated against `AnalysisResult`)
+## Current Scope
+1. Public landing page (`app/page.tsx`) → OTP login → upload audio file → store in Supabase Storage
+2. Inngest pipeline: convert (if needed) → transcribe with ivrit.ai on Runpod (OpenAI `gpt-4o-transcribe-diarize` fallback) → reason with Claude Sonnet 4.6 → synthesize to JSON with GPT-4o (Zod-validated against `AnalysisResult`) → DISC customer-personality scoring (dedicated quantitative engine, `lib/disc.ts` — not LLM-holistic)
 3. Analysis output — v1 core (always present): customer personality type / salesperson performance / customer needs. v2 enriched fields (present when the model produces them; UI degrades gracefully if absent): executive summary, overall score + 4 sub-scores, deal stage, buying signals, competitors, objections with handling score, key moments, prioritized next steps, call metrics
-4. Display results in `/analysis/[id]` via `components/salezy/analysis-view.tsx` — rotating status messages + skeleton screens while processing, premium v2 cards (or legacy 3-card fallback) on completion
-5. Dashboard (`/dashboard`) — stats bar + score-trend chart (`lib/analytics.ts`, `components/salezy/stats-bar.tsx`, `score-chart.tsx`) aggregated from each analysis's flat `scores` snapshot, plus the analysis list
+4. Salesperson Scorecard — 6 quote-anchored categories (opening/discovery/pitch/objectionHandling/closing/talkRatio), verbatim-verified against the transcript, plus a weekly Coaching Plan (`components/salezy/scorecard.tsx`, `coaching-plan.tsx`)
+5. Stage Analysis — chronological 5-stage timeline with per-stage sentiment + failure point (`components/salezy/stage-analysis.tsx`)
+6. Display results in `/analysis/[id]` via `components/salezy/analysis-view.tsx` — rotating status messages + skeleton screens while processing, premium v2 cards (or legacy 3-card fallback) on completion
+7. Dashboard (`/dashboard`) — stats bar + score-trend chart (`lib/analytics.ts`, `components/salezy/stats-bar.tsx`, `score-chart.tsx`) aggregated from each analysis's flat `scores` snapshot, plus the analysis list
+8. Patterns (`/patterns`) — deterministic pattern detection across a user's scored calls (3+ call gate), `lib/patterns.ts`
 
 ## What NOT to build yet
-- Real-time recording, mobile app, Zoom integration, team features, payments, PDF export
+- Real-time recording, mobile app, Zoom integration, team features, payments
 
 ## Agents (.claude/commands/)
 Invoke agents with `/agent-name [task]` — the Planner routes tasks to the right agent.
