@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Salezy
 
-## Getting Started
+Hebrew B2B sales-call analyzer. Upload a recording, get an AI-generated analysis: customer DISC personality, a quote-anchored salesperson scorecard across 6 categories, a per-stage timeline, a weekly coaching plan, and trend detection across a user's call history.
 
-First, run the development server:
+## Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Next.js 16 (App Router, Turbopack) + React 19 + TypeScript
+- Supabase — Postgres (RLS on every table), Auth, Storage
+- Inngest — background pipeline (transcribe → reason → synthesize → score)
+- Transcription: ivrit.ai/whisper-large-v3 + pyannote on Runpod (primary), OpenAI `gpt-4o-transcribe-diarize` (fallback)
+- Analysis: Claude Sonnet reasons → GPT-4o formats to JSON (Zod-validated)
+- Auth: custom OTP via Resend (not Supabase's built-in email auth)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+See `CLAUDE.md` for the full architecture reference, `PRODUCT.md` for product vision, `DESIGN.md` for the visual design system, `docs/OPS.md` for migration/deployment operations.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Local development
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Copy the required env vars into `.env.local` (get real values from the project owner — none of these should ever be committed):
 
-## Learn More
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=
+   SUPABASE_SERVICE_KEY=
+   OPENAI_API_KEY=
+   ANTHROPIC_API_KEY=
+   RESEND_API_KEY=
+   INNGEST_SIGNING_KEY=
+   INNGEST_EVENT_KEY=
+   RUNPOD_API_KEY=
+   RUNPOD_ENDPOINT_ID=
+   RUNPOD_BASE_URL=
+   TRANSCRIPTION_PROVIDER=
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+2. Apply any pending migrations in `supabase/migrations/` (Supabase SQL Editor — see `docs/OPS.md` for the current apply order).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+3. Run the dev server and the local Inngest dev server (both configured in `.claude/launch.json`):
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+   ```bash
+   npm run dev
+   npx inngest-cli@latest dev -u http://localhost:3000/api/inngest
+   ```
 
-## Deploy on Vercel
+4. Open [http://localhost:3000](http://localhost:3000).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Deployment
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+GitHub-linked to Vercel — pushing to `main` auto-deploys to production. See `docs/OPS.md` before pushing anything that depends on a new migration.
