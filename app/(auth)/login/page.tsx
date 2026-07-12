@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/salezy/ui";
@@ -14,6 +15,10 @@ export default function LoginPage() {
 
   async function handleSendCode(e: React.FormEvent) {
     e.preventDefault();
+    // The checkbox below is `required`, so the browser already blocks
+    // getting here at all with it unchecked — reaching handleSendCode is
+    // itself proof of consent for the record app/api/auth/verify-otp
+    // writes on successful login.
     setStatus("sending");
     setMessage("");
 
@@ -81,6 +86,24 @@ export default function LoginPage() {
               placeholder="you@example.com"
               className="w-full rounded-lg border border-zinc-700 bg-elevated px-4 py-2.5 font-mono text-foreground placeholder-zinc-500 outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-ring/40"
             />
+            <label className="flex items-start gap-2 text-xs leading-relaxed text-zinc-400">
+              <input
+                type="checkbox"
+                required
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-zinc-600 bg-elevated text-primary focus:ring-2 focus:ring-ring/40"
+              />
+              <span>
+                קראתי ואני מסכים/ה ל
+                <Link href="/terms" target="_blank" className="text-primary underline underline-offset-2">
+                  תנאי השימוש
+                </Link>{" "}
+                ול
+                <Link href="/privacy" target="_blank" className="text-primary underline underline-offset-2">
+                  מדיניות הפרטיות
+                </Link>
+                , לרבות אחריותי לכך שהקלטות שאני מעלה נעשו כדין.
+              </span>
+            </label>
             <Button type="submit" disabled={status === "sending"} className="w-full">
               {status === "sending" ? "שולח..." : "שלח לי קוד"}
             </Button>

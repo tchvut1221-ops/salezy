@@ -16,13 +16,25 @@ Current migrations on `main`:
 0007_add_cancelled_status.sql
 0008_add_resume_support.sql
 0009_otp_rate_limit_email.sql
+<<<<<<< HEAD
 0010_retention.sql
+=======
+0011_consent_log.sql
+>>>>>>> feat/a4-legal
 0012_add_runpod_job_ids.sql
 0013_add_transcription_provider.sql
 0014_harden_recordings_bucket.sql
 ```
 
+<<<<<<< HEAD
 **`0011` is intentionally missing** — reserved for the consent-log migration of the security/legal plan (`0010` was the other reserved slot, now filled by the retention migration). This is expected, not a bug; do not renumber `0012`/`0013`/`0014` down to fill the gap. Note `0010` merged *after* `0012`-`0014` — numeric order still holds for fresh environments (they're independent), but on the live DB it is applied later.
+=======
+**`0010` is intentionally missing** — reserved for a retention-lifecycle migration on a separate, concurrently-developed branch of the same security/legal plan (not yet merged here). `0011` above is this plan's own migration (consent_log). This is expected, not a bug; do not renumber `0012`/`0013`/`0014` down to fill the gap.
+
+### Pending: apply `0011` with the legal-docs deploy
+
+`0011_consent_log.sql` (adds the `consent_log` table — service-role-only RLS, same convention as `otp_codes`) must be applied in the Supabase SQL Editor **before or together with** deploying this branch — `app/api/auth/verify-otp/route.ts`'s `recordConsentIfNew` references the table (best-effort/non-fatal on failure, but it should still succeed in production).
+>>>>>>> feat/a4-legal
 
 `0012` and `0013` were applied via the Supabase SQL Editor on 2026-07-10, same day they merged.
 
