@@ -22,6 +22,7 @@ Price: 200 NIS/month subscription.
 8. Key moments (buying signals / objections / pain points / breakthroughs) with quotes
 9. Prioritized next steps (urgent / soon / when possible) with reasoning
 10. Dashboard trend — score-per-call chart + aggregate stats (call count, average score, improvement, dominant personality type) across all of a user's analyses
+11. Salesperson Scorecard + coaching — a deliberate shift from "call analyzer" to "sales coach": 6 quote-anchored categories (opening/discovery/pitch/objection handling/closing/talk ratio) grading the SALESPERSON (not just profiling the customer), a weekly coaching plan, a per-call Stage Analysis timeline (sentiment + failure point per stage), and a Patterns page surfacing recurring trends once a user has 3+ scored calls. Customer-personality classification (item 1) now runs on a dedicated quantitative DISC engine (word-pair method) rather than being inferred holistically by the LLM.
 
 ## Revenue Milestones
 - Stage 1: 3,000 NIS/month (15 paying users)
