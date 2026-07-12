@@ -106,14 +106,15 @@ export default async function DashboardPage() {
             </Link>
           </div>
         ) : (
-          analyses.map((a) => {
+          analyses.map((a, i) => {
             const score = a.scores?.overall;
             const sc =
               typeof score === "number" ? scoreColor(score) : null;
             return (
               <div
                 key={a.id}
-                className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3.5 transition hover:border-zinc-700 sm:px-5 sm:py-4"
+                className="animate-fade-up flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3.5 transition hover:border-zinc-700 hover:bg-zinc-800/40 sm:px-5 sm:py-4"
+                style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
               >
                 <Link
                   href={`/analysis/${a.id}`}

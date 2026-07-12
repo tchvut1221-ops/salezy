@@ -231,72 +231,102 @@ function Result({ result }: { result: NonNullable<Analysis["result"]> }) {
       (k) => scorecard[k]?.sentiment != null || scorecard[k]?.failurePoint != null
     );
 
+  // Fixed per-slot delays (not renumbered when a card is hidden) — a
+  // decorative stagger, not worth recomputing indices for conditionally
+  // rendered cards. A hidden leading card just means the next one starts
+  // its animation slightly later than 0ms, which reads fine in practice.
+  const DELAY = (step: number) => ({ animationDelay: `${step * 40}ms` });
+
   return (
     <div className="mt-8 space-y-5">
       {/* ── v2 enriched cards — each guarded on its own data so v1-only results
           (no v2 fields at all) render none of this and fall through cleanly
           to the original 3-card view below. ── */}
       {result.executiveSummary && (
-        <ExecutiveSummary
-          summary={result.executiveSummary}
-          callObjective={result.callObjective}
-          achieved={result.callObjectiveAchieved}
-        />
+        <div className="animate-fade-up" style={DELAY(0)}>
+          <ExecutiveSummary
+            summary={result.executiveSummary}
+            callObjective={result.callObjective}
+            achieved={result.callObjectiveAchieved}
+          />
+        </div>
       )}
 
       {typeof overallScore === "number" && (
-        <ScoreGauge
-          overall={overallScore}
-          scores={result.salespersonPerformance.scores}
-        />
+        <div className="animate-fade-up" style={DELAY(1)}>
+          <ScoreGauge
+            overall={overallScore}
+            scores={result.salespersonPerformance.scores}
+          />
+        </div>
       )}
 
       {hasDealIntelligence && (
-        <DealIntelligence
-          dealStage={result.dealStage}
-          buyingSignals={result.buyingSignals}
-          competitors={result.competitorsMentioned}
-        />
+        <div className="animate-fade-up" style={DELAY(2)}>
+          <DealIntelligence
+            dealStage={result.dealStage}
+            buyingSignals={result.buyingSignals}
+            competitors={result.competitorsMentioned}
+          />
+        </div>
       )}
 
       {result.objections && result.objections.length > 0 && (
-        <ObjectionTracker objections={result.objections} />
+        <div className="animate-fade-up" style={DELAY(3)}>
+          <ObjectionTracker objections={result.objections} />
+        </div>
       )}
 
       {result.keyMoments && result.keyMoments.length > 0 && (
-        <KeyMoments moments={result.keyMoments} />
+        <div className="animate-fade-up" style={DELAY(4)}>
+          <KeyMoments moments={result.keyMoments} />
+        </div>
       )}
 
       {result.nextSteps && result.nextSteps.length > 0 && (
-        <NextSteps steps={result.nextSteps} />
+        <div className="animate-fade-up" style={DELAY(5)}>
+          <NextSteps steps={result.nextSteps} />
+        </div>
       )}
 
       {hasStageAnalysis && scorecard && (
-        <StageAnalysis scorecard={scorecard} />
+        <div className="animate-fade-up" style={DELAY(6)}>
+          <StageAnalysis scorecard={scorecard} />
+        </div>
       )}
 
       {result.salespersonScorecard && (
-        <Scorecard scorecard={result.salespersonScorecard} />
+        <div className="animate-fade-up" style={DELAY(7)}>
+          <Scorecard scorecard={result.salespersonScorecard} />
+        </div>
       )}
 
       {(result.coachingActions?.length || result.weeklyFocus) && (
-        <CoachingPlan actions={result.coachingActions} weeklyFocus={result.weeklyFocus} />
+        <div className="animate-fade-up" style={DELAY(8)}>
+          <CoachingPlan actions={result.coachingActions} weeklyFocus={result.weeklyFocus} />
+        </div>
       )}
 
       {/* ── v1 core — always present. The personality card self-degrades when the
           enriched DISC fields are absent (legacy analyses). ── */}
-      <PersonalityCard personality={result.customerPersonality} />
+      <div className="animate-fade-up" style={DELAY(9)}>
+        <PersonalityCard personality={result.customerPersonality} />
+      </div>
 
-      <Card title="ביצועי איש המכירות">
-        <List label="מה עבד" items={result.salespersonPerformance.whatWorked} />
-        <List label="מה פספס" items={result.salespersonPerformance.whatDidnt} />
-        <List label="טיפים" items={result.salespersonPerformance.tips} />
-      </Card>
+      <div className="animate-fade-up" style={DELAY(10)}>
+        <Card title="ביצועי איש המכירות">
+          <List label="מה עבד" items={result.salespersonPerformance.whatWorked} />
+          <List label="מה פספס" items={result.salespersonPerformance.whatDidnt} />
+          <List label="טיפים" items={result.salespersonPerformance.tips} />
+        </Card>
+      </div>
 
-      <Card title="צרכי הלקוח">
-        <List label="גלוי" items={result.customerNeeds.explicit} />
-        <List label="סמוי" items={result.customerNeeds.implicit} />
-      </Card>
+      <div className="animate-fade-up" style={DELAY(11)}>
+        <Card title="צרכי הלקוח">
+          <List label="גלוי" items={result.customerNeeds.explicit} />
+          <List label="סמוי" items={result.customerNeeds.implicit} />
+        </Card>
+      </div>
     </div>
   );
 }
