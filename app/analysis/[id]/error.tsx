@@ -1,0 +1,42 @@
+"use client";
+
+import { useEffect } from "react";
+import Link from "next/link";
+
+export default function AnalysisError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  useEffect(() => {
+    console.error(error);
+  }, [error]);
+
+  return (
+    <main className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center px-4 py-16 text-center">
+      <div className="w-full rounded-2xl border border-zinc-800 bg-zinc-900 p-8">
+        <h1 className="text-xl font-bold text-foreground">לא הצלחנו לטעון את הניתוח</h1>
+        <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+          נתקלנו בתקלה בלתי צפויה בטעינת השיחה הזו. אפשר לנסות שוב — ואם זה
+          חוזר, חזרו לדשבורד.
+        </p>
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <button
+            onClick={reset}
+            className="rounded-lg bg-primary px-4 py-2.5 font-medium text-primary-foreground transition hover:bg-primary/90"
+          >
+            נסה שוב
+          </button>
+          <Link
+            href="/dashboard"
+            className="rounded-lg border border-zinc-700 px-4 py-2.5 font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-foreground"
+          >
+            חזרה לדשבורד
+          </Link>
+        </div>
+      </div>
+    </main>
+  );
+}
