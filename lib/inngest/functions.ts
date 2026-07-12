@@ -296,6 +296,7 @@ export const analyzeCall = inngest.createFunction(
             jobId,
             chunkIndex,
           }));
+          await persistProgress(admin, analysisId, { runpod_job_ids: records });
           console.log(
             `[transcribe] analysis ${analysisId}: submitted ${records.length} ivrit job(s): ${records.map((r) => r.jobId).join(", ")}`
           );
@@ -337,6 +338,7 @@ export const analyzeCall = inngest.createFunction(
             );
             const cfg = loadTranscriptionConfig();
             await cancelRunpodJobs(records, cfg);
+            await persistProgress(admin, analysisId, { runpod_job_ids: null });
           });
           const fallback = await step.run("transcribe-openai-fallback", async () => {
             const prep = await prepareAudio(admin, analysisId, filePath);
@@ -368,6 +370,7 @@ export const analyzeCall = inngest.createFunction(
           await persistProgress(admin, analysisId, {
             transcript: result.text,
             transcription_provider: result.provider,
+            runpod_job_ids: null,
             completed_steps: [...initialCompletedSteps, "transcribe"],
           });
         });
