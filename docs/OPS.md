@@ -16,25 +16,14 @@ Current migrations on `main`:
 0007_add_cancelled_status.sql
 0008_add_resume_support.sql
 0009_otp_rate_limit_email.sql
-<<<<<<< HEAD
 0010_retention.sql
-=======
 0011_consent_log.sql
->>>>>>> feat/a4-legal
 0012_add_runpod_job_ids.sql
 0013_add_transcription_provider.sql
 0014_harden_recordings_bucket.sql
 ```
 
-<<<<<<< HEAD
-**`0011` is intentionally missing** — reserved for the consent-log migration of the security/legal plan (`0010` was the other reserved slot, now filled by the retention migration). This is expected, not a bug; do not renumber `0012`/`0013`/`0014` down to fill the gap. Note `0010` merged *after* `0012`-`0014` — numeric order still holds for fresh environments (they're independent), but on the live DB it is applied later.
-=======
-**`0010` is intentionally missing** — reserved for a retention-lifecycle migration on a separate, concurrently-developed branch of the same security/legal plan (not yet merged here). `0011` above is this plan's own migration (consent_log). This is expected, not a bug; do not renumber `0012`/`0013`/`0014` down to fill the gap.
-
-### Pending: apply `0011` with the legal-docs deploy
-
-`0011_consent_log.sql` (adds the `consent_log` table — service-role-only RLS, same convention as `otp_codes`) must be applied in the Supabase SQL Editor **before or together with** deploying this branch — `app/api/auth/verify-otp/route.ts`'s `recordConsentIfNew` references the table (best-effort/non-fatal on failure, but it should still succeed in production).
->>>>>>> feat/a4-legal
+`0010` (retention: `analyses.audio_deleted_at` + purge indexes) and `0011` (`consent_log` table) were both reserved slots from the same security/legal plan, developed on separate branches and merged back to back. Both have been applied in the Supabase SQL Editor (confirmed by the user before each branch's merge, per this plan's rule of applying a migration before/with the deploy that depends on it — see the general rule below).
 
 `0012` and `0013` were applied via the Supabase SQL Editor on 2026-07-10, same day they merged.
 
@@ -43,10 +32,6 @@ Current migrations on `main`:
 `0014_harden_recordings_bucket.sql` (MIME type + size limit on the `recordings` storage bucket) has not been applied yet.
 
 **General rule, reconfirmed twice today:** a migration file existing and being merged is not the same as the fix being live — code that depends on a new column/policy can `throw` (not just degrade) if deployed before the migration is actually applied. Apply migrations before or as part of the same deploy, not after. (See `otp_rate_limits.email` earlier today for the fail-open case, and the ivrit `runpod_job_ids`/`transcription_provider` columns for the fail-throw case — both traced to this same root cause.)
-
-### Pending: apply `0010` with the retention deploy
-
-`0010_retention.sql` (adds `analyses.audio_deleted_at` + purge indexes) must be applied in the Supabase SQL Editor **before or together with** deploying the retention branch — the nightly sweep (`lib/inngest/retention.ts`), the retry/resume guards (`app/actions.ts`), and the analysis page all reference the new column. Before the first live sweep, run the read-only report `npx tsx --env-file=.env.local scripts/retention-dryrun.ts` to see exactly which recordings it will delete.
 
 ## Data retention
 
