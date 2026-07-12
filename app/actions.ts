@@ -23,11 +23,12 @@ export async function signOut() {
 }
 
 /**
- * Re-runs the pipeline for an analysis that previously `failed`. The original
- * upload still lives in Storage (file_path), so we just reset the row to a clean
- * "uploaded" state, clear the error, and re-emit the Inngest event. Ownership is
- * verified server-side; RLS on the UPDATE is the real guard, the user_id check
- * is defense-in-depth.
+ * Re-runs the pipeline for an analysis that previously `failed` or
+ * `no_speech_detected`. The original upload still lives in Storage
+ * (file_path), so we just reset the row to a clean "uploaded" state, clear
+ * the error, and re-emit the Inngest event. Ownership is verified
+ * server-side; RLS on the UPDATE is the real guard, the user_id check is
+ * defense-in-depth.
  */
 export async function retryAnalysis(analysisId: string) {
   const supabase = await createClient();
@@ -44,6 +45,9 @@ export async function retryAnalysis(analysisId: string) {
 
   if (error || !data || data.user_id !== user.id) {
     throw new Error("Analysis not found");
+  }
+  if (data.status !== "failed" && data.status !== "no_speech_detected") {
+    throw new Error("Analysis is not in a retryable state");
   }
 
   const { error: updateError } = await supabase
