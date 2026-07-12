@@ -1,4 +1,5 @@
 import { Panel } from "./ui";
+import { OBJECTION_SCORE_ICON, ICON_STROKE_WIDTH } from "./icons";
 import type { ObjectionScore } from "@/types";
 
 const SCORE_META: Record<ObjectionScore, { label: string; cls: string }> = {
@@ -40,14 +41,16 @@ export function ObjectionTracker({
           <tbody className="divide-y divide-zinc-800">
             {objections.map((o, i) => {
               const meta = SCORE_META[o.score];
+              const Icon = OBJECTION_SCORE_ICON[o.score];
               return (
                 <tr key={i} className="align-top">
                   <td className="px-4 py-3 text-zinc-200">{o.objection}</td>
                   <td className="px-4 py-3 text-zinc-400">{o.howHandled}</td>
                   <td className="px-4 py-3">
                     <span
-                      className={`inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs ring-1 ring-inset ${meta.cls}`}
+                      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs ring-1 ring-inset ${meta.cls}`}
                     >
+                      <Icon className="h-3.5 w-3.5" strokeWidth={ICON_STROKE_WIDTH} />
                       {meta.label}
                     </span>
                   </td>

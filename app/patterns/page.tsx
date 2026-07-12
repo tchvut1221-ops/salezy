@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getPatternsData } from "@/lib/patterns";
 import { PatternsView } from "@/components/salezy/patterns-view";
@@ -16,8 +17,13 @@ export default async function PatternsPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 sm:py-12">
-      <Link href="/dashboard" className="text-sm text-zinc-400 hover:text-foreground">
-        ← חזרה לדשבורד
+      <Link
+        href="/dashboard"
+        className="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-foreground"
+      >
+        {/* RTL back — DESIGN.md: "back points right" */}
+        <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
+        חזרה לדשבורד
       </Link>
       <h1 className="mt-2 text-2xl font-bold text-foreground">דפוסים וזיהוי מגמות</h1>
 

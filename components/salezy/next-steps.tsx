@@ -1,4 +1,5 @@
 import { Panel } from "./ui";
+import { NEXT_STEP_PRIORITY_ICON, ICON_STROKE_WIDTH } from "./icons";
 import type { NextStepPriority } from "@/types";
 
 const PRIORITY_META: Record<
@@ -33,6 +34,7 @@ export function NextSteps({
       <ul className="space-y-3">
         {steps.map((s, i) => {
           const meta = PRIORITY_META[s.priority];
+          const Icon = NEXT_STEP_PRIORITY_ICON[s.priority];
           return (
             <li
               key={i}
@@ -43,8 +45,9 @@ export function NextSteps({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="font-medium text-zinc-100">{s.action}</p>
                   <span
-                    className={`inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs ring-1 ring-inset ${meta.cls}`}
+                    className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs ring-1 ring-inset ${meta.cls}`}
                   >
+                    <Icon className="h-3.5 w-3.5" strokeWidth={ICON_STROKE_WIDTH} />
                     {meta.label}
                   </span>
                 </div>
