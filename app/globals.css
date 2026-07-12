@@ -172,4 +172,37 @@
   .tabular-nums {
     font-feature-settings: "tnum";
   }
+
+  /*
+    Scoped typography for the legal pages (privacy/terms/DPA) — plain semantic
+    HTML (h2/h3/p/ul/table) inside a `.legal-prose` wrapper, styled here rather
+    than pulling in a typography plugin for three static documents.
+  */
+  .legal-prose h2 {
+    @apply mt-10 text-xl font-semibold text-foreground first:mt-0;
+  }
+  .legal-prose h3 {
+    @apply mt-6 text-base font-semibold text-foreground;
+  }
+  .legal-prose p {
+    @apply mt-3 text-sm leading-relaxed text-zinc-300;
+  }
+  .legal-prose ul {
+    @apply mt-3 list-inside list-disc space-y-1.5 text-sm leading-relaxed text-zinc-300;
+  }
+  .legal-prose strong {
+    @apply font-semibold text-foreground;
+  }
+  .legal-prose a {
+    @apply text-primary underline underline-offset-2;
+  }
+  .legal-prose table {
+    @apply mt-4 w-full border-collapse overflow-hidden rounded-lg text-sm;
+  }
+  .legal-prose th {
+    @apply border-b border-zinc-700 bg-zinc-900 px-3 py-2 text-start font-medium text-zinc-300;
+  }
+  .legal-prose td {
+    @apply border-b border-zinc-800 px-3 py-2 align-top text-zinc-300;
+  }
 }

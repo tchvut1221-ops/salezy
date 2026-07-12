@@ -16,12 +16,17 @@ Current migrations on `main`:
 0007_add_cancelled_status.sql
 0008_add_resume_support.sql
 0009_otp_rate_limit_email.sql
+0011_consent_log.sql
 0012_add_runpod_job_ids.sql
 0013_add_transcription_provider.sql
 0014_harden_recordings_bucket.sql
 ```
 
-**`0010` and `0011` are intentionally missing** — reserved by a separate, concurrently-developed plan not yet merged to this branch. This is expected, not a bug; do not renumber `0012`/`0013`/`0014` down to fill the gap.
+**`0010` is intentionally missing** — reserved for a retention-lifecycle migration on a separate, concurrently-developed branch of the same security/legal plan (not yet merged here). `0011` above is this plan's own migration (consent_log). This is expected, not a bug; do not renumber `0012`/`0013`/`0014` down to fill the gap.
+
+### Pending: apply `0011` with the legal-docs deploy
+
+`0011_consent_log.sql` (adds the `consent_log` table — service-role-only RLS, same convention as `otp_codes`) must be applied in the Supabase SQL Editor **before or together with** deploying this branch — `app/api/auth/verify-otp/route.ts`'s `recordConsentIfNew` references the table (best-effort/non-fatal on failure, but it should still succeed in production).
 
 `0012` and `0013` were applied via the Supabase SQL Editor on 2026-07-10, same day they merged.
 
