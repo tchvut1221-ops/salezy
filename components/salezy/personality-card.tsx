@@ -1,5 +1,6 @@
 import { Panel, Pill, scoreColor } from "./ui";
 import { PERSONALITY_TYPE_META as TYPE_META } from "@/lib/disc-reference";
+import { PERSONALITY_TYPE_ICON, ICON_STROKE_WIDTH } from "./icons";
 import type { AnalysisResult } from "@/types";
 
 /**
@@ -34,6 +35,7 @@ export function PersonalityCard({
   } = personality;
 
   const meta = TYPE_META[type];
+  const Icon = PERSONALITY_TYPE_ICON[type];
 
   // Sign density too low to trust a type classification (lib/disc.ts). Show the
   // evidence that IS there (confidence bar + raw axis meters) without the
@@ -63,7 +65,7 @@ export function PersonalityCard({
         {/* Type headline + blend + confidence */}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <span className="flex items-center gap-2">
-            <span className={`h-3.5 w-3.5 rounded-full ${meta.dot}`} />
+            <Icon className={`h-5 w-5 ${meta.text}`} strokeWidth={ICON_STROKE_WIDTH} />
             <span className={`text-2xl font-bold ${meta.text}`}>{meta.he}</span>
           </span>
           <span className="text-sm text-zinc-500">

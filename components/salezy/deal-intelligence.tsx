@@ -1,4 +1,5 @@
 import { Panel, Pill } from "./ui";
+import { SIGNAL_DIRECTION_ICON, ICON_STROKE_WIDTH } from "./icons";
 import type { DealStage } from "@/types";
 
 const STAGES: { key: Exclude<DealStage, "unknown">; label: string }[] = [
@@ -118,15 +119,18 @@ function SignalList({
   items: string[];
   tone: "positive" | "negative";
 }) {
-  const dot = tone === "positive" ? "bg-score-high" : "bg-score-low";
   const head = tone === "positive" ? "text-score-high" : "text-score-low";
+  const Icon = SIGNAL_DIRECTION_ICON[tone];
   return (
     <div>
-      <p className={`mb-2 text-sm font-medium ${head}`}>{label}</p>
+      <p className={`mb-2 flex items-center gap-1.5 text-sm font-medium ${head}`}>
+        <Icon className="h-4 w-4" strokeWidth={ICON_STROKE_WIDTH} />
+        {label}
+      </p>
       <ul className="space-y-1.5">
         {items.map((s, i) => (
           <li key={i} className="flex gap-2 text-sm text-zinc-300">
-            <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${dot}`} />
+            <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${tone === "positive" ? "bg-score-high" : "bg-score-low"}`} />
             <span>{s}</span>
           </li>
         ))}

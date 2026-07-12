@@ -8,6 +8,7 @@ import {
   Handshake,
 } from "lucide-react";
 import { Panel, Pill, scorecardScoreColor } from "./ui";
+import { Quote } from "./quote";
 import type {
   AnalysisResult,
   ScorecardCategory,
@@ -95,7 +96,7 @@ function StageRow({
 
         {category.quote && (
           <blockquote className="mt-3 rounded-lg border-e-4 border-primary bg-zinc-950/40 px-4 py-2.5 text-sm text-zinc-300">
-            &rdquo;{category.quote}&ldquo;
+            <Quote>{category.quote}</Quote>
           </blockquote>
         )}
 

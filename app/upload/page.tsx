@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import * as tus from "tus-js-client";
+import { UploadCloud } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { isAllowedAudio, MAX_FILE_BYTES } from "@/lib/constants";
 import { Button } from "@/components/salezy/ui";
@@ -73,10 +74,12 @@ export default function UploadPage() {
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
 
-  function onPick(e: React.ChangeEvent<HTMLInputElement>) {
+  // Shared by the native file input and the drop handler so both paths run
+  // the exact same validation.
+  function validateAndSetFile(f: File | null) {
     setError("");
-    const f = e.target.files?.[0] ?? null;
     if (f && !isAllowedAudio(f)) {
       setError(
         `קובץ לא נתמך. אפשר mp3 / wav / m4a / mp4 / mov / ogg / aac / webm / flac, עד ${Math.round(
@@ -87,6 +90,27 @@ export default function UploadPage() {
       return;
     }
     setFile(f);
+  }
+
+  function onPick(e: React.ChangeEvent<HTMLInputElement>) {
+    validateAndSetFile(e.target.files?.[0] ?? null);
+  }
+
+  function onDragOver(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    if (!busy) setIsDragging(true);
+  }
+
+  function onDragLeave(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setIsDragging(false);
+  }
+
+  function onDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setIsDragging(false);
+    if (busy) return;
+    validateAndSetFile(e.dataTransfer.files?.[0] ?? null);
   }
 
   async function onUpload() {
@@ -145,14 +169,28 @@ export default function UploadPage() {
         ההעלאה. התמלול והניתוח נשמרים עד שתמחקו אותם.
       </p>
 
-      <div className="mt-8 rounded-xl border border-dashed border-zinc-700 bg-zinc-900 p-8 text-center">
+      <div
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+        className={`mt-8 rounded-xl border border-dashed p-8 text-center transition-colors ${
+          isDragging
+            ? "border-primary bg-primary/5"
+            : "border-zinc-700 bg-zinc-900"
+        }`}
+      >
+        <UploadCloud
+          className={`mx-auto h-8 w-8 ${isDragging ? "text-primary" : "text-zinc-500"}`}
+          strokeWidth={1.5}
+        />
+        <p className="mt-2 text-sm text-zinc-400">גררו קובץ לכאן, או</p>
         <input
           id="file"
           type="file"
           accept=".mp3,.wav,.m4a,.mp4,.mov,.ogg,.aac,.webm,.flac,audio/*,video/mp4,video/quicktime"
           onChange={onPick}
           disabled={busy}
-          className="block w-full text-sm text-zinc-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary file:px-4 file:py-2 file:text-primary-foreground file:transition-colors hover:file:bg-primary/90"
+          className="mx-auto mt-2 block text-sm text-zinc-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary file:px-4 file:py-2 file:text-primary-foreground file:transition-colors hover:file:bg-primary/90"
         />
         {file && (
           <p className="mt-4 text-sm text-zinc-300">
