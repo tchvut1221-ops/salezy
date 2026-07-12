@@ -25,6 +25,7 @@ import {
   type TranscriptionResult,
 } from "@/lib/transcription/providers";
 import { reasonAboutCall, synthesizeAnalysis } from "@/lib/analysis";
+import { computeCustomerPersonality } from "@/lib/disc";
 import { needsConversion } from "@/lib/constants";
 
 /**
@@ -203,11 +204,12 @@ export const analyzeCall = inngest.createFunction(
     const row = await step.run("load-analysis", async () => {
       const { data, error } = await admin
         .from("analyses")
-        .select("file_path, transcript, reasoning, completed_steps")
+        .select("user_id, file_path, transcript, reasoning, completed_steps")
         .eq("id", analysisId)
         .single();
       if (error) throw error;
       return data as {
+        user_id: string;
         file_path: string;
         transcript: string | null;
         reasoning: string | null;
@@ -217,6 +219,18 @@ export const analyzeCall = inngest.createFunction(
 
     const initialCompletedSteps = row.completed_steps ?? [];
     const filePath = row.file_path;
+
+    // Defense in depth: app/upload/actions.ts already rejects a file_path
+    // outside the caller's own folder before this event is ever sent, but
+    // this download uses the service-role client (bypasses storage RLS), so
+    // the invariant is re-checked here regardless of how the row was created.
+    if (!filePath.startsWith(`${row.user_id}/`)) {
+      await updateIfNotTerminal(admin, analysisId, {
+        status: "failed",
+        error: "Invalid file path for this analysis.",
+      });
+      return { analysisId, status: "failed" };
+    }
 
     let transcript: string;
     if (initialCompletedSteps.includes("transcribe") && row.transcript) {
@@ -386,8 +400,18 @@ export const analyzeCall = inngest.createFunction(
     }
 
     const result = await step.run("synthesize", async () => {
-      return synthesizeAnalysis(reasoning);
+      return synthesizeAnalysis(reasoning, transcript);
     });
+
+    // Dedicated DISC engine: quantitative, quote-anchored axis scoring (lib/disc.ts)
+    // replaces whatever GPT-4o's synthesis put in customerPersonality (a throwaway
+    // placeholder — see lib/analysis.ts). computeCustomerPersonality owns its own
+    // "score-disc" step.run internally (a self-consistency ensemble of K parallel
+    // detection passes), so it must NOT be wrapped in another step.run here. Not
+    // resume-gated: given the already-persisted transcript it's cheap and safe to
+    // recompute on a resumed run, so unlike "reason"/"transcribe" it skips the
+    // completed_steps logic.
+    result.customerPersonality = await computeCustomerPersonality(transcript, step);
 
     await step.run("complete", async () => {
       // Flat numeric snapshot so the dashboard can aggregate scores without
@@ -400,7 +424,12 @@ export const analyzeCall = inngest.createFunction(
           ? {
               overall,
               ...(perf.scores ?? {}),
-              personalityType: result.customerPersonality.type,
+              // Omit personalityType when the DISC engine couldn't classify
+              // confidently — analytics.ts already skips missing values, so no
+              // downstream dashboard/analytics change is needed for this.
+              ...(result.customerPersonality.indeterminate
+                ? {}
+                : { personalityType: result.customerPersonality.type }),
             }
           : null;
 

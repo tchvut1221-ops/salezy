@@ -1,5 +1,6 @@
 import { Panel, Pill, scoreColor } from "./ui";
-import type { AnalysisResult, PersonalityType } from "@/types";
+import { PERSONALITY_TYPE_META as TYPE_META } from "@/lib/disc-reference";
+import type { AnalysisResult } from "@/types";
 
 /**
  * Customer DISC personality. Upgraded from the old type+explanation card to
@@ -8,42 +9,6 @@ import type { AnalysisResult, PersonalityType } from "@/types";
  * per-type selling guidance. Every enriched field is guarded so a legacy
  * analysis (type+explanation only) still renders cleanly.
  */
-
-// Color overlay from the popular 4-type framework Israeli reps know: Red /
-// Yellow / Green / Blue. Derived deterministically from `type` — no schema field.
-const TYPE_META: Record<
-  PersonalityType,
-  { he: string; tagline: string; colorName: string; dot: string; text: string }
-> = {
-  Driver: {
-    he: "משימתי",
-    tagline: "תוצאות ושליטה",
-    colorName: "אדום",
-    dot: "bg-disc-d",
-    text: "text-disc-d",
-  },
-  Expressive: {
-    he: "מבטא",
-    tagline: "השפעה ורגש",
-    colorName: "צהוב",
-    dot: "bg-disc-i",
-    text: "text-disc-i",
-  },
-  Amiable: {
-    he: "תומך",
-    tagline: "יחסים ויציבות",
-    colorName: "ירוק",
-    dot: "bg-disc-s",
-    text: "text-disc-s",
-  },
-  Analytical: {
-    he: "אנליטי",
-    tagline: "דיוק ונתונים",
-    colorName: "כחול",
-    dot: "bg-disc-c",
-    text: "text-disc-c",
-  },
-};
 
 const AXIS_LABEL = {
   assertiveness: { high: "אסרטיביות גבוהה", low: "אסרטיביות נמוכה" },
@@ -64,9 +29,33 @@ export function PersonalityCard({
     signals,
     howToSellToThisType,
     redFlags,
+    indeterminate,
+    discAxes,
   } = personality;
 
   const meta = TYPE_META[type];
+
+  // Sign density too low to trust a type classification (lib/disc.ts). Show the
+  // evidence that IS there (confidence bar + raw axis meters) without the
+  // confident colored headline or per-type selling tips, which would be
+  // guidance for a type we can't actually back with enough signal.
+  if (indeterminate) {
+    return (
+      <Panel title="סוג אישיות הלקוח" eyebrow="פרופיל DISC">
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <span className="h-3.5 w-3.5 rounded-full bg-zinc-600" />
+            <span className="text-lg font-semibold text-zinc-300">
+              לא ניתן לקבוע בביטחון
+            </span>
+          </div>
+          <p className="text-sm leading-relaxed text-zinc-400">{explanation}</p>
+          {typeof confidence === "number" && <Confidence value={confidence} />}
+          {discAxes && <AxisMeters discAxes={discAxes} />}
+        </div>
+      </Panel>
+    );
+  }
 
   return (
     <Panel title="סוג אישיות הלקוח" eyebrow="פרופיל DISC">
@@ -104,6 +93,8 @@ export function PersonalityCard({
           </div>
         )}
 
+        {discAxes && <AxisMeters discAxes={discAxes} />}
+
         <p className="text-sm leading-relaxed text-zinc-300">{explanation}</p>
 
         {/* Linguistic evidence */}
@@ -139,6 +130,52 @@ export function PersonalityCard({
         )}
       </div>
     </Panel>
+  );
+}
+
+function AxisMeters({
+  discAxes,
+}: {
+  discAxes: NonNullable<AnalysisResult["customerPersonality"]["discAxes"]>;
+}) {
+  return (
+    <div className="space-y-2.5">
+      <AxisMeter
+        label="רשמי ↔ בלתי-רשמי"
+        score={discAxes.formalInformal.score}
+        signalCount={discAxes.formalInformal.signalCount}
+      />
+      <AxisMeter
+        label="דומיננטי ↔ פאסיבי"
+        score={discAxes.dominantPassive.score}
+        signalCount={discAxes.dominantPassive.signalCount}
+      />
+    </div>
+  );
+}
+
+function AxisMeter({
+  label,
+  score,
+  signalCount,
+}: {
+  label: string;
+  score: number;
+  signalCount: number;
+}) {
+  const pct = Math.max(0, Math.min(100, (score / 18) * 100));
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between text-xs text-zinc-500">
+        <span>{label}</span>
+        <span dir="ltr" className="font-mono tabular-nums">
+          {score}/18 · {signalCount} סימנים
+        </span>
+      </div>
+      <div className="h-1 w-full overflow-hidden rounded-full bg-zinc-800">
+        <div className="h-full rounded-full bg-zinc-500" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
   );
 }
 

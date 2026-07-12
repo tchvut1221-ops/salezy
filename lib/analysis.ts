@@ -4,6 +4,8 @@ import type { AiAdapter, GetStepTools } from "inngest";
 import { inngest } from "@/lib/inngest/client";
 import type { AnalysisResult, PersonalityType } from "@/types";
 import { SALES_SYSTEM_KNOWLEDGE } from "@/lib/sales-knowledge";
+import { normalizeForMatch, isVerbatimQuote } from "@/lib/verbatim";
+import { computeRepPercentage } from "@/lib/talk-ratio";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -58,6 +60,15 @@ const resultSchema = z.object({
       .catch(undefined),
     howToSellToThisType: z.array(z.string()).optional().catch(undefined),
     redFlags: z.array(z.string()).optional().catch(undefined),
+    /** Set by the dedicated DISC engine (lib/disc.ts), never by the LLM synthesis. */
+    indeterminate: z.boolean().optional().catch(undefined),
+    discAxes: z
+      .object({
+        formalInformal: z.object({ score: z.number(), signalCount: z.number() }),
+        dominantPassive: z.object({ score: z.number(), signalCount: z.number() }),
+      })
+      .optional()
+      .catch(undefined),
   }),
   salespersonPerformance: z.object({
     whatWorked: z.array(z.string()),
@@ -135,7 +146,7 @@ const resultSchema = z.object({
   callMetrics: z
     .object({
       estimatedDurationMinutes: z.number().optional().catch(undefined),
-      talkRatioSalesperson: z.number().optional().catch(undefined),
+      salespersonSpeakerLabel: z.string().optional().catch(undefined),
       energyLevel: z.enum(["low", "medium", "high"]).optional().catch(undefined),
       callPace: z
         .enum(["rushed", "optimal", "slow"])
@@ -222,12 +233,7 @@ export async function reasonAboutCall(
 
 1. תקציר מנהלים — 2-3 משפטים: מה קרה בשיחה ומה השורה התחתונה.
 2. מטרת השיחה והאם הושגה (כן / חלקית / לא).
-3. סוג אישיות הלקוח לפי DISC — נתח לעומק לפי מדריך הצירים, ההבחנה בין טיפוסים סמוכים, ומדריך כיול הביטחון:
-   - הטיפוס הראשי (Driver / Expressive / Amiable / Analytical) + טיפוס משני/תמהיל אם יש נטייה משנית בולטת.
-   - קריאת שני הצירים: אסרטיביות (גבוהה/נמוכה) ומיקוד (משימה/אנשים).
-   - רמת ביטחון (0-100) לפי כמות וההתכנסות של הסימנים — אל תיתן ביטחון גבוה בלי בסיס.
-   - הסימנים הלשוניים הספציפיים שהובילו לסיווג, כל אחד עם ציטוט קצר מהתמלול והסבר מה הוא מסגיר.
-   - איך הכי נכון למכור לאישיות הזו, ומה שורף את העסקה מולה.
+3. סוג אישיות הלקוח לפי DISC — **דלג על סעיף זה.** סיווג ה-DISC מחושב בנפרד על ידי מנוע ייעודי כמותי (לא על ידך) — אין צורך שתנתח או תסווג אישיות בתשובתך.
 4. שלב העסקה לפי המדריך (discovery / demo / objection / negotiation / close / unknown).
 5. אותות רכישה — חיוביים ושליליים — עם ציטוטים.
 6. מתחרים שהוזכרו (אם הוזכרו).
@@ -237,7 +243,7 @@ export async function reasonAboutCall(
 10. רגעי מפתח — לפחות 3 ציטוטים משמעותיים, כל אחד עם סוג (buying_signal / objection / pain_point / breakthrough) ולמה הוא חשוב.
 11. צעדים הבאים — לפחות 2 פעולות קונקרטיות עם עדיפות (urgent / soon / when-possible) ונימוק.
 12. ציון כולל לשיחה (0-100) לפי ה-rubric.
-13. מדדי שיחה (רק אם ניתן להעריך מהתמלול): משך משוער בדקות, יחס הדיבור של איש המכירות באחוזים (אמוד לפי כמות הדיבור של כל דובר), רמת אנרגיה, קצב, וסנטימנט בתחילת/אמצע/סוף השיחה. אם אי אפשר להעריך מדד מסוים — דלג עליו ואל תנחש.
+13. מדדי שיחה (רק אם ניתן להעריך מהתמלול): משך משוער בדקות, זיהוי איזו תווית דובר (למשל 'דובר 1') היא איש המכירות — על סמך מי מוביל את השיחה, שואל שאלות גילוי, מציג פתרון ומטפל בהתנגדויות (ציין זאת בבירור בטקסט, למשל 'איש המכירות הוא דובר 1'; אם לא ניתן לזהות בבירור — ציין זאת ואל תנחש), רמת אנרגיה, קצב, וסנטימנט בתחילת/אמצע/סוף השיחה. אם אי אפשר להעריך מדד מסוים — דלג עליו ואל תנחש.
 14. כרטיס ביצועים מפורט של איש המכירות (Scorecard) — ניתוח נפרד ומוסף על סעיף 8, אל תמזג אותם. דרג את איש המכירות בנפרד בכל אחת מ-5 הקטגוריות, בסולם 1-5:
    - opening (פתיחה): בניית מערכת יחסים, אג'נדה ברורה, שליטה מקצועית בפתיחת השיחה.
    - discovery (גילוי צרכים): עומק השאלות, האם נחשפו צרכים אמיתיים ולא רק פני שטח.
@@ -320,7 +326,8 @@ ${SALES_SYSTEM_KNOWLEDGE}`;
  * Validates against Zod before returning. Runs inside an Inngest step only.
  */
 export async function synthesizeAnalysis(
-  reasoning: string
+  reasoning: string,
+  transcript: string
 ): Promise<AnalysisResult> {
   const system = `החזר אך ורק JSON תקין (Return ONLY valid JSON) — בלי טקסט לפני או אחרי האובייקט, ובלי עיצוב markdown כמו גדרות קוד (\`\`\`json ... \`\`\`). כל תו מחוץ לאובייקט ה-JSON עצמו ישבור את הפרסור אצלנו.
 
@@ -331,18 +338,6 @@ export async function synthesizeAnalysis(
   "overallScore": 0-100,
   "callObjective": "מטרת השיחה",
   "callObjectiveAchieved": "yes | partial | no",
-  "customerPersonality": {
-    "type": "Analytical | Driver | Amiable | Expressive",
-    "secondaryType": "Analytical | Driver | Amiable | Expressive",
-    "explanation": "הסבר קצר בעברית עם דוגמאות",
-    "confidence": 0-100,
-    "axes": { "assertiveness": "high | low", "responsiveness": "task | people" },
-    "signals": [
-      { "quote": "ציטוט קצר מהשיחה", "interpretation": "מה הציטוט מסגיר על הטיפוס (עברית)" }
-    ],
-    "howToSellToThisType": ["..."],
-    "redFlags": ["..."]
-  },
   "dealStage": "discovery | demo | objection | negotiation | close | unknown",
   "buyingSignals": { "positive": ["..."], "negative": ["..."] },
   "competitorsMentioned": ["..."],
@@ -370,7 +365,7 @@ export async function synthesizeAnalysis(
   ],
   "callMetrics": {
     "estimatedDurationMinutes": 0,
-    "talkRatioSalesperson": 0-100,
+    "salespersonSpeakerLabel": "דובר 1",
     "energyLevel": "low | medium | high",
     "callPace": "rushed | optimal | slow",
     "sentiment": { "start": "positive | neutral | negative", "middle": "positive | neutral | negative", "end": "positive | neutral | negative" }
@@ -394,15 +389,15 @@ export async function synthesizeAnalysis(
 }
 
 ⚠️ חשוב:
-- customerPersonality.type ו-customerPersonality.secondaryType חייבים להיות **בדיוק** אחד מ: Analytical, Driver, Amiable, Expressive (באנגלית). אל תתרגם ואל תשנה. השמט את secondaryType לגמרי אם אין נטייה משנית בולטת.
-- customerPersonality.axes.assertiveness חייב להיות "high" או "low"; customerPersonality.axes.responsiveness חייב להיות "task" או "people".
+- אל תכלול שדה customerPersonality בתשובתך בכלל — סיווג האישיות מחושב בנפרד על ידי מנוע ייעודי ולא ממך. אם תכלול אותו בכל זאת, הוא יוחלף לגמרי ויתעלמו ממנו.
 - כל שאר ערכי ה-enum (callObjectiveAchieved, dealStage, objections[].score, keyMoments[].type, nextSteps[].priority, energyLevel, callPace, sentiment) חייבים להיות בדיוק באנגלית כפי שמופיע למעלה.
 - כל שאר הטקסט בתוך ה-JSON חייב להיות בעברית.
-- השדות whatWorked, whatDidnt, tips, explicit, implicit ו-customerPersonality חובה תמיד.
+- השדות whatWorked, whatDidnt, tips, explicit, implicit חובה תמיד.
 - salespersonScorecard.*.score (בכל אחת מ-5 הקטגוריות) חייב להיות מספר שלם 1-5 **או null**. לעולם אל תיתן score בלי quote תומך — אם אין quote אמיתי, גם score וגם quote צריכים להיות null.
 - salespersonScorecard.*.sentiment חייב להיות בדיוק אחד מ: "positive", "neutral", "negative" (באנגלית). salespersonScorecard.*.failurePoint הוא משפט עברית קצר או null — קבע null כשהשלב היה חזק ולא הייתה נקודת כשל.
 - coachingActions.*.priority חייב להיות בדיוק "high", "medium" או "low" (באנגלית). לפחות פריט אחד חייב להיות "high".
 - אל תכלול overallScorecardScore ואל תכלול talkRatio בתוך salespersonScorecard — הם מחושבים אוטומטית מחוץ ל-JSON שלך, אל תמציא אותם.
+- callMetrics.salespersonSpeakerLabel חייב להיות בדיוק כפי שמופיע בתמלול (למשל "דובר 1" או "דובר 2") ורק אם זוהה בבירור בניתוח; אם לא זוהה, השמט את השדה לגמרי ואל תנחש.
 - שמור על נאמנות מוחלטת לניתוח שקיבלת — אל תוסיף מידע שלא נמצא בו.
 - תזכורת אחרונה: החזר אך ורק את אובייקט ה-JSON. בלי גדרות markdown, בלי טקסט הסבר לפני או אחרי. Return ONLY the JSON object — no markdown code fences, no text before or after.`;
 
@@ -439,17 +434,23 @@ export async function synthesizeAnalysis(
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- raw model JSON, shape-checked below then Zod-validated
   const raw: any = parseModelJson(content);
-  // Defensive: the model occasionally translates/varies the DISC type even when
-  // told not to. Map common variants back to the canonical enum before Zod, for
-  // both the primary type and the (optional) secondary/blend type.
+  // customerPersonality is no longer authored by GPT-4o (the dedicated DISC engine
+  // in lib/disc.ts owns it — see lib/inngest/functions.ts's score-disc step, which
+  // overwrites this field entirely right after synthesizeAnalysis returns). This is
+  // a throwaway placeholder satisfying resultSchema's required shape in the
+  // meantime; its content is never read by anything downstream of the overwrite.
+  // Still defensively normalized in case the model includes one anyway (it was told
+  // not to, but occasionally does).
   const personality = raw?.customerPersonality;
   if (personality) {
     personality.type = normalizeDiscType(personality.type) ?? personality.type;
     const secondary = normalizeDiscType(personality.secondaryType);
     if (secondary) personality.secondaryType = secondary;
+  } else {
+    raw.customerPersonality = { type: "Analytical", explanation: "" };
   }
   if (raw?.salespersonScorecard) {
-    raw.salespersonScorecard = normalizeScorecard(raw.salespersonScorecard, raw.callMetrics);
+    raw.salespersonScorecard = normalizeScorecard(raw.salespersonScorecard, raw.callMetrics, transcript);
   }
   return resultSchema.parse(raw);
 }
@@ -464,7 +465,7 @@ export async function synthesizeAnalysis(
  * start/end of the raw response (not the whole, potentially large payload)
  * so a real failure is debuggable from Inngest/Vercel logs.
  */
-function parseModelJson(content: string): unknown {
+export function parseModelJson(content: string): unknown {
   const stripFences = (s: string) =>
     s
       .trim()
@@ -531,15 +532,18 @@ const DISC_TYPE_MAP: Record<string, PersonalityType> = {
 };
 
 /**
- * Defensive post-processing for the scorecard, mirroring normalizeDiscType():
+ * Defensive post-processing for the scorecard, mirroring normalizeDiscType()
+ * and DISC's own anti-fabrication gate (lib/disc.ts filterVerbatimSigns):
  * fix up the model's raw output in code before Zod validation, rather than
  * trusting prompt discipline alone for anything fabrication-sensitive or
  * arithmetic.
- *  1. Anti-fabrication: a category score is only valid alongside a non-empty
- *     quote. If the model emits a score with no real quote, null the score.
- *  2. talkRatio is derived entirely from callMetrics.talkRatioSalesperson
- *     (never taken from the model's own guess) so the UI never has to
- *     reconcile two disagreeing "talk ratio" numbers for one call.
+ *  1. Anti-fabrication: a category's score AND quote are both nulled unless
+ *     the quote can actually be found (loosely normalized) in the
+ *     transcript — never trust the model's claim that a quote is verbatim.
+ *  2. talkRatio.repPercentage is computed by counting transcript characters
+ *     per speaker label (lib/talk-ratio.ts), using only the model's
+ *     identification of *which* label is the salesperson — never an LLM
+ *     percentage guess.
  *  3. overallScorecardScore is recomputed as the average of the non-null
  *     category scores — never trusted from the model — eliminating
  *     arithmetic drift on the feature's headline number.
@@ -547,16 +551,22 @@ const DISC_TYPE_MAP: Record<string, PersonalityType> = {
 function normalizeScorecard(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- raw model JSON, shape-checked here then Zod-validated by resultSchema
   raw: any,
-  callMetrics: { talkRatioSalesperson?: number } | undefined
+  callMetrics: { salespersonSpeakerLabel?: string } | undefined,
+  transcript: string
 ): Record<string, unknown> | undefined {
   if (!raw) return undefined;
   const categories = ["opening", "discovery", "pitch", "objectionHandling", "closing"] as const;
 
+  const normalizedTranscript = normalizeForMatch(transcript);
   for (const key of categories) {
     const cat = raw[key];
     if (!cat) continue;
-    const hasRealQuote = typeof cat.quote === "string" && cat.quote.trim().length > 0;
-    if (!hasRealQuote) cat.score = null;
+    const hasRealQuote =
+      typeof cat.quote === "string" && isVerbatimQuote(cat.quote, normalizedTranscript);
+    if (!hasRealQuote) {
+      cat.score = null;
+      cat.quote = null;
+    }
   }
 
   const scores = categories
@@ -567,7 +577,7 @@ function normalizeScorecard(
       ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100
       : null;
 
-  const repPct = callMetrics?.talkRatioSalesperson;
+  const repPct = computeRepPercentage(transcript, callMetrics?.salespersonSpeakerLabel);
   const BENCHMARK = 43;
   const TOLERANCE = 5; // +/-5pp around the benchmark still counts as "optimal"
   if (typeof repPct === "number") {
