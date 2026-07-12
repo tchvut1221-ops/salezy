@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { retryAnalysis } from "@/app/actions";
+import { exportElementToPdf, toPdfFileName } from "@/lib/export-pdf";
 import type { Analysis, AnalysisStatus } from "@/types";
 import { ExecutiveSummary } from "./executive-summary";
 import { ScoreGauge } from "./score-gauge";
@@ -46,6 +47,7 @@ const TERMINAL: AnalysisStatus[] = [
 export function AnalysisView({ initial }: { initial: Analysis }) {
   const [analysis, setAnalysis] = useState<Analysis>(initial);
   const [retrying, startRetry] = useTransition();
+  const [exportingPdf, startExportPdf] = useTransition();
 
   const isDone = TERMINAL.includes(analysis.status);
 
@@ -108,6 +110,17 @@ export function AnalysisView({ initial }: { initial: Analysis }) {
     });
   }
 
+  function onExportPdf() {
+    startExportPdf(async () => {
+      try {
+        await exportElementToPdf("analysis-content", toPdfFileName(analysis.file_name));
+      } catch (err) {
+        console.error("[AnalysisView] PDF export failed:", err);
+        toast.error("יצירת ה-PDF נכשלה. נסו שוב.");
+      }
+    });
+  }
+
   const isReady = analysis.status === "completed" && Boolean(analysis.result);
 
   const isCancelled = analysis.status === "cancelled";
@@ -121,10 +134,11 @@ export function AnalysisView({ initial }: { initial: Analysis }) {
         {isReady && (
           <button
             type="button"
-            onClick={() => window.print()}
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            onClick={onExportPdf}
+            disabled={exportingPdf}
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
           >
-            הורד PDF
+            {exportingPdf ? "מכין PDF..." : "הורד PDF"}
           </button>
         )}
       </div>
