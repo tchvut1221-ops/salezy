@@ -39,7 +39,7 @@ export function PatternsView({ data }: { data: Extract<PatternsData, { eligible:
               <Tooltip
                 contentStyle={{ backgroundColor: "#1A1A26", border: "1px solid #2A2A3D", borderRadius: 8, color: "#F0F0FF" }}
               />
-              <Bar dataKey="average" name="ממוצע" fill="#4D7EFF" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="average" name="ממוצע" fill="#00D4A0" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
