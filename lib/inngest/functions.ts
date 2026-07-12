@@ -27,6 +27,7 @@ import {
 import { reasonAboutCall, synthesizeAnalysis } from "@/lib/analysis";
 import { computeCustomerPersonality } from "@/lib/disc";
 import { needsConversion } from "@/lib/constants";
+import { TERMINAL_STATUSES } from "@/lib/retention-policy";
 
 /**
  * Defense in depth: the ffmpeg volumedetect guard passed (real audio above
@@ -37,13 +38,9 @@ import { needsConversion } from "@/lib/constants";
  */
 const MIN_TRANSCRIPT_CHARS = 10;
 
-/** Statuses a running pipeline should never write over once reached. */
-const TERMINAL_STATUSES = [
-  "completed",
-  "failed",
-  "no_speech_detected",
-  "cancelled",
-];
+// TERMINAL_STATUSES (statuses a running pipeline should never write over
+// once reached) now lives in lib/retention-policy.ts — the retention sweep
+// keys "the analysis is finished" off the same list, so there's exactly one.
 
 /**
  * Applies a STATUS change only if the row hasn't already reached a terminal
