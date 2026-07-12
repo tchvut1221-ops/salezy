@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { buttonVariants, Pill } from "@/components/salezy/ui";
 import { LandingDemo } from "@/components/salezy/landing-demo";
 import { SiteFooter } from "@/components/salezy/site-footer";
+import { RevealOnScroll } from "@/components/salezy/reveal-on-scroll";
 
 // Mirrors AUDIO_RETENTION_DAYS in lib/retention-policy.ts (feat/a2-retention,
 // not yet merged as of this branch) — a plain literal here rather than an
@@ -115,9 +116,10 @@ export default async function Home() {
         </h2>
         <div className="mt-8 grid gap-6 sm:grid-cols-3">
           {HOW_IT_WORKS.map((step, i) => (
-            <div
+            <RevealOnScroll
               key={step.title}
-              className="rounded-xl border border-zinc-800 bg-zinc-900 p-6 transition-colors hover:border-zinc-700"
+              delayMs={i * 100}
+              className="rounded-xl border border-zinc-800 bg-zinc-900 p-6 transition-colors hover:border-zinc-700 hover:bg-zinc-800/40"
             >
               <div className="flex items-center gap-2">
                 <step.icon className="h-5 w-5 text-primary" strokeWidth={1.5} />
@@ -129,7 +131,7 @@ export default async function Home() {
               <p className="mt-2 text-sm leading-relaxed text-zinc-400">
                 {step.description}
               </p>
-            </div>
+            </RevealOnScroll>
           ))}
         </div>
       </section>
@@ -138,9 +140,9 @@ export default async function Home() {
       <section className="mx-auto max-w-5xl px-4 py-12">
         <div className="space-y-10">
           {FEATURE_ROWS.map((row, i) => (
-            <div
+            <RevealOnScroll
               key={row.title}
-              className={`grid items-center gap-8 rounded-xl border border-zinc-800 bg-zinc-900 p-8 sm:grid-cols-2 ${
+              className={`grid items-center gap-8 rounded-xl border border-zinc-800 bg-zinc-900 p-8 transition-colors hover:border-zinc-700 sm:grid-cols-2 ${
                 i % 2 === 1 ? "sm:[&>*:first-child]:order-2" : ""
               }`}
             >
@@ -151,7 +153,7 @@ export default async function Home() {
                 </p>
               </div>
               <div>{row.visual}</div>
-            </div>
+            </RevealOnScroll>
           ))}
         </div>
       </section>
