@@ -214,7 +214,11 @@ export function aggregatePollResults(states: RunpodJobPollState[]): RunpodPollVe
 /** Best-effort cancel so a job we're abandoning stops billing GPU time. */
 export async function cancelRunpodJob(jobId: string, cfg: TranscriptionConfig): Promise<void> {
   try {
-    await fetch(`${runpodBase(cfg)}/cancel/${jobId}`, { method: "POST", headers: runpodHeaders(cfg) });
+    const res = await fetch(`${runpodBase(cfg)}/cancel/${jobId}`, { method: "POST", headers: runpodHeaders(cfg) });
+    if (!res.ok) {
+      console.error(`[runpod] cancel returned HTTP ${res.status} for job ${jobId} (best-effort, ignoring)`);
+      return;
+    }
     console.log(`[runpod] cancelled job ${jobId}`);
   } catch (err) {
     console.error(`[runpod] cancel failed for job ${jobId} (best-effort, ignoring):`, err);
