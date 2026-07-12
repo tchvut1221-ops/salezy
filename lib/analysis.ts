@@ -426,9 +426,10 @@ export async function synthesizeAnalysis(
     // Even at the raised budget, an unusually rich call can still exhaust it —
     // this pinpoints truncation specifically (vs. some other malformed-JSON
     // cause) in the logs so a future max_tokens bump is an easy diagnosis.
+    // Log shape only, never content — the completion paraphrases the
+    // customer's call, and hosted log drains must stay free of call PII.
     console.error(
-      "[synthesizeAnalysis] Completion hit max_tokens and was likely truncated (finish_reason=length). Last 500 chars:",
-      content.slice(-500)
+      `[synthesizeAnalysis] Completion hit max_tokens and was likely truncated (finish_reason=length, content length ${content.length}).`
     );
   }
 
@@ -461,9 +462,9 @@ export async function synthesizeAnalysis(
  * markdown code fences wrapped around the JSON despite being told not to,
  * stray text before/after the object, or the object being cut off mid-
  * generation by hitting max_tokens on a long, richly-populated analysis.
- * Tries increasingly aggressive recovery steps before giving up; logs the
- * start/end of the raw response (not the whole, potentially large payload)
- * so a real failure is debuggable from Inngest/Vercel logs.
+ * Tries increasingly aggressive recovery steps before giving up; on total
+ * failure logs only the payload length (the content paraphrases the customer's
+ * call, so no excerpt of it may reach Inngest/Vercel logs).
  */
 export function parseModelJson(content: string): unknown {
   const stripFences = (s: string) =>
@@ -496,12 +497,10 @@ export function parseModelJson(content: string): unknown {
     }
   }
 
+  // Log shape only, never content — see the truncation log in
+  // synthesizeAnalysis; the raw payload paraphrases the customer's call.
   console.error(
-    "[synthesizeAnalysis] Failed to parse model JSON after all recovery attempts.",
-    "First 500 chars:",
-    content.slice(0, 500),
-    "Last 500 chars:",
-    content.slice(-500)
+    `[synthesizeAnalysis] Failed to parse model JSON after all recovery attempts (content length ${content.length}).`
   );
   throw new Error("תשובת המודל לא הייתה JSON תקין");
 }

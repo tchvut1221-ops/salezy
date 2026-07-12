@@ -58,7 +58,8 @@ export async function POST(req: Request) {
     email,
   });
   if (linkError || !link) {
-    console.error("[verify-otp] generateLink failed:", linkError);
+    // Message only — the full error object can carry request context (email).
+    console.error("[verify-otp] generateLink failed:", linkError?.message);
     return NextResponse.json({ error: "ההתחברות נכשלה. נסה שוב." }, { status: 500 });
   }
 
@@ -69,7 +70,7 @@ export async function POST(req: Request) {
     type: "magiclink",
   });
   if (verifyError) {
-    console.error("[verify-otp] verifyOtp failed:", verifyError);
+    console.error("[verify-otp] verifyOtp failed:", verifyError.message);
     return NextResponse.json({ error: "ההתחברות נכשלה. נסה שוב." }, { status: 500 });
   }
 
