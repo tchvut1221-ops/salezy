@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import * as tus from "tus-js-client";
 import { createClient } from "@/lib/supabase/client";
 import { isAllowedAudio, MAX_FILE_BYTES } from "@/lib/constants";
+import { AUDIO_RETENTION_DAYS } from "@/lib/retention-policy";
 import { startAnalysis } from "./actions";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -137,6 +138,10 @@ export default function UploadPage() {
       <p className="mt-1 text-sm text-zinc-400">
         העלה הקלטה (mp3 / wav / m4a / mp4 / mov / ogg / aac / webm / flac, עד{" "}
         {Math.round(MAX_FILE_BYTES / 1024 / 1024)}MB) ונתחיל לנתח אותה.
+      </p>
+      <p className="mt-2 text-xs text-zinc-500">
+        קובץ ההקלטה נמחק מהשרתים אוטומטית {AUDIO_RETENTION_DAYS} יום לאחר
+        ההעלאה. התמלול והניתוח נשמרים עד שתמחקו אותם.
       </p>
 
       <div className="mt-8 rounded-2xl border border-dashed border-zinc-700 bg-zinc-900 p-8 text-center">

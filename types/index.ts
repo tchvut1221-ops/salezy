@@ -228,6 +228,13 @@ export interface Analysis {
    * that stage finishes.
    */
   reasoning: string | null;
+  /**
+   * When the nightly retention sweep (lib/inngest/retention.ts) removed the
+   * raw recording from Storage, per lib/retention-policy.ts. Null while the
+   * recording still exists. Only the audio file is auto-deleted — the
+   * transcript and result stay until the user deletes the analysis.
+   */
+  audio_deleted_at: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { retryAnalysis } from "@/app/actions";
+import { AUDIO_RETENTION_DAYS } from "@/lib/retention-policy";
 import type { Analysis, AnalysisStatus } from "@/types";
 import { ExecutiveSummary } from "./executive-summary";
 import { ScoreGauge } from "./score-gauge";
@@ -112,6 +113,16 @@ export function AnalysisView({ initial }: { initial: Analysis }) {
 
   const isCancelled = analysis.status === "cancelled";
 
+  // Whether a re-run is even possible: once the retention sweep deleted the
+  // raw recording (lib/inngest/retention.ts), retry/resume only work if
+  // transcription already finished — the pipeline then reads the persisted
+  // transcript instead of the audio. Mirrors the guards in app/actions.ts.
+  const audioDeleted = Boolean(analysis.audio_deleted_at);
+  const canReprocess =
+    !audioDeleted ||
+    ((analysis.completed_steps ?? []).includes("transcribe") &&
+      Boolean(analysis.transcript));
+
   return (
     <div>
       {/* כפתורי פעולה — מחוץ ל-#analysis-content ומוסתרים בהדפסה. מחיקה זמינה
@@ -131,6 +142,12 @@ export function AnalysisView({ initial }: { initial: Analysis }) {
 
       <div id="analysis-content">
         <h1 className="text-2xl font-bold text-foreground">{analysis.file_name}</h1>
+        {audioDeleted && isReady && (
+          <p className="mt-1 text-xs text-zinc-500">
+            ההקלטה המקורית נמחקה בהתאם למדיניות השמירה ({AUDIO_RETENTION_DAYS}{" "}
+            יום) — התמלול והניתוח נשמרים.
+          </p>
+        )}
 
         {analysis.status === "failed" ||
         analysis.status === "no_speech_detected" ||
@@ -150,7 +167,13 @@ export function AnalysisView({ initial }: { initial: Analysis }) {
                   ? "לא זוהה דיבור בהקלטה הזו. ודא שהקובץ מכיל שיחה אמיתית ונסה שוב."
                   : "נתקלנו בתקלה בעיבוד ההקלטה. אפשר לנסות שוב — הקובץ שכבר העליתם נשמר."}
             </p>
-            {isCancelled ? (
+            {!canReprocess ? (
+              <p className="mt-4 text-xs text-zinc-500">
+                ההקלטה נמחקה מהשרתים בהתאם למדיניות השמירה (
+                {AUDIO_RETENTION_DAYS} יום), ולכן לא ניתן להריץ את הניתוח
+                מחדש.
+              </p>
+            ) : isCancelled ? (
               <div className="mt-4">
                 <ResumeAnalysisButton analysisId={initial.id} />
               </div>

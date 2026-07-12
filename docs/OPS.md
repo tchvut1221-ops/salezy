@@ -16,12 +16,13 @@ Current migrations on `main`:
 0007_add_cancelled_status.sql
 0008_add_resume_support.sql
 0009_otp_rate_limit_email.sql
+0010_retention.sql
 0012_add_runpod_job_ids.sql
 0013_add_transcription_provider.sql
 0014_harden_recordings_bucket.sql
 ```
 
-**`0010` and `0011` are intentionally missing** — reserved by a separate, concurrently-developed plan not yet merged to this branch. This is expected, not a bug; do not renumber `0012`/`0013`/`0014` down to fill the gap.
+**`0011` is intentionally missing** — reserved for the consent-log migration of the security/legal plan (`0010` was the other reserved slot, now filled by the retention migration). This is expected, not a bug; do not renumber `0012`/`0013`/`0014` down to fill the gap. Note `0010` merged *after* `0012`-`0014` — numeric order still holds for fresh environments (they're independent), but on the live DB it is applied later.
 
 `0012` and `0013` were applied via the Supabase SQL Editor on 2026-07-10, same day they merged.
 
@@ -30,6 +31,14 @@ Current migrations on `main`:
 `0014_harden_recordings_bucket.sql` (MIME type + size limit on the `recordings` storage bucket) has not been applied yet.
 
 **General rule, reconfirmed twice today:** a migration file existing and being merged is not the same as the fix being live — code that depends on a new column/policy can `throw` (not just degrade) if deployed before the migration is actually applied. Apply migrations before or as part of the same deploy, not after. (See `otp_rate_limits.email` earlier today for the fail-open case, and the ivrit `runpod_job_ids`/`transcription_provider` columns for the fail-throw case — both traced to this same root cause.)
+
+### Pending: apply `0010` with the retention deploy
+
+`0010_retention.sql` (adds `analyses.audio_deleted_at` + purge indexes) must be applied in the Supabase SQL Editor **before or together with** deploying the retention branch — the nightly sweep (`lib/inngest/retention.ts`), the retry/resume guards (`app/actions.ts`), and the analysis page all reference the new column. Before the first live sweep, run the read-only report `npx tsx --env-file=.env.local scripts/retention-dryrun.ts` to see exactly which recordings it will delete.
+
+## Data retention
+
+The retention policy lives in `lib/retention-policy.ts` (single source of truth — the upload-page disclosure and the legal docs quote it). Nightly Inngest cron `retention-sweep` (03:00 Asia/Jerusalem): deletes raw recordings 30 days after upload (60 for rows stuck mid-pipeline), stamps `audio_deleted_at`; purges `otp_codes` >24h and `otp_rate_limits` >7d. Transcripts/analyses are never auto-deleted. Verification: `npx tsx scripts/retention-selftest.ts` (pure), `scripts/retention-dryrun.ts` (read-only, real DB).
 
 ## Transcription provider
 

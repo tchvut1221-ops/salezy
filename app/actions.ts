@@ -39,7 +39,7 @@ export async function retryAnalysis(analysisId: string) {
 
   const { data, error } = await supabase
     .from("analyses")
-    .select("id, user_id, status")
+    .select("id, user_id, status, transcript, completed_steps, audio_deleted_at")
     .eq("id", analysisId)
     .single();
 
@@ -48,6 +48,19 @@ export async function retryAnalysis(analysisId: string) {
   }
   if (data.status !== "failed" && data.status !== "no_speech_detected") {
     throw new Error("Analysis is not in a retryable state");
+  }
+  // Once the retention sweep deleted the raw recording, a re-run can only
+  // succeed if transcription already finished — the pipeline's skip logic
+  // (lib/inngest/functions.ts) then reads the persisted transcript instead
+  // of re-downloading the audio. Mirrors that skip condition exactly.
+  const completedSteps: string[] = data.completed_steps ?? [];
+  if (
+    data.audio_deleted_at &&
+    !(completedSteps.includes("transcribe") && data.transcript)
+  ) {
+    throw new Error(
+      "ההקלטה נמחקה בהתאם למדיניות השמירה, ולכן לא ניתן להריץ את הניתוח מחדש."
+    );
   }
 
   const { error: updateError } = await supabase
@@ -124,7 +137,7 @@ export async function resumeAnalysis(analysisId: string) {
 
   const { data, error } = await supabase
     .from("analyses")
-    .select("id, user_id, status, completed_steps")
+    .select("id, user_id, status, completed_steps, transcript, audio_deleted_at")
     .eq("id", analysisId)
     .single();
 
@@ -134,10 +147,21 @@ export async function resumeAnalysis(analysisId: string) {
   if (data.status !== "cancelled") {
     throw new Error("Analysis is not cancelled");
   }
+  // Same recording-gone guard as retryAnalysis above: resuming a run whose
+  // transcription never finished needs the raw audio, which the retention
+  // sweep may have already deleted.
+  const completedSteps: string[] = data.completed_steps ?? [];
+  if (
+    data.audio_deleted_at &&
+    !(completedSteps.includes("transcribe") && data.transcript)
+  ) {
+    throw new Error(
+      "ההקלטה נמחקה בהתאם למדיניות השמירה, ולכן לא ניתן להמשיך את הניתוח."
+    );
+  }
 
   // Reflects which stage is about to run so the UI doesn't show a misleading
   // "transcribing" progress step when transcription already finished.
-  const completedSteps: string[] = data.completed_steps ?? [];
   const nextStatus = completedSteps.includes("transcribe")
     ? "analyzing"
     : "transcribing";
@@ -174,7 +198,7 @@ export async function deleteAnalysis(analysisId: string) {
 
   const { data, error } = await supabase
     .from("analyses")
-    .select("id, user_id, status, file_path, runpod_job_ids")
+    .select("id, user_id, status, file_path, runpod_job_ids, audio_deleted_at")
     .eq("id", analysisId)
     .single();
 
@@ -192,14 +216,17 @@ export async function deleteAnalysis(analysisId: string) {
     ]);
   }
 
-  const { error: storageError } = await supabase.storage
-    .from("recordings")
-    .remove([data.file_path]);
-  if (storageError) {
-    console.error(
-      `[deleteAnalysis] Failed to remove storage file for ${analysisId} (${data.file_path}):`,
-      storageError
-    );
+  // Skip the storage call when the retention sweep already removed the file.
+  if (!data.audio_deleted_at) {
+    const { error: storageError } = await supabase.storage
+      .from("recordings")
+      .remove([data.file_path]);
+    if (storageError) {
+      console.error(
+        `[deleteAnalysis] Failed to remove storage file for ${analysisId} (${data.file_path}):`,
+        storageError
+      );
+    }
   }
 
   const { error: deleteError } = await supabase
