@@ -37,8 +37,8 @@ async function fetchTranscript(analysisId: string): Promise<string> {
 
 async function runOnce(transcript: string) {
   const passes = getDiscEnsemblePasses();
-  const raw = await ensembleDetectSigns(transcript, passes);
-  return computeDiscResult(raw, passes);
+  const { signs: raw, successfulPasses } = await ensembleDetectSigns(transcript, passes);
+  return computeDiscResult(raw, successfulPasses || 1);
 }
 
 async function main() {

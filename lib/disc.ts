@@ -137,14 +137,17 @@ async function detectSignsOnce(transcript: string): Promise<RawDiscSigns> {
 export async function ensembleDetectSigns(
   transcript: string,
   passes: number = getDiscEnsemblePasses()
-): Promise<RawDiscSigns> {
+): Promise<{ signs: RawDiscSigns; successfulPasses: number }> {
   const settled = await Promise.allSettled(
     Array.from({ length: passes }, () => detectSignsOnce(transcript))
   );
   const ok = settled
     .filter((r): r is PromiseFulfilledResult<RawDiscSigns> => r.status === "fulfilled")
     .map((r) => r.value);
-  return ok.length > 0 ? poolSigns(ok) : EMPTY_RAW_SIGNS;
+  return {
+    signs: ok.length > 0 ? poolSigns(ok) : EMPTY_RAW_SIGNS,
+    successfulPasses: ok.length,
+  };
 }
 
 /**
@@ -317,8 +320,14 @@ export async function computeCustomerPersonality(
   step: DiscStep
 ): Promise<AnalysisResult["customerPersonality"]> {
   const passes = getDiscEnsemblePasses();
-  const raw = await step.run("score-disc", () => ensembleDetectSigns(transcript, passes));
-  const computed = computeDiscResult(raw, passes);
+  const { signs: raw, successfulPasses } = await step.run("score-disc", () =>
+    ensembleDetectSigns(transcript, passes)
+  );
+  // Density must reflect passes that actually returned data, not the
+  // requested count — otherwise a partial-failure run (some passes reject)
+  // under-counts density and skews toward indeterminate even when the
+  // passes that DID succeed found plenty of signal.
+  const computed = computeDiscResult(raw, successfulPasses || 1);
   return {
     type: computed.type,
     secondaryType: computed.secondaryType,
