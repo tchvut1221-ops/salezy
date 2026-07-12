@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { retryAnalysis } from "@/app/actions";
 import { AUDIO_RETENTION_DAYS } from "@/lib/retention-policy";
+import { exportElementToPdf, toPdfFileName } from "@/lib/export-pdf";
 import type { Analysis, AnalysisStatus } from "@/types";
 import { ExecutiveSummary } from "./executive-summary";
 import { ScoreGauge } from "./score-gauge";
@@ -24,6 +25,7 @@ import {
   ResumeAnalysisButton,
 } from "./analysis-actions";
 import { Button, Panel } from "./ui";
+import { SectionNav, type SectionNavItem } from "./section-nav";
 
 const STEPS: { key: AnalysisStatus; label: string }[] = [
   { key: "uploaded", label: "הועלה" },
@@ -48,6 +50,7 @@ const TERMINAL: AnalysisStatus[] = [
 export function AnalysisView({ initial }: { initial: Analysis }) {
   const [analysis, setAnalysis] = useState<Analysis>(initial);
   const [retrying, startRetry] = useTransition();
+  const [exportingPdf, startExportPdf] = useTransition();
 
   const isDone = TERMINAL.includes(analysis.status);
 
@@ -110,6 +113,17 @@ export function AnalysisView({ initial }: { initial: Analysis }) {
     });
   }
 
+  function onExportPdf() {
+    startExportPdf(async () => {
+      try {
+        await exportElementToPdf("analysis-content", toPdfFileName(analysis.file_name));
+      } catch (err) {
+        console.error("[AnalysisView] PDF export failed:", err);
+        toast.error("יצירת ה-PDF נכשלה. נסו שוב.");
+      }
+    });
+  }
+
   const isReady = analysis.status === "completed" && Boolean(analysis.result);
 
   const isCancelled = analysis.status === "cancelled";
@@ -131,7 +145,9 @@ export function AnalysisView({ initial }: { initial: Analysis }) {
       <div className="mb-4 flex items-center justify-between gap-3">
         <DeleteAnalysisButton analysisId={initial.id} />
         {isReady && (
-          <Button onClick={() => window.print()}>הורד PDF</Button>
+          <Button onClick={onExportPdf} disabled={exportingPdf}>
+            {exportingPdf ? "מכין PDF..." : "הורד PDF"}
+          </Button>
         )}
       </div>
 
@@ -229,6 +245,14 @@ function Progress({
   );
 }
 
+// Fixed per-slot delays (not renumbered when a card is hidden) — a
+// decorative stagger, not worth recomputing indices for conditionally
+// rendered cards. Below-the-fold sections finish this 40ms-stepped
+// animation long before a user actually scrolls to them, which is fine —
+// the entrance effect only needs to be visible for what's on screen at
+// mount (the summary section).
+const DELAY = (step: number) => ({ animationDelay: `${step * 40}ms` });
+
 function Result({ result }: { result: NonNullable<Analysis["result"]> }) {
   const hasDealIntelligence =
     Boolean(result.dealStage && result.dealStage !== "unknown") ||
@@ -254,101 +278,142 @@ function Result({ result }: { result: NonNullable<Analysis["result"]> }) {
       (k) => scorecard[k]?.sentiment != null || scorecard[k]?.failurePoint != null
     );
 
-  // Fixed per-slot delays (not renumbered when a card is hidden) — a
-  // decorative stagger, not worth recomputing indices for conditionally
-  // rendered cards. A hidden leading card just means the next one starts
-  // its animation slightly later than 0ms, which reads fine in practice.
-  const DELAY = (step: number) => ({ animationDelay: `${step * 40}ms` });
+  const hasMoments = Boolean(result.keyMoments?.length) || Boolean(result.objections?.length);
+  const hasFollowup = Boolean(result.nextSteps?.length);
+
+  // Summary and Customer are always present (the v1 core — PersonalityCard
+  // self-degrades on legacy data) so they're not gated; Performance, Key
+  // Moments, and Follow-up only appear — in the nav and as sections — when
+  // there's actually something to show.
+  const sections: SectionNavItem[] = [
+    { id: "summary", label: "סיכום" },
+    { id: "performance", label: "ביצועים" },
+    { id: "customer", label: "הלקוח" },
+    ...(hasMoments ? [{ id: "moments", label: "רגעי מפתח" }] : []),
+    ...(hasFollowup ? [{ id: "followup", label: "המשך טיפול" }] : []),
+  ];
 
   return (
-    <div className="mt-8 space-y-5">
-      {/* ── v2 enriched cards — each guarded on its own data so v1-only results
-          (no v2 fields at all) render none of this and fall through cleanly
-          to the original 3-card view below. ── */}
-      {result.executiveSummary && (
-        <div className="animate-fade-up" style={DELAY(0)}>
-          <ExecutiveSummary
-            summary={result.executiveSummary}
-            callObjective={result.callObjective}
-            achieved={result.callObjectiveAchieved}
-          />
-        </div>
-      )}
+    <div className="mt-8 grid gap-8 xl:grid-cols-[200px_minmax(0,1fr)] xl:items-start">
+      <SectionNav items={sections} />
 
-      {typeof overallScore === "number" && (
-        <div className="animate-fade-up" style={DELAY(1)}>
-          <ScoreGauge
-            overall={overallScore}
-            scores={result.salespersonPerformance.scores}
-          />
-        </div>
-      )}
+      <div className="min-w-0 space-y-10">
+        <section id="summary" className="scroll-mt-24 space-y-5">
+          {result.executiveSummary && (
+            <div className="animate-fade-up" style={DELAY(0)}>
+              <ExecutiveSummary
+                summary={result.executiveSummary}
+                callObjective={result.callObjective}
+                achieved={result.callObjectiveAchieved}
+              />
+            </div>
+          )}
 
-      {hasDealIntelligence && (
-        <div className="animate-fade-up" style={DELAY(2)}>
-          <DealIntelligence
-            dealStage={result.dealStage}
-            buyingSignals={result.buyingSignals}
-            competitors={result.competitorsMentioned}
-          />
-        </div>
-      )}
+          {typeof overallScore === "number" && (
+            <div className="animate-fade-up" style={DELAY(1)}>
+              <ScoreGauge
+                overall={overallScore}
+                scores={result.salespersonPerformance.scores}
+              />
+            </div>
+          )}
+        </section>
 
-      {result.objections && result.objections.length > 0 && (
-        <div className="animate-fade-up" style={DELAY(3)}>
-          <ObjectionTracker objections={result.objections} />
-        </div>
-      )}
+        <section id="performance" className="scroll-mt-24 space-y-5">
+          <h2 className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+            ביצועים
+          </h2>
 
-      {result.keyMoments && result.keyMoments.length > 0 && (
-        <div className="animate-fade-up" style={DELAY(4)}>
-          <KeyMoments moments={result.keyMoments} />
-        </div>
-      )}
+          {hasDealIntelligence && (
+            <div className="animate-fade-up" style={DELAY(2)}>
+              <DealIntelligence
+                dealStage={result.dealStage}
+                buyingSignals={result.buyingSignals}
+                competitors={result.competitorsMentioned}
+              />
+            </div>
+          )}
 
-      {result.nextSteps && result.nextSteps.length > 0 && (
-        <div className="animate-fade-up" style={DELAY(5)}>
-          <NextSteps steps={result.nextSteps} />
-        </div>
-      )}
+          {hasStageAnalysis && scorecard && (
+            <div className="animate-fade-up" style={DELAY(3)}>
+              <StageAnalysis scorecard={scorecard} />
+            </div>
+          )}
 
-      {hasStageAnalysis && scorecard && (
-        <div className="animate-fade-up" style={DELAY(6)}>
-          <StageAnalysis scorecard={scorecard} />
-        </div>
-      )}
+          {result.salespersonScorecard && (
+            <div className="animate-fade-up" style={DELAY(4)}>
+              <Scorecard scorecard={result.salespersonScorecard} />
+            </div>
+          )}
 
-      {result.salespersonScorecard && (
-        <div className="animate-fade-up" style={DELAY(7)}>
-          <Scorecard scorecard={result.salespersonScorecard} />
-        </div>
-      )}
+          {(result.coachingActions?.length || result.weeklyFocus) && (
+            <div className="animate-fade-up" style={DELAY(5)}>
+              <CoachingPlan actions={result.coachingActions} weeklyFocus={result.weeklyFocus} />
+            </div>
+          )}
 
-      {(result.coachingActions?.length || result.weeklyFocus) && (
-        <div className="animate-fade-up" style={DELAY(8)}>
-          <CoachingPlan actions={result.coachingActions} weeklyFocus={result.weeklyFocus} />
-        </div>
-      )}
+          {/* ── v1 core — always present. ── */}
+          <div className="animate-fade-up" style={DELAY(6)}>
+            <Card title="ביצועי איש המכירות">
+              <List label="מה עבד" items={result.salespersonPerformance.whatWorked} />
+              <List label="מה פספס" items={result.salespersonPerformance.whatDidnt} />
+              <List label="טיפים" items={result.salespersonPerformance.tips} />
+            </Card>
+          </div>
+        </section>
 
-      {/* ── v1 core — always present. The personality card self-degrades when the
-          enriched DISC fields are absent (legacy analyses). ── */}
-      <div className="animate-fade-up" style={DELAY(9)}>
-        <PersonalityCard personality={result.customerPersonality} />
-      </div>
+        <section id="customer" className="scroll-mt-24 space-y-5">
+          <h2 className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+            הלקוח
+          </h2>
 
-      <div className="animate-fade-up" style={DELAY(10)}>
-        <Card title="ביצועי איש המכירות">
-          <List label="מה עבד" items={result.salespersonPerformance.whatWorked} />
-          <List label="מה פספס" items={result.salespersonPerformance.whatDidnt} />
-          <List label="טיפים" items={result.salespersonPerformance.tips} />
-        </Card>
-      </div>
+          {/* The personality card self-degrades when the enriched DISC fields
+              are absent (legacy analyses). */}
+          <div className="animate-fade-up" style={DELAY(7)}>
+            <PersonalityCard personality={result.customerPersonality} />
+          </div>
 
-      <div className="animate-fade-up" style={DELAY(11)}>
-        <Card title="צרכי הלקוח">
-          <List label="גלוי" items={result.customerNeeds.explicit} />
-          <List label="סמוי" items={result.customerNeeds.implicit} />
-        </Card>
+          <div className="animate-fade-up" style={DELAY(8)}>
+            <Card title="צרכי הלקוח">
+              <List label="גלוי" items={result.customerNeeds.explicit} />
+              <List label="סמוי" items={result.customerNeeds.implicit} />
+            </Card>
+          </div>
+        </section>
+
+        {hasMoments && (
+          <section id="moments" className="scroll-mt-24 space-y-5">
+            <h2 className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+              רגעי מפתח
+            </h2>
+
+            {result.objections && result.objections.length > 0 && (
+              <div className="animate-fade-up" style={DELAY(9)}>
+                <ObjectionTracker objections={result.objections} />
+              </div>
+            )}
+
+            {result.keyMoments && result.keyMoments.length > 0 && (
+              <div className="animate-fade-up" style={DELAY(10)}>
+                <KeyMoments moments={result.keyMoments} />
+              </div>
+            )}
+          </section>
+        )}
+
+        {hasFollowup && (
+          <section id="followup" className="scroll-mt-24 space-y-5">
+            <h2 className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+              המשך טיפול
+            </h2>
+
+            {result.nextSteps && result.nextSteps.length > 0 && (
+              <div className="animate-fade-up" style={DELAY(11)}>
+                <NextSteps steps={result.nextSteps} />
+              </div>
+            )}
+          </section>
+        )}
       </div>
     </div>
   );

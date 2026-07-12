@@ -11,7 +11,7 @@ const shimmer = "animate-pulse rounded-md bg-zinc-800";
 
 export function ResultSkeleton() {
   return (
-    <div className="mt-8 space-y-5" aria-hidden="true">
+    <div className="mx-auto mt-8 max-w-3xl space-y-5" aria-hidden="true">
       <ExecutiveSummarySkeleton />
       <ScoreGaugeSkeleton />
       <DealIntelligenceSkeleton />

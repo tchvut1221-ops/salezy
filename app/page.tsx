@@ -6,13 +6,7 @@ import { buttonVariants, Pill } from "@/components/salezy/ui";
 import { LandingDemo } from "@/components/salezy/landing-demo";
 import { SiteFooter } from "@/components/salezy/site-footer";
 import { RevealOnScroll } from "@/components/salezy/reveal-on-scroll";
-
-// Mirrors AUDIO_RETENTION_DAYS in lib/retention-policy.ts (feat/a2-retention,
-// not yet merged as of this branch) — a plain literal here rather than an
-// import so this branch doesn't depend on that one merging first. Keep this
-// in sync with that constant; it's the number quoted to visitors as a
-// commitment.
-const AUDIO_RETENTION_DAYS = 30;
+import { AUDIO_RETENTION_DAYS } from "@/lib/retention-policy";
 
 const HOW_IT_WORKS = [
   {
