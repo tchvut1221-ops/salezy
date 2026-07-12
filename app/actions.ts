@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { inngest } from "@/lib/inngest/client";
+import { cancelRunpodJobs, type RunpodJobRecord } from "@/lib/transcription/ivrit-provider";
+import { loadTranscriptionConfig } from "@/lib/transcription/providers";
 import type { AnalysisStatus } from "@/types";
 
 /** Non-terminal statuses — the pipeline is still actively running. */
@@ -71,7 +73,7 @@ export async function cancelAnalysis(analysisId: string) {
 
   const { data, error } = await supabase
     .from("analyses")
-    .select("id, user_id, status")
+    .select("id, user_id, status, runpod_job_ids")
     .eq("id", analysisId)
     .single();
 
@@ -82,7 +84,16 @@ export async function cancelAnalysis(analysisId: string) {
     throw new Error("Analysis is not currently running");
   }
 
-  await inngest.send({ name: "analysis/cancel-requested", data: { analysisId } });
+  // Cancelling the Inngest run (below) only stops it BETWEEN steps and
+  // can't reach an in-flight Runpod job's ID, which only lives in that
+  // run's own memory — so a live job ID persisted on the row (set by
+  // lib/inngest/functions.ts's prepare-and-submit-runpod step) is cancelled
+  // directly here instead. Best-effort: cancelRunpodJobs never throws.
+  const jobRecords = data.runpod_job_ids as RunpodJobRecord[] | null;
+  await Promise.all([
+    inngest.send({ name: "analysis/cancel-requested", data: { analysisId } }),
+    jobRecords?.length ? cancelRunpodJobs(jobRecords, loadTranscriptionConfig()) : Promise.resolve(),
+  ]);
 
   const { error: updateError } = await supabase
     .from("analyses")
@@ -159,7 +170,7 @@ export async function deleteAnalysis(analysisId: string) {
 
   const { data, error } = await supabase
     .from("analyses")
-    .select("id, user_id, status, file_path")
+    .select("id, user_id, status, file_path, runpod_job_ids")
     .eq("id", analysisId)
     .single();
 
@@ -168,7 +179,13 @@ export async function deleteAnalysis(analysisId: string) {
   }
 
   if (RUNNING_STATUSES.includes(data.status as AnalysisStatus)) {
-    await inngest.send({ name: "analysis/cancel-requested", data: { analysisId } });
+    // See cancelAnalysis above for why the Runpod job is cancelled directly
+    // here rather than relying on Inngest's cancelOn.
+    const jobRecords = data.runpod_job_ids as RunpodJobRecord[] | null;
+    await Promise.all([
+      inngest.send({ name: "analysis/cancel-requested", data: { analysisId } }),
+      jobRecords?.length ? cancelRunpodJobs(jobRecords, loadTranscriptionConfig()) : Promise.resolve(),
+    ]);
   }
 
   const { error: storageError } = await supabase.storage
