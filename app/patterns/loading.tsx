@@ -7,7 +7,7 @@ export default function PatternsLoading() {
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="h-64 w-full animate-pulse rounded-[12px] border border-zinc-800 bg-zinc-900"
+            className="h-64 w-full animate-pulse rounded-xl border border-zinc-800 bg-zinc-900"
           />
         ))}
       </div>

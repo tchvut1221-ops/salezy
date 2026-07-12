@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import * as tus from "tus-js-client";
 import { createClient } from "@/lib/supabase/client";
 import { isAllowedAudio, MAX_FILE_BYTES } from "@/lib/constants";
+import { Button } from "@/components/salezy/ui";
 import { startAnalysis } from "./actions";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -139,7 +140,7 @@ export default function UploadPage() {
         {Math.round(MAX_FILE_BYTES / 1024 / 1024)}MB) ונתחיל לנתח אותה.
       </p>
 
-      <div className="mt-8 rounded-2xl border border-dashed border-zinc-700 bg-zinc-900 p-8 text-center">
+      <div className="mt-8 rounded-xl border border-dashed border-zinc-700 bg-zinc-900 p-8 text-center">
         <input
           id="file"
           type="file"
@@ -183,13 +184,14 @@ export default function UploadPage() {
 
       {error && <p className="mt-4 text-sm text-score-low">{error}</p>}
 
-      <button
+      <Button
         onClick={onUpload}
         disabled={!file || busy}
-        className="mt-6 w-full rounded-lg bg-primary px-4 py-3 font-medium text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
+        size="lg"
+        className="mt-6 w-full"
       >
         {busy ? "מעלה ומתחיל ניתוח..." : "העלה ונתח"}
-      </button>
+      </Button>
     </main>
   );
 }

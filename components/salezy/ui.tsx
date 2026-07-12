@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { cva, type VariantProps } from "class-variance-authority";
 
 /**
  * Shared presentational primitives for the premium analysis view. They follow the
@@ -48,7 +49,11 @@ export function scorecardScoreColor(score: number) {
   return { text: "text-score-low", dot: "bg-score-low" };
 }
 
-/** Card section matching the existing analysis cards. */
+/**
+ * THE card. Every boxed surface in the app goes through Panel (or at least
+ * copies its exact wrapper classes) — one radius convention (rounded-xl,
+ * which the theme maps to the design system's 12px), one border, one bg.
+ */
 export function Panel({
   title,
   eyebrow,
@@ -62,7 +67,7 @@ export function Panel({
 }) {
   return (
     <section
-      className={`rounded-[12px] border border-zinc-800 bg-zinc-900 p-6 ${
+      className={`rounded-xl border border-zinc-800 bg-zinc-900 p-6 ${
         className ?? ""
       }`}
     >
@@ -105,5 +110,53 @@ export function Pill({
     >
       {children}
     </span>
+  );
+}
+
+/**
+ * The one button recipe. Exported separately from <Button> so links can wear
+ * the same clothes: <Link className={buttonVariants({ size: "lg" })}>.
+ * rounded-lg = the design system's 8px control radius (cards are 12px).
+ */
+export const buttonVariants = cva(
+  "inline-flex items-center justify-center rounded-lg font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:pointer-events-none disabled:opacity-50",
+  {
+    variants: {
+      variant: {
+        primary: "bg-primary text-primary-foreground hover:bg-primary/90",
+        secondary:
+          "border border-zinc-700 text-zinc-300 hover:border-zinc-600 hover:text-foreground",
+        ghost: "text-zinc-400 hover:text-foreground",
+        danger:
+          "border border-score-low/30 text-score-low hover:bg-score-low/10",
+      },
+      size: {
+        sm: "px-2.5 py-1.5 text-xs",
+        md: "px-4 py-2.5 text-sm",
+        lg: "px-8 py-3 text-base",
+      },
+    },
+    defaultVariants: { variant: "primary", size: "md" },
+  }
+);
+
+/**
+ * Shared button. Defaults to type="button" (NOT the browser's in-form
+ * "submit" default) — form submitters must say type="submit" explicitly, so
+ * a stray action button inside a form can never submit it by accident.
+ */
+export function Button({
+  className,
+  variant,
+  size,
+  type = "button",
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & VariantProps<typeof buttonVariants>) {
+  return (
+    <button
+      type={type}
+      className={buttonVariants({ variant, size, className })}
+      {...props}
+    />
   );
 }
