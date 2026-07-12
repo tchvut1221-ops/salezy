@@ -18,15 +18,18 @@ Current migrations on `main`:
 0009_otp_rate_limit_email.sql
 0012_add_runpod_job_ids.sql
 0013_add_transcription_provider.sql
+0014_harden_recordings_bucket.sql
 ```
 
-**`0010` and `0011` are intentionally missing** — reserved by a separate, concurrently-developed plan not yet merged to this branch. This is expected, not a bug; do not renumber `0012`/`0013` down to fill the gap.
+**`0010` and `0011` are intentionally missing** — reserved by a separate, concurrently-developed plan not yet merged to this branch. This is expected, not a bug; do not renumber `0012`/`0013`/`0014` down to fill the gap.
 
-### Pending as of 2026-07-10: apply `0012` then `0013`
+`0012` and `0013` were applied via the Supabase SQL Editor on 2026-07-10, same day they merged.
 
-Neither has been applied to the live Supabase project yet. **Apply `0012_add_runpod_job_ids.sql` before `0013_add_transcription_provider.sql`** (plain numeric order — no functional dependency between the two columns they add, but keep the convention so migration history stays a reliable audit trail).
+### Pending as of 2026-07-10: apply `0014`
 
-**Do this before enabling `TRANSCRIPTION_PROVIDER=ivrit` in any environment, including Vercel production.** The ivrit transcription path writes to both `runpod_job_ids` (`lib/inngest/functions.ts`) and `transcription_provider` (`lib/transcription/providers.ts`) as part of the transcribe step. Supabase's PostgREST layer rejects an `update`/`insert` referencing a column that doesn't exist yet in its schema cache — the whole call fails, not just the missing field. Unlike a rate-limit degrading silently, this failure `throw`s inside the transcribe step, which fails the whole analysis. Confirmed the hard way earlier today with a different pair of columns (see `otp_rate_limits.email`, applied via migration `0009_otp_rate_limit_email.sql`) — the lesson generalizes: **a migration file existing and being merged is not the same as the fix being live.** Apply the migration first, or keep `TRANSCRIPTION_PROVIDER` unset/`openai` until it's confirmed applied.
+`0014_harden_recordings_bucket.sql` (MIME type + size limit on the `recordings` storage bucket) has not been applied yet.
+
+**General rule, reconfirmed twice today:** a migration file existing and being merged is not the same as the fix being live — code that depends on a new column/policy can `throw` (not just degrade) if deployed before the migration is actually applied. Apply migrations before or as part of the same deploy, not after. (See `otp_rate_limits.email` earlier today for the fail-open case, and the ivrit `runpod_job_ids`/`transcription_provider` columns for the fail-throw case — both traced to this same root cause.)
 
 ## Transcription provider
 
