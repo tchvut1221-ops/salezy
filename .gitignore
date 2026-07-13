@@ -39,6 +39,9 @@ yarn-error.log*
 # git worktrees (isolated feature-branch checkouts)
 /.worktrees
 
+# brainstorming visual-companion scratch mockups (not source)
+/.superpowers
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
