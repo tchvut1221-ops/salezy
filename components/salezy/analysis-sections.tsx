@@ -328,7 +328,7 @@ function ProgressBar({ opened, total }: { opened: number; total: number }) {
   );
 }
 
-function HighlightRow({
+export function HighlightRow({
   tone,
   label,
   text,
