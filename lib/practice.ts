@@ -1,5 +1,7 @@
 import { z } from "zod";
+import Anthropic from "@anthropic-ai/sdk";
 import { STYLE_PROFILES, PERSONALITY_TYPE_META } from "@/lib/disc-reference";
+import { parseModelJson } from "@/lib/analysis";
 import type { PersonalityType, PracticeMessage, PracticeSectionKey } from "@/types";
 
 export const PRACTICE_MODEL_ID = "claude-sonnet-4-6";
@@ -60,3 +62,52 @@ export const practiceFeedbackSchema = z.object({
   whatWorked: z.string(),
   whatToImprove: z.string(),
 });
+
+// Lazy singleton, mirrors lib/disc.ts's getDiscClient() pattern exactly.
+let practiceClient: Anthropic | null = null;
+function getPracticeClient(): Anthropic {
+  if (!practiceClient) practiceClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  return practiceClient;
+}
+
+/** One chat turn: sends the full conversation so far, returns the customer's next line. */
+export async function sendPracticeTurn(
+  systemPrompt: string,
+  messages: PracticeMessage[]
+): Promise<string> {
+  const res = await getPracticeClient().messages.create({
+    model: PRACTICE_MODEL_ID,
+    system: systemPrompt,
+    messages: messages.map((m) => ({
+      role: m.role === "user" ? ("user" as const) : ("assistant" as const),
+      content: m.content,
+    })),
+    max_tokens: 300,
+    temperature: 0.7,
+  });
+  return res.content
+    .filter((b): b is Anthropic.TextBlock => b.type === "text")
+    .map((b) => b.text)
+    .join("\n")
+    .trim();
+}
+
+/** Wrap-up call: Claude drops character, returns Zod-validated short feedback. */
+export async function generateFeedback(
+  messages: PracticeMessage[],
+  focusText: string
+) {
+  const res = await getPracticeClient().messages.create({
+    model: PRACTICE_MODEL_ID,
+    system: "אתה מספק משוב מכירתי קצר וממוקד. תמיד מחזיר JSON תקין בלבד, בלי גדרות markdown.",
+    messages: [{ role: "user", content: buildFeedbackPrompt(messages, focusText) }],
+    max_tokens: 500,
+    temperature: 0.1,
+  });
+  const text = res.content
+    .filter((b): b is Anthropic.TextBlock => b.type === "text")
+    .map((b) => b.text)
+    .join("\n")
+    .trim();
+  return practiceFeedbackSchema.parse(parseModelJson(text));
+}
