@@ -70,7 +70,18 @@ function getPracticeClient(): Anthropic {
   return practiceClient;
 }
 
-/** One chat turn: sends the full conversation so far, returns the customer's next line. */
+const PRACTICE_KICKOFF_INSTRUCTION = "(התחל את השיחה כלקוח, במשפט פתיחה טבעי אחד)";
+
+/**
+ * One chat turn: `messages` is the DISPLAY/persisted history so far (never
+ * includes a synthetic kickoff turn — that's added here, internally, on every
+ * call). This keeps callers simple (just pass the real session history,
+ * even when empty for a brand-new session) while guaranteeing the array sent
+ * to the Anthropic API always starts with role "user" and alternates
+ * correctly — Anthropic rejects any call whose first message isn't "user",
+ * which a raw replay of `messages` (starting with the AI's own persisted
+ * opening line, role "customer") would violate on every turn after the first.
+ */
 export async function sendPracticeTurn(
   systemPrompt: string,
   messages: PracticeMessage[]
@@ -78,10 +89,13 @@ export async function sendPracticeTurn(
   const res = await getPracticeClient().messages.create({
     model: PRACTICE_MODEL_ID,
     system: systemPrompt,
-    messages: messages.map((m) => ({
-      role: m.role === "user" ? ("user" as const) : ("assistant" as const),
-      content: m.content,
-    })),
+    messages: [
+      { role: "user" as const, content: PRACTICE_KICKOFF_INSTRUCTION },
+      ...messages.map((m) => ({
+        role: m.role === "user" ? ("user" as const) : ("assistant" as const),
+        content: m.content,
+      })),
+    ],
     max_tokens: 300,
     temperature: 0.7,
   });
