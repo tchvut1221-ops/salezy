@@ -21,6 +21,7 @@ Current migrations on `main`:
 0012_add_runpod_job_ids.sql
 0013_add_transcription_provider.sql
 0014_harden_recordings_bucket.sql
+0015_add_practice_sessions.sql
 ```
 
 `0010` (retention: `analyses.audio_deleted_at` + purge indexes) and `0011` (`consent_log` table) were both reserved slots from the same security/legal plan, developed on separate branches and merged back to back. Both have been applied in the Supabase SQL Editor (confirmed by the user before each branch's merge, per this plan's rule of applying a migration before/with the deploy that depends on it — see the general rule below).
@@ -28,6 +29,8 @@ Current migrations on `main`:
 `0012` and `0013` were applied via the Supabase SQL Editor on 2026-07-10, same day they merged. `0014` (MIME type + size limit on the `recordings` storage bucket) is also applied — confirmed 2026-07-13 by querying the live bucket config directly (`allowed_mime_types`/`file_size_limit` match the migration exactly).
 
 **All migrations through `0014` are applied. None are currently pending.**
+
+`0015` (new `practice_sessions` table for the Practice Loop feature) is **not yet applied** — this is a brand-new table with no existing code depending on it, so (unlike the ivrit-columns fail-throw case above) it's safe to merge before applying, but must be applied before the practice Server Actions are actually used in production (the first `INSERT` would otherwise fail with a missing-table error).
 
 **General rule, reconfirmed twice today:** a migration file existing and being merged is not the same as the fix being live — code that depends on a new column/policy can `throw` (not just degrade) if deployed before the migration is actually applied. Apply migrations before or as part of the same deploy, not after. (See `otp_rate_limits.email` earlier today for the fail-open case, and the ivrit `runpod_job_ids`/`transcription_provider` columns for the fail-throw case — both traced to this same root cause.)
 
