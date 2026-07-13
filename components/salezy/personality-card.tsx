@@ -18,8 +18,14 @@ const AXIS_LABEL = {
 
 export function PersonalityCard({
   personality,
+  hideSignals = false,
 }: {
   personality: AnalysisResult["customerPersonality"];
+  /** Skip the linguistic-evidence (signals) block. The 4-section analysis view
+   *  surfaces the DISC quotes in the customer section's summary + "למה זיהיתי ככה?",
+   *  so the full card in that section's details opts out to avoid showing them twice.
+   *  Defaults to showing them, so every other caller is unaffected. */
+  hideSignals?: boolean;
 }) {
   const {
     type,
@@ -100,7 +106,7 @@ export function PersonalityCard({
         <p className="text-sm leading-relaxed text-zinc-300">{explanation}</p>
 
         {/* Linguistic evidence */}
-        {signals && signals.length > 0 && (
+        {!hideSignals && signals && signals.length > 0 && (
           <div>
             <p className="mb-2 text-sm font-medium text-zinc-400">
               סימנים בתמלול

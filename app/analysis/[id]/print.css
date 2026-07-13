@@ -23,6 +23,12 @@
     display: none !important;
   }
 
+  /* גלה את כל התוכן המורחב (מאחורי "פרטים נוספים") — הדפסה היא דוח מלא,
+     לא צילום מסך של מה שקרה להיות פתוח. ראה components/salezy/analysis-section.tsx. */
+  #analysis-content [data-analysis-details] {
+    display: block !important;
+  }
+
   /* שמור על עברית ו-RTL בהדפסה. */
   html {
     direction: rtl;

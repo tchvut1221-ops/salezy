@@ -42,6 +42,14 @@ export async function exportElementToPdf(elementId: string, fileName: string) {
           border-color: #d4d4d8 !important;
           box-shadow: none !important;
         }
+        /* The analysis view collapses each section's expanded content behind
+           "פרטים נוספים" (hidden attribute, components/salezy/analysis-section.tsx).
+           A downloaded PDF is a full report, not a snapshot of what happens to be
+           expanded on screen — force every section open in this offscreen clone only,
+           never touching the live page. */
+        #${elementId} [data-analysis-details] {
+          display: block !important;
+        }
       `;
       clonedDoc.head.appendChild(style);
       clonedElement.style.backgroundColor = "#ffffff";
