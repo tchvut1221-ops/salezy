@@ -238,3 +238,30 @@ export interface Analysis {
   created_at: string;
   updated_at: string;
 }
+
+export type PracticeSectionKey = "sales_call" | "followup" | "customer_style" | "scorecard";
+
+export interface PracticeMessage {
+  role: "user" | "customer";
+  content: string;
+}
+
+export interface PracticeFeedback {
+  whatWorked: string;
+  whatToImprove: string;
+}
+
+/** A row of the public.practice_sessions table. */
+export interface PracticeSession {
+  id: string;
+  user_id: string;
+  analysis_id: string;
+  section_key: PracticeSectionKey;
+  focus_text: string;
+  personality_type: PersonalityType;
+  messages: PracticeMessage[];
+  feedback: PracticeFeedback | null;
+  status: "in_progress" | "completed";
+  created_at: string;
+  updated_at: string;
+}
