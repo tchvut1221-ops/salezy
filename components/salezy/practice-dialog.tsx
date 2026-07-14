@@ -51,16 +51,20 @@ export function PracticeDialog({
   // Kick off a fresh session every time the dialog opens.
   useEffect(() => {
     if (!open) return;
+    let ignore = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting to "starting" is required here: this dialog is a single persistent instance whose `open` prop toggles (not remounted per session), so without this reset the PREVIOUS session's chat/feedback would flash briefly while the new startPracticeSession() call is in flight.
     setState({ phase: "starting" });
     setDraft("");
     startPracticeSession(analysisId, sectionKey, focusText, personalityType)
-      .then((session) =>
-        setState({ phase: "chat", session, isWaitingForReply: false, isEnding: false })
-      )
-      .catch(() =>
-        setState({ phase: "error", message: "לא הצלחנו להתחיל את התרגול. נסו שוב." })
-      );
+      .then((session) => {
+        if (!ignore) setState({ phase: "chat", session, isWaitingForReply: false, isEnding: false });
+      })
+      .catch(() => {
+        if (!ignore) setState({ phase: "error", message: "לא הצלחנו להתחיל את התרגול. נסו שוב." });
+      });
+    return () => {
+      ignore = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- re-running on analysisId/sectionKey/focusText/personalityType change is correct, but open is the actual trigger
   }, [open]);
 
@@ -69,7 +73,11 @@ export function PracticeDialog({
     const text = draft.trim();
     const sessionId = state.session.id;
     setDraft("");
-    setState({ ...state, isWaitingForReply: true });
+    setState({
+      ...state,
+      session: { ...state.session, messages: [...state.session.messages, { role: "user", content: text }] },
+      isWaitingForReply: true,
+    });
     try {
       const updated = await sendPracticeMessage(sessionId, text);
       setState({ phase: "chat", session: updated, isWaitingForReply: false, isEnding: false });
@@ -79,7 +87,7 @@ export function PracticeDialog({
   }
 
   async function onEnd() {
-    if (state.phase !== "chat" || state.isEnding) return;
+    if (state.phase !== "chat" || state.isEnding || state.isWaitingForReply) return;
     const sessionId = state.session.id;
     setState({ ...state, isEnding: true });
     try {
@@ -94,7 +102,7 @@ export function PracticeDialog({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-40 bg-black/60" />
-        <Dialog.Popup className="fixed start-1/2 top-1/2 z-50 flex max-h-[80vh] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 flex-col rounded-xl border border-zinc-800 bg-zinc-900 p-6">
+        <Dialog.Popup className="fixed left-1/2 top-1/2 z-50 flex max-h-[80vh] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 flex-col rounded-xl border border-zinc-800 bg-zinc-900 p-6">
           {state.phase === "starting" && (
             <p className="text-sm text-zinc-400">מתחילים תרגול...</p>
           )}
@@ -120,8 +128,8 @@ export function PracticeDialog({
                     key={i}
                     className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
                       m.role === "user"
-                        ? "ms-auto bg-primary text-primary-foreground"
-                        : "me-auto bg-zinc-800 text-zinc-100"
+                        ? "me-auto bg-primary text-primary-foreground"
+                        : "ms-auto bg-zinc-800 text-zinc-100"
                     }`}
                   >
                     {m.content}
@@ -157,7 +165,7 @@ export function PracticeDialog({
               <Button
                 variant="secondary"
                 onClick={onEnd}
-                disabled={state.isEnding}
+                disabled={state.isEnding || state.isWaitingForReply}
                 className="mt-3"
               >
                 {state.isEnding ? "מסיים..." : "סיים תרגול"}
