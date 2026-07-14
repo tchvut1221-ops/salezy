@@ -51,6 +51,7 @@ export function PracticeDialog({
   // Kick off a fresh session every time the dialog opens.
   useEffect(() => {
     if (!open) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting to "starting" is required here: this dialog is a single persistent instance whose `open` prop toggles (not remounted per session), so without this reset the PREVIOUS session's chat/feedback would flash briefly while the new startPracticeSession() call is in flight.
     setState({ phase: "starting" });
     setDraft("");
     startPracticeSession(analysisId, sectionKey, focusText, personalityType)
