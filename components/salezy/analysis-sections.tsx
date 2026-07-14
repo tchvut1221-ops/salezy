@@ -15,7 +15,13 @@ import { CoachingPlan } from "./coaching-plan";
 import { PersonalityCard } from "./personality-card";
 import { PERSONALITY_TYPE_META } from "@/lib/disc-reference";
 import { PERSONALITY_TYPE_ICON, ICON_STROKE_WIDTH } from "./icons";
-import type { AnalysisResult, CoachingPriority, ScorecardCategoryKey } from "@/types";
+import { PracticeDialog } from "./practice-dialog";
+import type {
+  AnalysisResult,
+  CoachingPriority,
+  ScorecardCategoryKey,
+  PracticeSectionKey,
+} from "@/types";
 
 const PRIORITY_RANK: Record<CoachingPriority, number> = { high: 0, medium: 1, low: 2 };
 
@@ -47,8 +53,18 @@ const DELAY = (step: number) => ({ animationDelay: `${step * 60}ms` });
  * rendered is still rendered here — nothing is deleted, it's relocated into a
  * section's `details` (hidden until "פרטים נוספים" is clicked).
  */
-export function AnalysisSections({ result }: { result: AnalysisResult }) {
+export function AnalysisSections({
+  analysisId,
+  result,
+}: {
+  analysisId: string;
+  result: AnalysisResult;
+}) {
   const [openedIds, setOpenedIds] = useState<ReadonlySet<string>>(new Set());
+  const [practiceTarget, setPracticeTarget] = useState<{
+    sectionKey: PracticeSectionKey;
+    focusText: string;
+  } | null>(null);
 
   // Sticky progress: once a section has been opened it stays counted even if
   // the user collapses it again, so the bar reads as cumulative progress
@@ -253,24 +269,44 @@ export function AnalysisSections({ result }: { result: AnalysisResult }) {
       title: "שיחת המכירה",
       summary: section1Summary,
       details: section1Details as ReactNode | undefined,
+      practiceEnabled: Boolean(improvement),
+      onPracticeClick: () =>
+        improvement && setPracticeTarget({ sectionKey: "sales_call", focusText: improvement }),
     },
     {
       id: "followup",
       title: "Follow-up",
       summary: section2Summary,
       details: section2Details,
+      practiceEnabled: Boolean(weeklyFocus),
+      onPracticeClick: () =>
+        weeklyFocus &&
+        setPracticeTarget({ sectionKey: "followup", focusText: weeklyFocus.primaryGoal }),
     },
     {
       id: "customer-style",
       title: "סגנון הלקוח",
       summary: <CustomerStyleSummary personality={result.customerPersonality} />,
       details: section3Details as ReactNode | undefined,
+      practiceEnabled: true,
+      onPracticeClick: () =>
+        setPracticeTarget({
+          sectionKey: "customer_style",
+          focusText: `לתרגל תקשורת עם לקוח מסוג ${PERSONALITY_TYPE_META[result.customerPersonality.type].he}`,
+        }),
     },
     {
       id: "scorecard",
       title: "Scorecard שלך",
       summary: section4Summary,
       details: section4Details,
+      practiceEnabled: Boolean(weakestCategory),
+      onPracticeClick: () =>
+        weakestCategory &&
+        setPracticeTarget({
+          sectionKey: "scorecard",
+          focusText: `לתרגל שיפור ב${SCORECARD_CATEGORY_LABEL[weakestCategory.key]}`,
+        }),
     },
   ];
 
@@ -287,12 +323,25 @@ export function AnalysisSections({ result }: { result: AnalysisResult }) {
             title={s.title}
             summary={s.summary}
             details={s.details}
+            practiceEnabled={s.practiceEnabled}
+            onPracticeClick={s.onPracticeClick}
             onOpenChange={(open) => {
               if (open) markOpened(s.id);
             }}
           />
         </div>
       ))}
+
+      <PracticeDialog
+        open={practiceTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setPracticeTarget(null);
+        }}
+        analysisId={analysisId}
+        sectionKey={practiceTarget?.sectionKey ?? "sales_call"}
+        focusText={practiceTarget?.focusText ?? ""}
+        personalityType={result.customerPersonality.type}
+      />
     </div>
   );
 }

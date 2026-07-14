@@ -185,7 +185,7 @@ export function AnalysisView({ initial }: { initial: Analysis }) {
             )}
           </div>
         ) : isReady && analysis.result ? (
-          <AnalysisSections result={analysis.result} />
+          <AnalysisSections analysisId={initial.id} result={analysis.result} />
         ) : (
           <Progress status={analysis.status} analysisId={initial.id} />
         )}
