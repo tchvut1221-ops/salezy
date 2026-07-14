@@ -7,7 +7,7 @@ Hebrew B2B sales-call analyzer. Upload a recording, get an AI-generated analysis
 - Next.js 16 (App Router, Turbopack) + React 19 + TypeScript
 - Supabase — Postgres (RLS on every table), Auth, Storage
 - Inngest — background pipeline (transcribe → reason → synthesize → score)
-- Transcription: ivrit.ai/whisper-large-v3 + pyannote on Runpod (primary), OpenAI `gpt-4o-transcribe-diarize` (fallback)
+- Transcription: OpenAI `gpt-4o-transcribe-diarize`
 - Analysis: Claude Sonnet reasons → GPT-4o formats to JSON (Zod-validated)
 - Auth: custom OTP via Resend (not Supabase's built-in email auth)
 
@@ -26,10 +26,6 @@ See `CLAUDE.md` for the full architecture reference, `PRODUCT.md` for product vi
    RESEND_API_KEY=
    INNGEST_SIGNING_KEY=
    INNGEST_EVENT_KEY=
-   RUNPOD_API_KEY=
-   RUNPOD_ENDPOINT_ID=
-   RUNPOD_BASE_URL=
-   TRANSCRIPTION_PROVIDER=
    ```
 
 2. Apply any pending migrations in `supabase/migrations/` (Supabase SQL Editor — see `docs/OPS.md` for the current apply order).

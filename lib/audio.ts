@@ -7,30 +7,8 @@ import ffmpegPath from "ffmpeg-static";
 /** Keep each chunk safely under Whisper's 25MB limit. */
 const MAX_BYTES = 24 * 1024 * 1024;
 
-/**
- * Keep each ivrit/Runpod chunk safely under the endpoint's confirmed 10MiB
- * REQUEST BODY limit — NOT a file-size limit like Whisper's. Discovered via a
- * live diagnostic call against the real endpoint, which returned Runpod's own
- * error verbatim: `{"detail":"bad request: body: exceeded max body size of
- * 10MiB"}`. submitRunpodJob() base64-encodes the raw chunk before sending it
- * as JSON, inflating size by ~4/3 — 7MB raw becomes ~9.33MB base64, leaving
- * ~0.67MiB headroom under the 10MiB ceiling for the surrounding JSON
- * structure (language/model/diarize fields).
- */
-export const RUNPOD_MAX_RAW_BYTES = 7 * 1024 * 1024;
-
 /** Segment length for oversized files split for Whisper (seconds). ~10 min of speech ≈ 10MB. */
 const SEGMENT_SECONDS = 600;
-
-/**
- * Segment length for oversized files split for ivrit/Runpod (seconds) — kept
- * proportionally shorter than SEGMENT_SECONDS to match RUNPOD_MAX_RAW_BYTES's
- * tighter target, with margin for un-converted (higher-bitrate) mp3/wav
- * uploads that skip the 16kHz-mono conversion step (needsConversion returns
- * false for mp3/wav, so splitIfNeeded may run on the ORIGINAL bitrate, not
- * the assumed-16kHz-mono one SEGMENT_SECONDS was tuned for).
- */
-export const RUNPOD_SEGMENT_SECONDS = 300;
 
 export interface AudioChunk {
   buffer: Buffer;
@@ -81,11 +59,9 @@ export async function convertToMp3(
  */
 export async function splitIfNeeded(
   buffer: Buffer,
-  fileName: string,
-  maxBytes: number = MAX_BYTES,
-  segmentSeconds: number = SEGMENT_SECONDS
+  fileName: string
 ): Promise<AudioChunk[]> {
-  if (buffer.length <= maxBytes) {
+  if (buffer.length <= MAX_BYTES) {
     return [{ buffer, name: fileName }];
   }
   if (!ffmpegPath) {
@@ -104,7 +80,7 @@ export async function splitIfNeeded(
     await runFfmpeg([
       "-i", inputPath,
       "-f", "segment",
-      "-segment_time", String(segmentSeconds),
+      "-segment_time", String(SEGMENT_SECONDS),
       "-c", "copy",
       "-reset_timestamps", "1",
       pattern,

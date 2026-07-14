@@ -67,4 +67,3 @@
 | Anthropic, PBC | ניתוח שיחה (LLM) | ארה"ב |
 | Inngest, Inc. | תזמור עיבוד ברקע | ארה"ב |
 | Resend (Plus Five Five, Inc.) | דוא"ל תפעולי (OTP) | ארה"ב |
-| Runpod, Inc. (מודל ivrit.ai) | תמלול עברית — רק כשמופעל | ⚖️ [לאמת אזור GPU לפני הפעלה] |

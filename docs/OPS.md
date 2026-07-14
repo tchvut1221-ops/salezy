@@ -32,12 +32,8 @@ Current migrations on `main`:
 
 `0015` (new `practice_sessions` table for the Practice Loop feature) is applied — confirmed 2026-07-14 by querying the live table directly (service-role key, bypassing RLS) and by a real end-to-end practice session (start → message exchange → feedback) completing successfully in production.
 
-**General rule, reconfirmed twice today:** a migration file existing and being merged is not the same as the fix being live — code that depends on a new column/policy can `throw` (not just degrade) if deployed before the migration is actually applied. Apply migrations before or as part of the same deploy, not after. (See `otp_rate_limits.email` earlier today for the fail-open case, and the ivrit `runpod_job_ids`/`transcription_provider` columns for the fail-throw case — both traced to this same root cause.)
+**General rule, reconfirmed twice today:** a migration file existing and being merged is not the same as the fix being live — code that depends on a new column/policy can `throw` (not just degrade) if deployed before the migration is actually applied. Apply migrations before or as part of the same deploy, not after. (See `otp_rate_limits.email` earlier today for the fail-open case.)
 
 ## Data retention
 
 The retention policy lives in `lib/retention-policy.ts` (single source of truth — the upload-page disclosure and the legal docs quote it). Nightly Inngest cron `retention-sweep` (03:00 Asia/Jerusalem): deletes raw recordings 30 days after upload (60 for rows stuck mid-pipeline), stamps `audio_deleted_at`; purges `otp_codes` >24h and `otp_rate_limits` >7d. Transcripts/analyses are never auto-deleted. Verification: `npx tsx scripts/retention-selftest.ts` (pure), `scripts/retention-dryrun.ts` (read-only, real DB).
-
-## Transcription provider
-
-`TRANSCRIPTION_PROVIDER` env var: `"ivrit"` routes through Runpod (primary) with automatic fallback to OpenAI on timeout/failure; unset or any other value uses OpenAI only (`lib/transcription/providers.ts`'s `loadTranscriptionConfig`). Requires `RUNPOD_API_KEY` / `RUNPOD_ENDPOINT_ID` to be set wherever `ivrit` is active.

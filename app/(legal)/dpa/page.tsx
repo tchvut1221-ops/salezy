@@ -10,7 +10,6 @@ const SUB_PROCESSORS = [
   { name: "Anthropic, PBC", role: "ניתוח שיחה (LLM)", region: "ארה״ב" },
   { name: "Inngest, Inc.", role: "תזמור עיבוד ברקע", region: "ארה״ב" },
   { name: "Resend (Plus Five Five, Inc.)", role: "דוא״ל תפעולי (OTP)", region: "ארה״ב" },
-  { name: "Runpod, Inc. (מודל ivrit.ai)", role: "תמלול עברית — רק כשמופעל", region: "לאמת אזור GPU לפני הפעלה" },
 ];
 
 export default function DpaPage() {

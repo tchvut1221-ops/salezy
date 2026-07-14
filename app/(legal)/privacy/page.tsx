@@ -140,11 +140,6 @@ export default function PrivacyPolicyPage() {
             <td>משלוח קודי התחברות בדוא״ל</td>
             <td>כתובת הדוא״ל וקוד ההתחברות</td>
           </tr>
-          <tr>
-            <td>Runpod (ivrit.ai)</td>
-            <td>תמלול עברית ייעודי — רק כאשר ערוץ זה מופעל</td>
-            <td>קובץ האודיו המלא</td>
-          </tr>
         </tbody>
       </table>
       <p>
