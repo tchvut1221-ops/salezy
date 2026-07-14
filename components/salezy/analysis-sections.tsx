@@ -333,6 +333,7 @@ export function AnalysisSections({
       ))}
 
       <PracticeDialog
+        key={practiceTarget ? `${practiceTarget.sectionKey}:${practiceTarget.focusText}` : "closed"}
         open={practiceTarget !== null}
         onOpenChange={(open) => {
           if (!open) setPracticeTarget(null);
