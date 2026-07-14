@@ -27,10 +27,14 @@ export interface AnalysisSectionProps {
   /** Expanded content, hidden by default. When absent the "פרטים נוספים" toggle
    *  is not rendered (a summary-only section, e.g. a degraded legacy analysis). */
   details?: ReactNode;
-  /** Part of the component API for stage 2 (Practice Loop). Stage 1 intentionally
-   *  ignores it: there is no practice flow to launch yet, so "תרגל עכשיו" is always
-   *  inert with a "בקרוב" tooltip. Wiring stage 2 = read this here, no call-site churn. */
+  /** Stage 2 (Practice Loop): whether this section actually has something to
+   *  practice (e.g. a legacy analysis with no weeklyFocus has nothing for the
+   *  Follow-up section). When false, "תרגל עכשיו" stays inert with the
+   *  "בקרוב" tooltip exactly as in stage 1. */
   practiceEnabled?: boolean;
+  /** Fires when "תרגל עכשיו" is clicked while practiceEnabled is true. The
+   *  parent (AnalysisSections) owns the actual PracticeDialog instance. */
+  onPracticeClick?: () => void;
   /** Fires on every expand/collapse so the parent can drive the Progress Bar. */
   onOpenChange?: (open: boolean) => void;
 }
@@ -39,6 +43,8 @@ export function AnalysisSection({
   title,
   summary,
   details,
+  practiceEnabled = false,
+  onPracticeClick,
   onOpenChange,
 }: AnalysisSectionProps) {
   const [open, setOpen] = useState(false);
@@ -68,18 +74,24 @@ export function AnalysisSection({
             {open ? "הסתר פרטים" : "פרטים נוספים"}
           </Button>
         )}
-        {/* aria-disabled (not the real `disabled` attribute) keeps the button
-            hoverable so the native title tooltip shows, and keeps it in the tab
-            order announced as disabled — a real disabled button suppresses both. */}
-        <Button
-          variant="secondary"
-          aria-disabled
-          title="בקרוב"
-          onClick={(e) => e.preventDefault()}
-          className="cursor-not-allowed opacity-50 hover:border-zinc-700 hover:text-zinc-300"
-        >
-          תרגל עכשיו
-        </Button>
+        {practiceEnabled ? (
+          <Button variant="secondary" onClick={onPracticeClick}>
+            תרגל עכשיו
+          </Button>
+        ) : (
+          // aria-disabled (not the real `disabled` attribute) keeps the button
+          // hoverable so the native title tooltip shows, and keeps it in the tab
+          // order announced as disabled — a real disabled button suppresses both.
+          <Button
+            variant="secondary"
+            aria-disabled
+            title="בקרוב"
+            onClick={(e) => e.preventDefault()}
+            className="cursor-not-allowed opacity-50 hover:border-zinc-700 hover:text-zinc-300"
+          >
+            תרגל עכשיו
+          </Button>
+        )}
       </div>
 
       {hasDetails && (
