@@ -25,40 +25,57 @@ export function PatternsView({ data }: { data: Extract<PatternsData, { eligible:
     .filter((t) => t.overall != null)
     .map((t, i) => ({ index: i + 1, score: t.overall as number }));
 
+  const categoryAverages = data.categoryAverages.map((c) => ({
+    label: c.label,
+    average: c.average ?? 0,
+  }));
+  const categorySummary = `גרף עמודות: ציון ממוצע לכל קטגוריה מתוך 5 — ${categoryAverages
+    .map((c) => `${c.label}: ${c.average.toFixed(1)}`)
+    .join(", ")}.`;
+
+  const trendSummary =
+    trendData.length > 1
+      ? `גרף קו: ציון סקורקארד כולל לאורך ${trendData.length} שיחות, מ-${trendData[0].score.toFixed(
+          1
+        )} ל-${trendData[trendData.length - 1].score.toFixed(1)} מתוך 5.`
+      : "";
+
   return (
     <div className="mt-8 space-y-6">
       <Panel eyebrow="מגמה" title="ציוני קטגוריות — ממוצע">
-        <div className="h-64 w-full" dir="ltr">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={data.categoryAverages.map((c) => ({ label: c.label, average: c.average ?? 0 }))}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#2A2A3D" />
-              <XAxis dataKey="label" stroke="#2A2A3D" tick={{ fill: "#8888AA", fontSize: 12 }} />
-              <YAxis domain={[0, 5]} stroke="#2A2A3D" tick={{ fill: "#8888AA", fontSize: 12 }} />
-              <Tooltip
-                contentStyle={{ backgroundColor: "#1A1A26", border: "1px solid #2A2A3D", borderRadius: 8, color: "#F0F0FF" }}
-              />
-              <Bar dataKey="average" name="ממוצע" fill="#00D4A0" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="h-64 w-full" dir="ltr" role="img" aria-label={categorySummary}>
+          <div aria-hidden="true" className="h-full w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={categoryAverages}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#2A2A3D" />
+                <XAxis dataKey="label" stroke="#2A2A3D" tick={{ fill: "#8888AA", fontSize: 12 }} />
+                <YAxis domain={[0, 5]} stroke="#2A2A3D" tick={{ fill: "#8888AA", fontSize: 12 }} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: "#1A1A26", border: "1px solid #2A2A3D", borderRadius: 8, color: "#F0F0FF" }}
+                />
+                <Bar dataKey="average" name="ממוצע" fill="#00D4A0" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </Panel>
 
       {trendData.length > 1 && (
         <Panel eyebrow="מגמה" title="ציון סקורקארד כולל לאורך זמן">
-          <div className="h-56 w-full" dir="ltr">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trendData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2A2A3D" />
-                <XAxis dataKey="index" stroke="#2A2A3D" tick={{ fill: "#8888AA", fontSize: 12 }} />
-                <YAxis domain={[0, 5]} stroke="#2A2A3D" tick={{ fill: "#8888AA", fontSize: 12 }} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: "#1A1A26", border: "1px solid #2A2A3D", borderRadius: 8, color: "#F0F0FF" }}
-                />
-                <Line type="monotone" dataKey="score" stroke="#00D4A0" strokeWidth={2} dot={{ r: 3, fill: "#00D4A0" }} />
-              </LineChart>
-            </ResponsiveContainer>
+          <div className="h-56 w-full" dir="ltr" role="img" aria-label={trendSummary}>
+            <div aria-hidden="true" className="h-full w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={trendData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#2A2A3D" />
+                  <XAxis dataKey="index" stroke="#2A2A3D" tick={{ fill: "#8888AA", fontSize: 12 }} />
+                  <YAxis domain={[0, 5]} stroke="#2A2A3D" tick={{ fill: "#8888AA", fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: "#1A1A26", border: "1px solid #2A2A3D", borderRadius: 8, color: "#F0F0FF" }}
+                  />
+                  <Line type="monotone" dataKey="score" stroke="#00D4A0" strokeWidth={2} dot={{ r: 3, fill: "#00D4A0" }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </Panel>
       )}

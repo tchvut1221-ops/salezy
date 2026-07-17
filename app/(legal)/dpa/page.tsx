@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { LegalLayout, LawyerNote } from "@/components/salezy/legal-layout";
 
-export const metadata: Metadata = { title: "הסכם עיבוד נתונים (DPA) — Salezy" };
+export const metadata: Metadata = { title: "הסכם עיבוד נתונים (DPA)" };
 
 const SUB_PROCESSORS = [
   { name: "Supabase Inc.", role: "מסד נתונים, אחסון, אימות", region: "אזור הפרויקט — לאמת: EU/US" },
@@ -109,9 +109,9 @@ export default function DpaPage() {
       <table>
         <thead>
           <tr>
-            <th>מעבד משנה</th>
-            <th>תפקיד</th>
-            <th>מיקום עיבוד עיקרי</th>
+            <th scope="col">מעבד משנה</th>
+            <th scope="col">תפקיד</th>
+            <th scope="col">מיקום עיבוד עיקרי</th>
           </tr>
         </thead>
         <tbody>

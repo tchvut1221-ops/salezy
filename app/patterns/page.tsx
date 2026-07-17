@@ -1,10 +1,13 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getPatternsData } from "@/lib/patterns";
 import { PatternsView } from "@/components/salezy/patterns-view";
 import { buttonVariants } from "@/components/salezy/ui";
+
+export const metadata: Metadata = { title: "דפוסים" };
 
 export default async function PatternsPage() {
   const supabase = await createClient();
@@ -16,7 +19,7 @@ export default async function PatternsPage() {
   const data = await getPatternsData(supabase, user.id);
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8 sm:py-12">
+    <main id="main-content" tabIndex={-1} className="mx-auto max-w-4xl px-4 py-8 outline-none sm:py-12">
       <Link
         href="/dashboard"
         className="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-foreground"

@@ -153,7 +153,7 @@ export function AnalysisView({ initial }: { initial: Analysis }) {
         {analysis.status === "failed" ||
         analysis.status === "no_speech_detected" ||
         isCancelled ? (
-          <div className="mt-6 rounded-lg border border-score-low/30 bg-score-low/10 p-5">
+          <div role="alert" className="mt-6 rounded-lg border border-score-low/30 bg-score-low/10 p-5">
             <p className="text-sm font-medium text-score-low">
               {isCancelled
                 ? "הניתוח בוטל"
@@ -204,28 +204,30 @@ function Progress({
   const current = stepIndex(status);
   return (
     <div className="mt-8">
-      <div className="flex items-center gap-3">
-        {STEPS.map((step, i) => (
-          <div key={step.key} className="flex flex-1 flex-col items-center">
-            <div
-              className={`h-2 w-full rounded-full transition-colors ${
-                i <= current ? "bg-primary" : "bg-zinc-800"
-              }`}
-            />
-            <span
-              className={`mt-2 text-xs ${
-                i <= current ? "text-primary" : "text-zinc-500"
-              }`}
-            >
-              {step.label}
-            </span>
-          </div>
-        ))}
+      <div role="status" aria-live="polite">
+        <div className="flex items-center gap-3">
+          {STEPS.map((step, i) => (
+            <div key={step.key} className="flex flex-1 flex-col items-center">
+              <div
+                className={`h-2 w-full rounded-full transition-colors ${
+                  i <= current ? "bg-primary" : "bg-zinc-800"
+                }`}
+              />
+              <span
+                className={`mt-2 text-xs ${
+                  i <= current ? "text-primary" : "text-zinc-500"
+                }`}
+              >
+                {step.label}
+              </span>
+            </div>
+          ))}
+        </div>
+        <LoadingMessages status={status} />
+        <p className="mt-2 text-center text-xs text-zinc-600">
+          אפשר להישאר בדף, הוא יתעדכן אוטומטית.
+        </p>
       </div>
-      <LoadingMessages status={status} />
-      <p className="mt-2 text-center text-xs text-zinc-600">
-        אפשר להישאר בדף, הוא יתעדכן אוטומטית.
-      </p>
       <div className="mt-4 flex justify-center gap-3">
         <StopAnalysisButton analysisId={analysisId} />
         <DeleteAnalysisButton analysisId={analysisId} />

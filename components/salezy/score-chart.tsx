@@ -64,59 +64,73 @@ export function ScoreChart({ points }: { points: ScorePoint[] }) {
     trend: Math.round(trend[i] * 10) / 10,
   }));
 
+  const trendDirection =
+    trend.length < 2
+      ? "יציבה"
+      : trend[trend.length - 1] > trend[0] + 0.5
+        ? "עולה"
+        : trend[trend.length - 1] < trend[0] - 0.5
+          ? "יורדת"
+          : "יציבה";
+  const chartSummary = `גרף ציון לאורך זמן: ${data.length} שיחות, מ-${data[0]?.score ?? 0} ל-${
+    data[data.length - 1]?.score ?? 0
+  } מתוך 100, מגמה ${trendDirection}.`;
+
   return (
     <Panel eyebrow="מגמה" title="ציון לאורך זמן">
-      <div className="h-64 w-full" dir="ltr">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#2A2A3D" />
-            <XAxis
-              dataKey="date"
-              stroke="#2A2A3D"
-              tick={{
-                fill: "#8888AA",
-                fontFamily: "var(--font-jetbrains-mono)",
-                fontSize: 12,
-              }}
-            />
-            <YAxis
-              domain={[0, 100]}
-              stroke="#2A2A3D"
-              tick={{
-                fill: "#8888AA",
-                fontFamily: "var(--font-jetbrains-mono)",
-                fontSize: 12,
-              }}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "#1A1A26",
-                border: "1px solid #2A2A3D",
-                borderRadius: 8,
-                color: "#F0F0FF",
-              }}
-              labelStyle={{ color: "#8888AA" }}
-            />
-            <Line
-              type="monotone"
-              dataKey="score"
-              name="ציון"
-              stroke="#00D4A0"
-              strokeWidth={2}
-              dot={{ r: 3, fill: "#00D4A0" }}
-              activeDot={{ r: 5 }}
-            />
-            <Line
-              type="monotone"
-              dataKey="trend"
-              name="מגמה"
-              stroke="#3D3D5C"
-              strokeWidth={2}
-              strokeDasharray="6 4"
-              dot={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+      <div className="h-64 w-full" dir="ltr" role="img" aria-label={chartSummary}>
+        <div aria-hidden="true" className="h-full w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#2A2A3D" />
+              <XAxis
+                dataKey="date"
+                stroke="#2A2A3D"
+                tick={{
+                  fill: "#8888AA",
+                  fontFamily: "var(--font-jetbrains-mono)",
+                  fontSize: 12,
+                }}
+              />
+              <YAxis
+                domain={[0, 100]}
+                stroke="#2A2A3D"
+                tick={{
+                  fill: "#8888AA",
+                  fontFamily: "var(--font-jetbrains-mono)",
+                  fontSize: 12,
+                }}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "#1A1A26",
+                  border: "1px solid #2A2A3D",
+                  borderRadius: 8,
+                  color: "#F0F0FF",
+                }}
+                labelStyle={{ color: "#8888AA" }}
+              />
+              <Line
+                type="monotone"
+                dataKey="score"
+                name="ציון"
+                stroke="#00D4A0"
+                strokeWidth={2}
+                dot={{ r: 3, fill: "#00D4A0" }}
+                activeDot={{ r: 5 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="trend"
+                name="מגמה"
+                stroke="#3D3D5C"
+                strokeWidth={2}
+                strokeDasharray="6 4"
+                dot={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </Panel>
   );

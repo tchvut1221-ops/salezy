@@ -162,6 +162,17 @@
   html {
     @apply font-sans;
   }
+  /*
+    Baseline keyboard-focus indicator (WCAG 2.4.7 / 1.4.11): the `*` rule
+    above only sets outline *color* at 50% opacity, so any element that
+    doesn't carry its own focus-visible utility (most buttons/nav/inputs do)
+    would otherwise show a faint or invisible ring. This is additive — it
+    doesn't touch any existing, stronger focus-visible style.
+  */
+  :focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+  }
   body {
     @apply bg-background text-foreground;
     /* Hebrew renders denser than Latin; relax line + word spacing for readability. */
@@ -229,4 +240,37 @@
   .animate-fade-up {
     animation: fade-up 0.4s ease-out both;
   }
+}
+
+/*
+  Accessibility widget support (components/salezy/accessibility-widget.tsx).
+  Opt-in only classes toggled on <html> — the default design is untouched
+  unless a user explicitly turns one of these on, and the choice persists via
+  localStorage across visits.
+*/
+
+/* "עצירת אנימציות" — a user-facing kill switch in addition to the OS-level
+   prefers-reduced-motion support already elsewhere in this file. */
+html.a11y-reduce-motion *,
+html.a11y-reduce-motion *::before,
+html.a11y-reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* "ניגודיות גבוהה" — pushes muted/secondary text and borders further from
+   the background without touching the accent/score brand colors. */
+html.a11y-high-contrast {
+  --text-secondary: #c4c4e0;
+  --border: #5a5a7a;
+  --border-strong: #7a7aa0;
+}
+
+/* "הגדלת טקסט" — a global scale applied via an inline custom property the
+   widget sets on <html> (--a11y-font-scale), independent of the browser's
+   own zoom so it can be reset without affecting the whole page's zoom. */
+html {
+  font-size: calc(100% * var(--a11y-font-scale, 1));
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { computeStats, fetchScorePoints } from "@/lib/analytics";
@@ -49,6 +50,8 @@ const dateFmt = new Intl.DateTimeFormat("he-IL", {
   year: "numeric",
 });
 
+export const metadata: Metadata = { title: "הניתוחים שלי" };
+
 export default async function DashboardPage() {
   const supabase = await createClient();
 
@@ -72,7 +75,7 @@ export default async function DashboardPage() {
   const stats = computeStats(scorePoints);
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8 sm:py-12">
+    <main id="main-content" tabIndex={-1} className="mx-auto max-w-4xl px-4 py-8 outline-none sm:py-12">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">הניתוחים שלי</h1>
       </div>
@@ -91,27 +94,27 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      <div className="mt-8 space-y-3">
-        {analyses.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-zinc-800 bg-zinc-900/40 px-6 py-10 text-center">
-            <p className="font-medium text-zinc-200">
-              עדיין אין לך ניתוחים — הניתוח הראשון שלך מחכה לקובץ
-            </p>
-            <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-zinc-500">
-              העלה הקלטה של שיחת מכירה ותקבל ניתוח אישיות הלקוח, ציון ביצועים
-              מפורט וצעדים הבאים מומלצים — הכל אוטומטית, בתוך דקות.
-            </p>
-            <Link href="/upload" className={`mt-6 ${buttonVariants()}`}>
-              העלאת השיחה הראשונה
-            </Link>
-          </div>
-        ) : (
-          analyses.map((a, i) => {
+      {analyses.length === 0 ? (
+        <div className="mt-8 rounded-xl border border-dashed border-zinc-800 bg-zinc-900/40 px-6 py-10 text-center">
+          <p className="font-medium text-zinc-200">
+            עדיין אין לך ניתוחים — הניתוח הראשון שלך מחכה לקובץ
+          </p>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-zinc-500">
+            העלה הקלטה של שיחת מכירה ותקבל ניתוח אישיות הלקוח, ציון ביצועים
+            מפורט וצעדים הבאים מומלצים — הכל אוטומטית, בתוך דקות.
+          </p>
+          <Link href="/upload" className={`mt-6 ${buttonVariants()}`}>
+            העלאת השיחה הראשונה
+          </Link>
+        </div>
+      ) : (
+        <ul className="mt-8 space-y-3">
+          {analyses.map((a, i) => {
             const score = a.scores?.overall;
             const sc =
               typeof score === "number" ? scoreColor(score) : null;
             return (
-              <div
+              <li
                 key={a.id}
                 className="animate-fade-up flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3.5 transition hover:border-zinc-700 hover:bg-zinc-800/40 sm:px-5 sm:py-4"
                 style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
@@ -145,12 +148,12 @@ export default async function DashboardPage() {
                   <Pill tone={STATUS_TONE[a.status]}>{STATUS_LABELS[a.status]}</Pill>
                 </Link>
 
-                <DeleteAnalysisButton analysisId={a.id} compact />
-              </div>
+                <DeleteAnalysisButton analysisId={a.id} fileName={a.file_name} compact />
+              </li>
             );
-          })
-        )}
-      </div>
+          })}
+        </ul>
+      )}
     </main>
   );
 }

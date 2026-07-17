@@ -29,7 +29,7 @@ export function HeaderNav() {
 
   return (
     <>
-      <nav className="hidden items-center gap-4 sm:flex sm:gap-5">
+      <nav aria-label="ניווט ראשי" className="hidden items-center gap-4 sm:flex sm:gap-5">
         {LINKS.map((link) => (
           <Link
             key={link.href}
@@ -58,6 +58,7 @@ export function HeaderNav() {
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "סגור תפריט" : "פתח תפריט"}
         aria-expanded={open}
+        aria-controls="mobile-menu"
         className="rounded-lg p-2 text-zinc-400 outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring sm:hidden"
       >
         {open ? (
@@ -68,7 +69,10 @@ export function HeaderNav() {
       </button>
 
       {open && (
-        <div className="absolute inset-x-0 top-14 z-30 border-b border-border bg-surface px-4 py-4 sm:hidden">
+        <div
+          id="mobile-menu"
+          className="absolute inset-x-0 top-14 z-30 border-b border-border bg-surface px-4 py-4 sm:hidden"
+        >
           <div className="flex flex-col gap-3">
             {LINKS.map((link) => (
               <Link

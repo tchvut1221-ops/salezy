@@ -54,18 +54,26 @@ function CategoryCard({
   const meta = CATEGORY_META[categoryKey];
   const Icon = meta.icon;
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
+    <article
+      aria-label={`${meta.label}: ${category.score != null ? `${category.score} מתוך 5` : "לא דורג"}`}
+      className="rounded-xl border border-zinc-800 bg-zinc-900 p-5"
+    >
       <div className="flex items-center gap-2">
-        <Icon className="h-4 w-4 text-zinc-500" strokeWidth={1.5} />
-        <span className="font-medium text-zinc-200">{meta.label}</span>
+        <Icon className="h-4 w-4 text-zinc-500" strokeWidth={1.5} aria-hidden="true" />
+        <h3 className="m-0 font-medium text-zinc-200">{meta.label}</h3>
       </div>
-      <div className="mt-3 flex gap-1.5">
+      <div
+        role="img"
+        aria-label={category.score != null ? `ציון ${category.score} מתוך 5` : "לא דורג"}
+        className="mt-3 flex gap-1.5"
+      >
         {[1, 2, 3, 4, 5].map((n) => {
           const filled = category.score != null && n <= category.score;
           const sc = category.score != null ? scorecardScoreColor(category.score) : null;
           return (
             <span
               key={n}
+              aria-hidden="true"
               className={`h-2.5 w-2.5 rounded-full ${filled && sc ? sc.dot : "bg-zinc-700"}`}
             />
           );
@@ -79,7 +87,7 @@ function CategoryCard({
       ) : (
         <p className="mt-3 text-xs text-zinc-600">לא רלוונטי לשיחה זו</p>
       )}
-    </div>
+    </article>
   );
 }
 
@@ -99,12 +107,21 @@ function TalkRatioCard({ talkRatio }: { talkRatio: Scorecard["talkRatio"] }) {
           {Math.round(talkRatio.repPercentage)}%
         </span>
       </div>
-      <div className="relative mt-4 h-3 overflow-hidden rounded-full bg-zinc-800" dir="ltr">
+      <div
+        role="img"
+        aria-label={`יחס דיבור: איש מכירות ${Math.round(talkRatio.repPercentage)} אחוז, לקוח ${Math.round(
+          100 - talkRatio.repPercentage
+        )} אחוז, בנצ'מרק 43 אחוז`}
+        className="relative mt-4 h-3 overflow-hidden rounded-full bg-zinc-800"
+        dir="ltr"
+      >
         <div
+          aria-hidden="true"
           className="absolute inset-y-0 start-0 rounded-full bg-primary"
           style={{ width: `${talkRatio.repPercentage}%` }}
         />
         <div
+          aria-hidden="true"
           className="absolute inset-y-0 w-px bg-zinc-400"
           style={{ insetInlineStart: "43%" }}
         />

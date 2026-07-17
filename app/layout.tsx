@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Assistant, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/salezy/site-header";
+import { SiteFooter } from "@/components/salezy/site-footer";
+import { AccessibilityWidget } from "@/components/salezy/accessibility-widget";
 import { Toaster } from "@/components/salezy/toaster";
 
 // Inter carries Latin text and the wordmark. It has no Hebrew glyphs, so Hebrew
@@ -64,8 +66,16 @@ export default function RootLayout({
       className={`dark h-full antialiased ${inter.variable} ${assistant.variable} ${jetbrainsMono.variable}`}
     >
       <body className="flex min-h-full flex-col bg-background text-foreground">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:start-4 focus:top-4 focus:z-50 focus:rounded focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
+        >
+          דלג לתוכן
+        </a>
         <SiteHeader />
-        {children}
+        <div className="flex flex-1 flex-col">{children}</div>
+        <SiteFooter />
+        <AccessibilityWidget />
         <Toaster />
       </body>
     </html>

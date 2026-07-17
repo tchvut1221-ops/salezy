@@ -3,7 +3,7 @@ import Link from "next/link";
 import { LegalLayout, LawyerNote } from "@/components/salezy/legal-layout";
 import { LEGAL_DOC_VERSIONS } from "@/lib/legal";
 
-export const metadata: Metadata = { title: "תנאי שימוש — Salezy" };
+export const metadata: Metadata = { title: "תנאי שימוש" };
 
 export default function TermsOfServicePage() {
   return (

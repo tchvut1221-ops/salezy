@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { LegalLayout, LawyerNote } from "@/components/salezy/legal-layout";
 import { LEGAL_DOC_VERSIONS } from "@/lib/legal";
 
-export const metadata: Metadata = { title: "מדיניות פרטיות — Salezy" };
+export const metadata: Metadata = { title: "מדיניות פרטיות" };
 
 export default function PrivacyPolicyPage() {
   return (
@@ -25,9 +25,9 @@ export default function PrivacyPolicyPage() {
       <table>
         <thead>
           <tr>
-            <th>סוג המידע</th>
-            <th>מקור</th>
-            <th>דוגמאות</th>
+            <th scope="col">סוג המידע</th>
+            <th scope="col">מקור</th>
+            <th scope="col">דוגמאות</th>
           </tr>
         </thead>
         <tbody>
@@ -100,9 +100,9 @@ export default function PrivacyPolicyPage() {
       <table>
         <thead>
           <tr>
-            <th>ספק</th>
-            <th>תפקיד</th>
-            <th>מה מגיע אליו</th>
+            <th scope="col">ספק</th>
+            <th scope="col">תפקיד</th>
+            <th scope="col">מה מגיע אליו</th>
           </tr>
         </thead>
         <tbody>
@@ -156,8 +156,8 @@ export default function PrivacyPolicyPage() {
       <table>
         <thead>
           <tr>
-            <th>פריט</th>
-            <th>תקופת שמירה</th>
+            <th scope="col">פריט</th>
+            <th scope="col">תקופת שמירה</th>
           </tr>
         </thead>
         <tbody>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useId, useMemo, useState, type ReactNode } from "react";
 import { Panel, Button, scoreColor, scorecardScoreColor } from "./ui";
 import { AnalysisSection } from "./analysis-section";
 import { ExecutiveSummary } from "./executive-summary";
@@ -413,6 +413,7 @@ function CustomerStyleSummary({
   personality: AnalysisResult["customerPersonality"];
 }) {
   const [showRest, setShowRest] = useState(false);
+  const restId = useId();
   const { type, indeterminate, explanation, signals } = personality;
   const meta = PERSONALITY_TYPE_META[type];
   const Icon = PERSONALITY_TYPE_ICON[type];
@@ -460,11 +461,12 @@ function CustomerStyleSummary({
             size="sm"
             onClick={() => setShowRest((v) => !v)}
             aria-expanded={showRest}
+            aria-controls={restId}
           >
             {showRest ? "הסתר ציטוטים נוספים" : "למה זיהיתי ככה?"}
           </Button>
           {showRest && (
-            <ul className="mt-3 space-y-2.5">
+            <ul id={restId} className="mt-3 space-y-2.5">
               {rest.map((s, i) => (
                 <li key={i} className="border-s-2 border-zinc-700 ps-3 text-sm">
                   <p className="text-zinc-200">&ldquo;{s.quote}&rdquo;</p>

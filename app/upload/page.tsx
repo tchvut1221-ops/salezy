@@ -158,7 +158,7 @@ export default function UploadPage() {
   }
 
   return (
-    <main className="mx-auto max-w-xl px-4 py-12">
+    <main id="main-content" tabIndex={-1} className="mx-auto max-w-xl px-4 py-12 outline-none">
       <h1 className="text-2xl font-bold text-foreground">העלאת שיחת מכירה</h1>
       <p className="mt-1 text-sm text-zinc-400">
         העלה הקלטה (mp3 / wav / m4a / mp4 / mov / ogg / aac / webm / flac, עד{" "}
@@ -184,6 +184,9 @@ export default function UploadPage() {
           strokeWidth={1.5}
         />
         <p className="mt-2 text-sm text-zinc-400">גררו קובץ לכאן, או</p>
+        <label htmlFor="file" className="sr-only">
+          בחירת קובץ הקלטה
+        </label>
         <input
           id="file"
           type="file"
@@ -203,8 +206,15 @@ export default function UploadPage() {
       </div>
 
       {busy && (
-        <div className="mt-6">
-          <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-800">
+        <div className="mt-6" role="status" aria-live="polite">
+          <div
+            role="progressbar"
+            aria-label="התקדמות העלאה"
+            aria-valuenow={progress}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            className="h-2 w-full overflow-hidden rounded-full bg-zinc-800"
+          >
             <div
               className="h-full rounded-full bg-primary transition-all duration-300"
               style={{ width: `${progress}%` }}
@@ -225,7 +235,11 @@ export default function UploadPage() {
         </div>
       )}
 
-      {error && <p className="mt-4 text-sm text-score-low">{error}</p>}
+      {error && (
+        <p role="alert" className="mt-4 text-sm text-score-low">
+          {error}
+        </p>
+      )}
 
       <Button
         onClick={onUpload}

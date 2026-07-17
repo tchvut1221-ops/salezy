@@ -74,7 +74,7 @@ export default async function Home() {
   if (user) redirect("/dashboard");
 
   return (
-    <main className="flex-1">
+    <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
       {/* Hero */}
       <section className="mx-auto max-w-6xl px-4 py-16 sm:py-20">
         <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">

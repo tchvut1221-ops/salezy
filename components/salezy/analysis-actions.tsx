@@ -65,14 +65,18 @@ export function ResumeAnalysisButton({ analysisId }: { analysisId: string }) {
  */
 export function DeleteAnalysisButton({
   analysisId,
+  fileName,
   compact = false,
 }: {
   analysisId: string;
+  /** When known (e.g. a dashboard list row), makes the accessible name file-specific ("מחק ניתוח X.mp3") instead of the generic fallback. */
+  fileName?: string;
   /** Smaller footprint for dense contexts (e.g. one per dashboard list row). */
   compact?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const router = useRouter();
+  const label = fileName ? `מחק ניתוח ${fileName}` : "מחק ניתוח";
 
   function onClick(e: React.MouseEvent) {
     e.preventDefault();
@@ -102,8 +106,8 @@ export function DeleteAnalysisButton({
       size={compact ? "sm" : "md"}
       onClick={onClick}
       disabled={pending}
-      aria-label="מחק ניתוח"
-      title="מחק ניתוח"
+      aria-label={label}
+      title={label}
       className={compact ? "shrink-0" : undefined}
     >
       {compact ? (pending ? "מוחק..." : "מחק") : pending ? "מוחק..." : "מחק ניתוח"}

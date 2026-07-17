@@ -104,12 +104,18 @@ export function PracticeDialog({
         <Dialog.Backdrop className="fixed inset-0 z-40 bg-black/60" />
         <Dialog.Popup className="fixed left-1/2 top-1/2 z-50 flex max-h-[80vh] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 flex-col rounded-xl border border-zinc-800 bg-zinc-900 p-6">
           {state.phase === "starting" && (
-            <p className="text-sm text-zinc-400">מתחילים תרגול...</p>
+            <>
+              <Dialog.Title className="sr-only">תרגול</Dialog.Title>
+              <p role="status" aria-live="polite" className="text-sm text-zinc-400">
+                מתחילים תרגול...
+              </p>
+            </>
           )}
 
           {state.phase === "error" && (
             <>
-              <p className="text-sm text-score-low">{state.message}</p>
+              <Dialog.Title className="sr-only">שגיאה בתרגול</Dialog.Title>
+              <p role="alert" className="text-sm text-score-low">{state.message}</p>
               <Button variant="secondary" onClick={() => onOpenChange(false)} className="mt-4">
                 סגור
               </Button>
@@ -122,7 +128,12 @@ export function PracticeDialog({
                 תרגול: {focusText}
               </Dialog.Title>
 
-              <div className="mt-4 flex-1 space-y-2 overflow-y-auto">
+              <div
+                className="mt-4 flex-1 space-y-2 overflow-y-auto"
+                role="log"
+                aria-live="polite"
+                aria-label="שיחת תרגול"
+              >
                 {state.session.messages.map((m, i) => (
                   <div
                     key={i}
@@ -141,7 +152,11 @@ export function PracticeDialog({
               </div>
 
               <div className="mt-4 flex gap-2">
+                <label htmlFor="practice-reply" className="sr-only">
+                  הקלד תגובה
+                </label>
                 <input
+                  id="practice-reply"
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
                   onKeyDown={(e) => {
