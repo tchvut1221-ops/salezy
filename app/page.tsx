@@ -4,7 +4,6 @@ import { Upload, Sparkles, TrendingUp, Lock, ShieldCheck, Clock, EyeOff } from "
 import { createClient } from "@/lib/supabase/server";
 import { buttonVariants, Pill } from "@/components/salezy/ui";
 import { LandingDemo } from "@/components/salezy/landing-demo";
-import { SiteFooter } from "@/components/salezy/site-footer";
 import { RevealOnScroll } from "@/components/salezy/reveal-on-scroll";
 import { AUDIO_RETENTION_DAYS } from "@/lib/retention-policy";
 
@@ -186,8 +185,6 @@ export default async function Home() {
           </Link>
         </div>
       </section>
-
-      <SiteFooter />
     </main>
   );
 }

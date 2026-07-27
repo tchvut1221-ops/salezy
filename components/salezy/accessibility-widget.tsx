@@ -109,7 +109,7 @@ export function AccessibilityWidget() {
     <Popover.Root>
       <Popover.Trigger
         aria-label="פתיחת סרגל נגישות"
-        className="fixed bottom-6 end-6 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-zinc-700 bg-primary text-primary-foreground shadow-lg outline-none transition-colors hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        className="fixed bottom-6 end-6 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-zinc-700 bg-accent-blue-deep text-primary-foreground shadow-lg outline-none transition-colors hover:bg-accent-blue-deep/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       >
         <Accessibility className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
       </Popover.Trigger>

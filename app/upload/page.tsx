@@ -193,7 +193,7 @@ export default function UploadPage() {
           accept=".mp3,.wav,.m4a,.mp4,.mov,.ogg,.aac,.webm,.flac,audio/*,video/mp4,video/quicktime"
           onChange={onPick}
           disabled={busy}
-          className="mx-auto mt-2 block text-sm text-zinc-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary file:px-4 file:py-2 file:text-primary-foreground file:transition-colors hover:file:bg-primary/90"
+          className="mx-auto mt-2 block text-sm text-zinc-300 file:me-4 file:rounded-lg file:border-0 file:bg-accent-blue-deep file:px-4 file:py-2 file:text-primary-foreground file:transition-colors hover:file:bg-accent-blue-deep/90"
         />
         {file && (
           <p className="mt-4 text-sm text-zinc-300">

@@ -353,8 +353,11 @@ function ProgressBar({ opened, total }: { opened: number; total: number }) {
     <div>
       <div className="mb-2 flex items-center justify-between text-sm">
         <span className="text-zinc-400">התקדמות בניתוח</span>
-        <span className="font-mono tabular-nums text-primary">
-          {opened}/{total} <span className="text-zinc-500">חלקים נפתחו</span>
+        <span>
+          <span className="font-mono tabular-nums text-primary">
+            {opened}/{total}
+          </span>{" "}
+          <span className="text-zinc-500">חלקים נפתחו</span>
         </span>
       </div>
       <div

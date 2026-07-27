@@ -40,15 +40,31 @@
   --color-score-mid: #f5a623;
   --color-score-low: #ff4d6a;
 
+  /*
+    Deepened blue for primary-button fills only (see the --accent-blue-deep
+    comment in :root below for the contrast rationale). --accent-blue itself
+    stays untouched for text/border/ring use.
+  */
+  --color-accent-blue-deep: #2e5fe8;
+
+  /* Border shade for interactive controls — see --border-interactive in :root. */
+  --color-border-interactive: #5a5a7a;
+
   /* Customer DISC personality (locked to lib/sales-knowledge.ts: Red/Yellow/Green/Blue) */
   --color-disc-d: #ff4d4d;
   --color-disc-i: #ffd400;
   --color-disc-s: #00c48c;
   --color-disc-c: #4d7eff;
 
-  /* Type system: Inter (Latin) + Assistant (Hebrew) for sans, JetBrains Mono for every number */
-  --font-sans: var(--font-inter), var(--font-assistant), ui-sans-serif, system-ui,
-    sans-serif;
+  /*
+    Type system: Inter (Latin) + Assistant (Hebrew) for sans, JetBrains Mono
+    for every number. --font-inter-primary (not --font-inter) deliberately —
+    see the comment above the Inter() call in app/layout.tsx for why: Next's
+    own --font-inter variable carries a broken synthetic fallback face that
+    claims Hebrew coverage and pre-empts Assistant.
+  */
+  --font-sans: var(--font-inter-primary), var(--font-assistant), ui-sans-serif,
+    system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", monospace;
 }
 
@@ -120,6 +136,37 @@
   --score-high: #00d4a0;
   --score-mid: #f5a623;
   --score-low: #ff4d6a;
+
+  /*
+    Customer DISC personality (locked to lib/sales-knowledge.ts: Red/Yellow/
+    Green/Blue). Previously only declared inside @theme as --color-disc-*,
+    which Tailwind uses to generate utilities (bg-disc-d, text-disc-i, ...)
+    but never resolves as a plain CSS custom property. --chart-4 below
+    referenced --disc-s directly and silently resolved to nothing as a
+    result — these four are the fix.
+  */
+  --disc-d: #ff4d4d;
+  --disc-i: #ffd400;
+  --disc-s: #00c48c;
+  --disc-c: #4d7eff;
+
+  /*
+    Primary-button fill only. --accent-blue (#4D7EFF) stays the source of
+    truth for text, links, borders, and focus rings, where it passes AA
+    (5.40:1 on --bg-base). But white text (#F0F0FF) on a #4D7EFF *fill* is
+    only 3.24:1 — below the 4.5:1 AA text minimum — so primary buttons use
+    this deliberately-deepened shade for their background instead.
+  */
+  --accent-blue-deep: #2e5fe8;
+
+  /*
+    Border shade for interactive controls (inputs, focus outlines on
+    non-focus-visible elements) — plain --border (#2A2A3D) is only 1.41:1
+    against --bg-base, well under the 3:1 WCAG 1.4.11 minimum for UI
+    component boundaries. This one clears it at ~3.2:1 without touching the
+    quieter --border used for purely decorative dividers.
+  */
+  --border-interactive: #5a5a7a;
 
   /* ── shadcn semantic tokens, derived from the brand tokens above ── */
   --background: var(--bg-base);

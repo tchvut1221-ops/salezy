@@ -32,7 +32,7 @@ export function LandingDemo() {
   const disc = PERSONALITY_TYPE_META.Driver;
   return (
     <div className="relative">
-      <span className="absolute -top-3 start-4 z-10 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">
+      <span className="absolute -top-3 start-4 z-10 rounded-full bg-accent-blue-deep px-3 py-1 text-xs font-medium text-primary-foreground">
         דוגמה
       </span>
       <div className="space-y-4">

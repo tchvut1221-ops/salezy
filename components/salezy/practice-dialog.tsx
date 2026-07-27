@@ -139,7 +139,7 @@ export function PracticeDialog({
                     key={i}
                     className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
                       m.role === "user"
-                        ? "me-auto bg-primary text-primary-foreground"
+                        ? "me-auto bg-accent-blue-deep text-primary-foreground"
                         : "ms-auto bg-zinc-800 text-zinc-100"
                     }`}
                   >

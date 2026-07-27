@@ -123,7 +123,12 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: "bg-primary text-primary-foreground hover:bg-primary/90",
+        // bg-accent-blue-deep, not bg-primary: white text (#F0F0FF) on the
+        // plain accent blue (#4D7EFF) is only 3.24:1, below the 4.5:1 AA
+        // minimum for text. The deepened shade clears ~4.8:1 while --primary
+        // itself (used for text/border/ring elsewhere) stays untouched.
+        primary:
+          "bg-accent-blue-deep text-primary-foreground hover:bg-accent-blue-deep/90",
         secondary:
           "border border-zinc-700 text-zinc-300 hover:border-zinc-600 hover:text-foreground",
         ghost: "text-zinc-400 hover:text-foreground",
