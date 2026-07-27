@@ -354,6 +354,20 @@
   localStorage across visits.
 */
 
+/*
+  The floating a11y button sits at `bottom-6` (1.5rem), which on a phone lands
+  directly on top of the app shell's bottom tab bar (h-16 = 4rem + the safe
+  area). AppBottomNav tags <html> with `has-bottom-nav` while it's mounted —
+  i.e. only on the four authenticated app routes — and this lifts the button
+  clear of the bar there, without moving it on the marketing pages that have
+  no bottom nav. Scoped below `md` because that's where the bar renders.
+*/
+@media (max-width: 47.999rem) {
+  html.has-bottom-nav .a11y-fab {
+    bottom: calc(4.75rem + env(safe-area-inset-bottom));
+  }
+}
+
 /* "עצירת אנימציות" — a user-facing kill switch in addition to the OS-level
    prefers-reduced-motion support already elsewhere in this file. */
 html.a11y-reduce-motion *,

@@ -2,15 +2,21 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { Button, buttonVariants, Card } from "@/components/salezy/ui";
+import { Button, buttonVariants, Card } from "./ui";
 
 /**
- * Route-segment error boundary. Catches render/data errors anywhere under the
- * root layout and shows a friendly Hebrew message instead of a raw stack trace.
- * The SiteHeader (from the layout) stays visible above this. `reset` re-renders
- * the segment; the dashboard link is the safe escape hatch.
+ * The generic "something went wrong" screen, shared by the two route-group
+ * error boundaries (app/(site)/error.tsx and app/(app)/error.tsx).
+ *
+ * Why two boundaries instead of the single app/error.tsx this replaces: an
+ * error.tsx renders INSIDE its segment's layout, and since D2 the two groups
+ * have different shells. One boundary at the root would have rendered inside
+ * the (now chrome-less) root layout, so an error on any route would have
+ * dropped the header/footer — or the sidebar — entirely. One per group keeps
+ * the surrounding shell intact either way; the visible card below is
+ * unchanged from the previous app/error.tsx.
  */
-export default function Error({
+export function ErrorView({
   error,
   reset,
 }: {

@@ -66,6 +66,45 @@ export async function fetchScorePoints(
     }));
 }
 
+/** One customer-personality type's share of the user's scored calls. */
+export interface PersonalityShare {
+  type: PersonalityType;
+  count: number;
+  /** Percentage of calls that HAVE a personality type, 0-100, rounded. */
+  percentage: number;
+}
+
+/**
+ * Distribution of detected customer personality types, descending by count.
+ *
+ * Deliberately a pure function over the score points the dashboard already
+ * fetches: `scores.personalityType` is part of the flat per-call snapshot that
+ * fetchScorePoints selects, so the DISC-distribution widget costs zero extra
+ * queries and never touches the heavy `result` jsonb. Types with no calls are
+ * omitted rather than rendered as empty 0% rows.
+ *
+ * The denominator is calls WITH a personality type, not all scored calls — a
+ * v1/indeterminate call without one shouldn't silently shrink every bar.
+ */
+export function computePersonalityDistribution(points: ScorePoint[]): PersonalityShare[] {
+  const counts = new Map<PersonalityType, number>();
+  for (const p of points) {
+    if (!p.personalityType) continue;
+    counts.set(p.personalityType, (counts.get(p.personalityType) ?? 0) + 1);
+  }
+
+  const total = [...counts.values()].reduce((sum, c) => sum + c, 0);
+  if (total === 0) return [];
+
+  return [...counts.entries()]
+    .map(([type, count]) => ({
+      type,
+      count,
+      percentage: Math.round((count / total) * 100),
+    }))
+    .sort((a, b) => b.count - a.count);
+}
+
 /** Pure aggregation over already-fetched score points — no I/O, easy to unit-trace. */
 export function computeStats(points: ScorePoint[]): AnalyticsStats {
   const callCount = points.length;

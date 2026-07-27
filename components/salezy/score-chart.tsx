@@ -59,7 +59,14 @@ const DAY_MONTH_YEAR_FORMATTER = new Intl.DateTimeFormat("he-IL", {
 });
 
 /** Line chart of score-per-call over time, with a linear trend line. v2-only, non-null scores. */
-export function ScoreChart({ points }: { points: ScorePoint[] }) {
+export function ScoreChart({
+  points,
+  className,
+}: {
+  points: ScorePoint[];
+  /** Grid placement from the dashboard (e.g. "lg:col-span-2"). */
+  className?: string;
+}) {
   const trend = linearRegression(points.map((p) => p.overall));
 
   // Only show the year once calls actually span more than one — otherwise
@@ -86,7 +93,7 @@ export function ScoreChart({ points }: { points: ScorePoint[] }) {
   } מתוך 100, מגמה ${trendDirection}.`;
 
   return (
-    <Panel eyebrow="מגמה" title="ציון לאורך זמן">
+    <Panel eyebrow="מגמה" title="ציון לאורך זמן" className={className}>
       <div className="h-64 w-full" dir="ltr" role="img" aria-label={chartSummary}>
         <div aria-hidden="true" className="h-full w-full">
           <ResponsiveContainer width="100%" height="100%">

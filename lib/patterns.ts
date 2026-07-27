@@ -41,7 +41,8 @@ export type PatternsData =
       trend: Array<{ createdAt: string; overall: number | null }>;
     };
 
-const MIN_CALLS_FOR_PATTERN = 3;
+/** Exported so the dashboard's pattern widget states the same gate, not a copy of the number. */
+export const MIN_CALLS_FOR_PATTERN = 3;
 const CATEGORIES: ScorecardCategoryKey[] = [
   "opening",
   "discovery",
@@ -211,6 +212,158 @@ const COACHING_FOR_PATTERN: Record<string, { action: string; how: string }> = {
     how: "בשלב הסגירה, שאל שאלה ואז שתוק — תן ללקוח למלא את השקט.",
   },
 };
+
+/** A single coaching action as produced by the analysis pipeline. */
+export type CoachingAction = NonNullable<AnalysisResult["coachingActions"]>[number];
+
+/**
+ * The two insight widgets on the dashboard, in one payload:
+ *  - the single highest-priority recurring pattern (+ its coaching pairing),
+ *    gated by the same 3-call rule as the /patterns page
+ *  - the coaching actions attached to the most recent scored call
+ */
+export interface DashboardInsights {
+  /** True once there are MIN_CALLS_FOR_PATTERN scorecard-bearing calls. */
+  eligible: boolean;
+  /** Scorecard-bearing call count (what the gate counts). */
+  callCount: number;
+  topFinding: PatternFinding | null;
+  topCoaching: { action: string; how: string } | null;
+  latestCoaching: { analysisId: string; actions: CoachingAction[] } | null;
+}
+
+const COACHING_PRIORITY_ORDER: Record<CoachingAction["priority"], number> = {
+  high: 0,
+  medium: 1,
+  low: 2,
+};
+
+type InsightRow = {
+  id: string;
+  created_at: string;
+  scorecard: ScoredCall["scorecard"] | null;
+  nextSteps: unknown[] | null;
+  coachingActions: CoachingAction[] | null;
+};
+
+function rowsToInsights(rows: InsightRow[]): DashboardInsights {
+  const scoredCalls: ScoredCall[] = rows
+    .filter((row) => row.scorecard != null)
+    .map((row) => ({
+      id: row.id,
+      createdAt: row.created_at,
+      scorecard: row.scorecard!,
+      nextStepsCount: row.nextSteps?.length ?? 0,
+    }));
+
+  // Rows arrive oldest -> newest, so the last one with coaching actions is the
+  // most recent call that produced any.
+  const latestWithCoaching = [...rows]
+    .reverse()
+    .find((row) => (row.coachingActions?.length ?? 0) > 0);
+
+  const latestCoaching = latestWithCoaching
+    ? {
+        analysisId: latestWithCoaching.id,
+        actions: [...latestWithCoaching.coachingActions!].sort(
+          (a, b) =>
+            (COACHING_PRIORITY_ORDER[a.priority] ?? 3) -
+            (COACHING_PRIORITY_ORDER[b.priority] ?? 3)
+        ),
+      }
+    : null;
+
+  if (scoredCalls.length < MIN_CALLS_FOR_PATTERN) {
+    return {
+      eligible: false,
+      callCount: scoredCalls.length,
+      topFinding: null,
+      topCoaching: null,
+      latestCoaching,
+    };
+  }
+
+  const topFinding = detectPatterns(scoredCalls)[0] ?? null;
+  return {
+    eligible: true,
+    callCount: scoredCalls.length,
+    topFinding,
+    topCoaching: topFinding ? (COACHING_FOR_PATTERN[topFinding.id] ?? null) : null,
+    latestCoaching,
+  };
+}
+
+/**
+ * Dashboard-sized sibling of getPatternsData: same rules, same detectors, a
+ * much smaller payload.
+ *
+ * The dashboard's own list query deliberately avoids the full `result` jsonb
+ * for performance, and running getPatternsData here would have undone that by
+ * pulling every completed analysis's entire result blob (transcript-derived
+ * quotes, key moments, the whole personality section) just to render two small
+ * cards. Instead this selects only the three JSON paths the widgets need via
+ * PostgREST's `->` operator, which is roughly an order of magnitude less data
+ * per row.
+ *
+ * If that path select fails for any reason (an older PostgREST, a syntax
+ * rejection), it falls back to the proven full-`result` select used by
+ * getPatternsData rather than silently rendering empty widgets — the data is
+ * identical either way, only the transfer size differs. The fallback also
+ * triggers on a *silent* shape mismatch (rows came back, but not one of them
+ * carried a scorecard), so a future PostgREST change to path-alias behaviour
+ * degrades into an extra query rather than into two widgets that quietly claim
+ * the user has no data. The only false positive there is a user whose calls are
+ * all legacy v1 (no scorecard at all), who pays for one redundant query.
+ */
+export async function fetchDashboardInsights(
+  supabase: SupabaseServerClient,
+  userId: string
+): Promise<DashboardInsights> {
+  const EMPTY: DashboardInsights = {
+    eligible: false,
+    callCount: 0,
+    topFinding: null,
+    topCoaching: null,
+    latestCoaching: null,
+  };
+
+  const { data, error } = await supabase
+    .from("analyses")
+    .select(
+      "id, created_at, scorecard:result->salespersonScorecard, nextSteps:result->nextSteps, coachingActions:result->coachingActions"
+    )
+    .eq("user_id", userId)
+    .eq("status", "completed")
+    .not("result", "is", null)
+    .order("created_at", { ascending: true });
+
+  if (!error && data) {
+    const rows = data as unknown as InsightRow[];
+    const looksResolved =
+      rows.length === 0 || rows.some((row) => row.scorecard != null);
+    if (looksResolved) return rowsToInsights(rows);
+  }
+
+  const { data: fullData } = await supabase
+    .from("analyses")
+    .select("id, created_at, result")
+    .eq("user_id", userId)
+    .eq("status", "completed")
+    .not("result", "is", null)
+    .order("created_at", { ascending: true });
+  if (!fullData) return EMPTY;
+
+  type FullRow = { id: string; created_at: string; result: AnalysisResult | null };
+  return rowsToInsights(
+    (fullData as FullRow[]).map((row) => ({
+      id: row.id,
+      created_at: row.created_at,
+      scorecard: row.result?.salespersonScorecard ?? null,
+      nextSteps: row.result?.nextSteps ?? null,
+      coachingActions: row.result?.coachingActions ?? null,
+    }))
+  );
+}
 
 /**
  * Queries this user's completed, scorecard-bearing analyses and composes the

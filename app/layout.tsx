@@ -1,8 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Assistant, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { SiteHeader } from "@/components/salezy/site-header";
-import { SiteFooter } from "@/components/salezy/site-footer";
 import { AccessibilityWidget } from "@/components/salezy/accessibility-widget";
 import { Toaster } from "@/components/salezy/toaster";
 
@@ -72,6 +70,18 @@ export const viewport: Viewport = {
   themeColor: "#0a0a0f",
 };
 
+/**
+ * Root layout — document scaffolding only: <html>/<body>, the three fonts, the
+ * skip link, and the two globally-mounted client widgets. It deliberately does
+ * NOT render a header or footer any more (D2): each route group supplies its
+ * own shell, because the authenticated app now has a sidebar shell that must
+ * not sit under the marketing top bar.
+ *
+ *   app/(site)/layout.tsx  → SiteShell (top bar + footer) for /, /login, legal
+ *   app/(app)/layout.tsx   → AppShell (sidebar + bottom tabs) for the 4 app routes
+ *   app/not-found.tsx      → composes SiteShell itself (root 404 renders here,
+ *                            not inside a route group's layout)
+ */
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -91,9 +101,7 @@ export default function RootLayout({
         >
           דלג לתוכן
         </a>
-        <SiteHeader />
-        <div className="flex flex-1 flex-col">{children}</div>
-        <SiteFooter />
+        {children}
         <AccessibilityWidget />
         <Toaster />
       </body>
