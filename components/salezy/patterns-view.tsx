@@ -18,6 +18,7 @@ import {
   CHART_GRID_STROKE,
   CHART_SCORE_LINE_COLOR,
   CHART_TOOLTIP_CONTENT_STYLE,
+  formatChartDates,
 } from "./chart-theme";
 import type { PatternsData } from "@/lib/patterns";
 
@@ -28,9 +29,11 @@ const CONSISTENCY_LABEL: Record<string, string> = {
 };
 
 export function PatternsView({ data }: { data: Extract<PatternsData, { eligible: true }> }) {
-  const trendData = data.trend
-    .filter((t) => t.overall != null)
-    .map((t, i) => ({ index: i + 1, score: t.overall as number }));
+  const scoredTrend = data.trend.filter(
+    (t): t is { createdAt: string; overall: number } => t.overall != null
+  );
+  const trendDates = formatChartDates(scoredTrend.map((t) => t.createdAt));
+  const trendData = scoredTrend.map((t, i) => ({ date: trendDates[i], score: t.overall }));
 
   const categoryAverages = data.categoryAverages.map((c) => ({
     label: c.label,
@@ -72,7 +75,7 @@ export function PatternsView({ data }: { data: Extract<PatternsData, { eligible:
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={trendData}>
                   <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
-                  <XAxis dataKey="index" stroke={CHART_AXIS_STROKE} tick={CHART_AXIS_TICK} />
+                  <XAxis dataKey="date" stroke={CHART_AXIS_STROKE} tick={CHART_AXIS_TICK} />
                   <YAxis domain={[0, 5]} stroke={CHART_AXIS_STROKE} tick={CHART_AXIS_TICK} />
                   <Tooltip contentStyle={CHART_TOOLTIP_CONTENT_STYLE} />
                   <Line

@@ -18,6 +18,7 @@ import {
   CHART_TOOLTIP_CONTENT_STYLE,
   CHART_TOOLTIP_LABEL_STYLE,
   CHART_TREND_LINE_COLOR,
+  formatChartDates,
 } from "./chart-theme";
 import type { ScorePoint } from "@/lib/analytics";
 
@@ -48,16 +49,6 @@ function linearRegression(values: number[]): number[] {
   return xs.map((x) => slope * x + intercept);
 }
 
-const DAY_MONTH_FORMATTER = new Intl.DateTimeFormat("he-IL", {
-  day: "2-digit",
-  month: "2-digit",
-});
-const DAY_MONTH_YEAR_FORMATTER = new Intl.DateTimeFormat("he-IL", {
-  day: "2-digit",
-  month: "2-digit",
-  year: "2-digit",
-});
-
 /** Line chart of score-per-call over time, with a linear trend line. v2-only, non-null scores. */
 export function ScoreChart({
   points,
@@ -68,14 +59,10 @@ export function ScoreChart({
   className?: string;
 }) {
   const trend = linearRegression(points.map((p) => p.overall));
-
-  // Only show the year once calls actually span more than one — otherwise
-  // "01/01" x2 from two different years would look like a duplicate point.
-  const years = new Set(points.map((p) => new Date(p.created_at).getFullYear()));
-  const dateFormatter = years.size > 1 ? DAY_MONTH_YEAR_FORMATTER : DAY_MONTH_FORMATTER;
+  const dates = formatChartDates(points.map((p) => p.created_at));
 
   const data = points.map((p, i) => ({
-    date: dateFormatter.format(new Date(p.created_at)),
+    date: dates[i],
     score: Math.round(p.overall),
     trend: Math.round(trend[i] * 10) / 10,
   }));

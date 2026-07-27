@@ -29,3 +29,27 @@ export const CHART_TOOLTIP_LABEL_STYLE = { color: "var(--text-secondary)" };
 
 export const CHART_SCORE_LINE_COLOR = "var(--score-high)";
 export const CHART_TREND_LINE_COLOR = "var(--border-strong)";
+
+const DAY_MONTH_FORMATTER = new Intl.DateTimeFormat("he-IL", {
+  day: "2-digit",
+  month: "2-digit",
+});
+const DAY_MONTH_YEAR_FORMATTER = new Intl.DateTimeFormat("he-IL", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "2-digit",
+});
+
+/**
+ * Formats a list of ISO date strings for a chart's x-axis, switching to a
+ * year-bearing format only when the dates actually span more than one year
+ * — otherwise "01/01" x2 from two different years reads as a duplicate
+ * point. Shared by score-chart.tsx and patterns-view.tsx (D3: the patterns
+ * trend line previously plotted a bare 1..N call index instead of real
+ * dates, discarding the createdAt the data layer already returned).
+ */
+export function formatChartDates(isoDates: string[]): string[] {
+  const years = new Set(isoDates.map((d) => new Date(d).getFullYear()));
+  const formatter = years.size > 1 ? DAY_MONTH_YEAR_FORMATTER : DAY_MONTH_FORMATTER;
+  return isoDates.map((d) => formatter.format(new Date(d)));
+}
