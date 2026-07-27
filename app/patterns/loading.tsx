@@ -1,3 +1,5 @@
+import { Skeleton } from "@/components/salezy/ui";
+
 export default function PatternsLoading() {
   return (
     <main
@@ -6,8 +8,8 @@ export default function PatternsLoading() {
       className="mx-auto max-w-4xl px-4 py-8 outline-none sm:py-12"
     >
       <p className="sr-only" role="status">טוען...</p>
-      <div className="h-4 w-24 animate-pulse rounded bg-zinc-800" />
-      <div className="mt-2 h-8 w-56 animate-pulse rounded bg-zinc-800" />
+      <Skeleton className="h-4 w-24" />
+      <Skeleton className="mt-2 h-8 w-56" />
       <div className="mt-8 space-y-6">
         {Array.from({ length: 4 }).map((_, i) => (
           <div

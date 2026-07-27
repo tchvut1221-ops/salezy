@@ -50,6 +50,9 @@
   /* Border shade for interactive controls — see --border-interactive in :root. */
   --color-border-interactive: #5a5a7a;
 
+  /* Amber for callouts/insights — see --insight in :root. */
+  --color-insight: #f5a623;
+
   /* Customer DISC personality (locked to lib/sales-knowledge.ts: Red/Yellow/Green/Blue) */
   --color-disc-d: #ff4d4d;
   --color-disc-i: #ffd400;
@@ -66,6 +69,52 @@
   --font-sans: var(--font-inter-primary), var(--font-assistant), ui-sans-serif,
     system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  /*
+    D1 additions — net-new, opt-in tokens for the v2 design system. Nothing
+    above this point changes, and no existing component references any of
+    these yet; they're picked up by components built from D2 onward. Named
+    "h1/h2/h3/body/caption" (DESIGN.md's own vocabulary) rather than
+    Tailwind's default xs/sm/base/... scale, so `text-h1` etc. can't be
+    confused with — or accidentally collide with — the stock scale still
+    used everywhere else in the app.
+  */
+  --text-h1: clamp(1.75rem, 1.6rem + 1vw, 2.25rem); /* 28px → 36px, DESIGN.md H1 */
+  --text-h1--line-height: 1.15;
+  --text-h2: clamp(1.25rem, 1.15rem + 0.5vw, 1.5rem); /* 20px → 24px, DESIGN.md H2 */
+  --text-h2--line-height: 1.25;
+  --text-h3: 1.125rem; /* 18px, DESIGN.md H3 — fixed, small enough not to need scaling */
+  --text-h3--line-height: 1.4;
+  --text-body: 1rem; /* 16px, DESIGN.md body minimum */
+  --text-body--line-height: 1.6;
+  --text-caption: 0.8125rem; /* 13px, DESIGN.md caption/label */
+  --text-caption--line-height: 1.5;
+
+  /*
+    Unified container widths. The app today has six different max-w-* values
+    scattered across routes (3xl/4xl/5xl/6xl/xl) with no single source of
+    truth (D0 audit finding). These are the two targets — max-w-app for the
+    dashboard/sidebar shell, max-w-content for single-column reading content
+    (analysis detail, legal docs) — declared here so D2+ can adopt them
+    route by route without every route needing to agree on the number at
+    once. Tailwind's own --container-* namespace (max-w-3xs..7xl) is
+    untouched; "app"/"content" don't collide with any of those names.
+  */
+  --container-app: 87.5rem; /* 1400px */
+  --container-content: 50rem; /* 800px */
+
+  /*
+    Overlay-only shadow scale, deliberately NOT named --shadow-sm/md/lg —
+    those are Tailwind's own built-in shadow tokens (already consumed by
+    shadow-lg/shadow-xl in accessibility-widget.tsx), so redeclaring them
+    here would silently change what those existing classes render. DESIGN.md
+    is explicit that cards use background-step elevation, not shadows — this
+    scale is only for genuinely floating surfaces added going forward
+    (popovers/modals/toasts), via shadow-overlay-sm/md/lg.
+  */
+  --shadow-overlay-sm: 0 1px 2px 0 rgb(0 0 0 / 0.24);
+  --shadow-overlay-md: 0 4px 12px -2px rgb(0 0 0 / 0.32);
+  --shadow-overlay-lg: 0 12px 32px -8px rgb(0 0 0 / 0.4);
 }
 
 @theme inline {
@@ -167,6 +216,15 @@
     quieter --border used for purely decorative dividers.
   */
   --border-interactive: #5a5a7a;
+
+  /*
+    Amber for callouts/insights/highlights (D1 addition) — a semantically
+    distinct name from --score-mid even though it currently shares the same
+    value. Score bands and "here's an insight" emphasis are different
+    concepts that happen to look the same today; keeping separate names
+    means a future change to one doesn't silently recolor the other.
+  */
+  --insight: #f5a623;
 
   /* ── shadcn semantic tokens, derived from the brand tokens above ── */
   --background: var(--bg-base);

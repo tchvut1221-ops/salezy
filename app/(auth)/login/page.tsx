@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Button } from "@/components/salezy/ui";
+import { Button, Card, Input } from "@/components/salezy/ui";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -71,7 +71,7 @@ export default function LoginPage() {
       tabIndex={-1}
       className="flex flex-1 items-center justify-center px-4 py-16 outline-none"
     >
-      <div className="w-full max-w-sm rounded-xl border border-zinc-800 bg-zinc-900 p-8">
+      <Card className="w-full max-w-sm p-8">
         <h1 className="text-2xl font-bold text-foreground">התחברות</h1>
         <p className="mt-1 text-sm text-zinc-400">
           {step === "email"
@@ -84,7 +84,7 @@ export default function LoginPage() {
             <label htmlFor="email" className="sr-only">
               כתובת מייל
             </label>
-            <input
+            <Input
               id="email"
               type="email"
               required
@@ -92,7 +92,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="w-full rounded-lg border border-zinc-700 bg-elevated px-4 py-2.5 font-mono text-foreground placeholder-zinc-500 outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-ring"
+              className="font-mono"
             />
             <label htmlFor="consent" className="flex items-start gap-2 text-xs leading-relaxed text-zinc-400">
               <input
@@ -128,7 +128,7 @@ export default function LoginPage() {
             <label htmlFor="otp" className="sr-only">
               קוד אימות
             </label>
-            <input
+            <Input
               id="otp"
               type="text"
               inputMode="numeric"
@@ -139,7 +139,7 @@ export default function LoginPage() {
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
               placeholder="קוד מהמייל"
-              className="w-full rounded-lg border border-zinc-700 bg-elevated px-4 py-2.5 text-center font-mono text-lg tracking-widest text-foreground placeholder-zinc-500 outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-ring"
+              className="text-center font-mono text-lg tracking-widest"
             />
             <Button
               type="submit"
@@ -160,7 +160,7 @@ export default function LoginPage() {
             </Button>
           </form>
         )}
-      </div>
+      </Card>
     </main>
   );
 }

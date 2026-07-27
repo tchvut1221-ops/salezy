@@ -1,4 +1,4 @@
-import { Panel, Pill, scoreColor } from "./ui";
+import { Panel, Pill, scoreColor, Meter } from "./ui";
 import { PERSONALITY_TYPE_META as TYPE_META } from "@/lib/disc-reference";
 import { PERSONALITY_TYPE_ICON, ICON_STROKE_WIDTH } from "./icons";
 import type { AnalysisResult } from "@/types";
@@ -180,9 +180,7 @@ function AxisMeter({
           {score}/18 · {signalCount} סימנים
         </span>
       </div>
-      <div className="h-1 w-full overflow-hidden rounded-full bg-zinc-800">
-        <div className="h-full rounded-full bg-zinc-500" style={{ width: `${pct}%` }} />
-      </div>
+      <Meter value={pct} size="xs" fillClassName="h-full rounded-full bg-zinc-500" />
     </div>
   );
 }
@@ -198,9 +196,7 @@ function Confidence({ value }: { value: number }) {
           {pct}%
         </span>
       </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
-        <div className={`h-full rounded-full ${c.bar}`} style={{ width: `${pct}%` }} />
-      </div>
+      <Meter value={pct} size="sm" fillClassName={`h-full rounded-full ${c.bar}`} />
     </div>
   );
 }

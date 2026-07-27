@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Dialog } from "@base-ui/react/dialog";
-import { Button } from "./ui";
+import { Button, Input } from "./ui";
 import { HighlightRow } from "./analysis-sections";
 import {
   startPracticeSession,
@@ -155,7 +155,7 @@ export function PracticeDialog({
                 <label htmlFor="practice-reply" className="sr-only">
                   הקלד תגובה
                 </label>
-                <input
+                <Input
                   id="practice-reply"
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
@@ -167,7 +167,7 @@ export function PracticeDialog({
                   }}
                   disabled={state.isWaitingForReply || state.isEnding}
                   placeholder="הקלד תגובה..."
-                  className="flex-1 rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-foreground placeholder:text-zinc-600"
+                  className="flex-1 text-sm"
                 />
                 <Button
                   onClick={onSend}

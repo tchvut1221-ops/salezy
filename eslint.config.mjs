@@ -1,10 +1,23 @@
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
+import jsxA11y from "eslint-plugin-jsx-a11y";
 
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  // eslint-config-next's core-web-vitals bundles jsx-a11y but only turns on
+  // 6 of its ~34 rules (D1 audit finding: "the real gap — no automated a11y
+  // linting"). The full recommended rule set below supersedes that minimal
+  // subset — only `.rules` is spread (not `.plugins`), since nextVitals
+  // already registers the jsx-a11y plugin instance and flat-config errors
+  // on two configs registering the same plugin name twice. Scoped to
+  // app/**+components/** — jsx-a11y is meaningless outside JSX, and this
+  // repo also lints plain .ts/.mjs config/script files.
+  {
+    files: ["app/**/*.{ts,tsx}", "components/**/*.{ts,tsx}"],
+    rules: jsxA11y.flatConfigs.recommended.rules,
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

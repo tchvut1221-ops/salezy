@@ -10,6 +10,15 @@ import {
   YAxis,
 } from "recharts";
 import { Panel } from "./ui";
+import {
+  CHART_AXIS_STROKE,
+  CHART_AXIS_TICK,
+  CHART_GRID_STROKE,
+  CHART_SCORE_LINE_COLOR,
+  CHART_TOOLTIP_CONTENT_STYLE,
+  CHART_TOOLTIP_LABEL_STYLE,
+  CHART_TREND_LINE_COLOR,
+} from "./chart-theme";
 import type { ScorePoint } from "@/lib/analytics";
 
 /**
@@ -82,48 +91,27 @@ export function ScoreChart({ points }: { points: ScorePoint[] }) {
         <div aria-hidden="true" className="h-full w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2A2A3D" />
-              <XAxis
-                dataKey="date"
-                stroke="#2A2A3D"
-                tick={{
-                  fill: "#8888AA",
-                  fontFamily: "var(--font-jetbrains-mono)",
-                  fontSize: 12,
-                }}
-              />
-              <YAxis
-                domain={[0, 100]}
-                stroke="#2A2A3D"
-                tick={{
-                  fill: "#8888AA",
-                  fontFamily: "var(--font-jetbrains-mono)",
-                  fontSize: 12,
-                }}
-              />
+              <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
+              <XAxis dataKey="date" stroke={CHART_AXIS_STROKE} tick={CHART_AXIS_TICK} />
+              <YAxis domain={[0, 100]} stroke={CHART_AXIS_STROKE} tick={CHART_AXIS_TICK} />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: "#1A1A26",
-                  border: "1px solid #2A2A3D",
-                  borderRadius: 8,
-                  color: "#F0F0FF",
-                }}
-                labelStyle={{ color: "#8888AA" }}
+                contentStyle={CHART_TOOLTIP_CONTENT_STYLE}
+                labelStyle={CHART_TOOLTIP_LABEL_STYLE}
               />
               <Line
                 type="monotone"
                 dataKey="score"
                 name="ציון"
-                stroke="#00D4A0"
+                stroke={CHART_SCORE_LINE_COLOR}
                 strokeWidth={2}
-                dot={{ r: 3, fill: "#00D4A0" }}
+                dot={{ r: 3, fill: CHART_SCORE_LINE_COLOR }}
                 activeDot={{ r: 5 }}
               />
               <Line
                 type="monotone"
                 dataKey="trend"
                 name="מגמה"
-                stroke="#3D3D5C"
+                stroke={CHART_TREND_LINE_COLOR}
                 strokeWidth={2}
                 strokeDasharray="6 4"
                 dot={false}

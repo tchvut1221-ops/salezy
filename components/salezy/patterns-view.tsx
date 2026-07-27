@@ -12,6 +12,13 @@ import {
   YAxis,
 } from "recharts";
 import { Panel } from "./ui";
+import {
+  CHART_AXIS_STROKE,
+  CHART_AXIS_TICK,
+  CHART_GRID_STROKE,
+  CHART_SCORE_LINE_COLOR,
+  CHART_TOOLTIP_CONTENT_STYLE,
+} from "./chart-theme";
 import type { PatternsData } from "@/lib/patterns";
 
 const CONSISTENCY_LABEL: Record<string, string> = {
@@ -47,13 +54,11 @@ export function PatternsView({ data }: { data: Extract<PatternsData, { eligible:
           <div aria-hidden="true" className="h-full w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={categoryAverages}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2A2A3D" />
-                <XAxis dataKey="label" stroke="#2A2A3D" tick={{ fill: "#8888AA", fontSize: 12 }} />
-                <YAxis domain={[0, 5]} stroke="#2A2A3D" tick={{ fill: "#8888AA", fontSize: 12 }} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: "#1A1A26", border: "1px solid #2A2A3D", borderRadius: 8, color: "#F0F0FF" }}
-                />
-                <Bar dataKey="average" name="ממוצע" fill="#00D4A0" radius={[4, 4, 0, 0]} />
+                <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
+                <XAxis dataKey="label" stroke={CHART_AXIS_STROKE} tick={CHART_AXIS_TICK} />
+                <YAxis domain={[0, 5]} stroke={CHART_AXIS_STROKE} tick={CHART_AXIS_TICK} />
+                <Tooltip contentStyle={CHART_TOOLTIP_CONTENT_STYLE} />
+                <Bar dataKey="average" name="ממוצע" fill={CHART_SCORE_LINE_COLOR} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -66,13 +71,17 @@ export function PatternsView({ data }: { data: Extract<PatternsData, { eligible:
             <div aria-hidden="true" className="h-full w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={trendData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2A2A3D" />
-                  <XAxis dataKey="index" stroke="#2A2A3D" tick={{ fill: "#8888AA", fontSize: 12 }} />
-                  <YAxis domain={[0, 5]} stroke="#2A2A3D" tick={{ fill: "#8888AA", fontSize: 12 }} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: "#1A1A26", border: "1px solid #2A2A3D", borderRadius: 8, color: "#F0F0FF" }}
+                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
+                  <XAxis dataKey="index" stroke={CHART_AXIS_STROKE} tick={CHART_AXIS_TICK} />
+                  <YAxis domain={[0, 5]} stroke={CHART_AXIS_STROKE} tick={CHART_AXIS_TICK} />
+                  <Tooltip contentStyle={CHART_TOOLTIP_CONTENT_STYLE} />
+                  <Line
+                    type="monotone"
+                    dataKey="score"
+                    stroke={CHART_SCORE_LINE_COLOR}
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: CHART_SCORE_LINE_COLOR }}
                   />
-                  <Line type="monotone" dataKey="score" stroke="#00D4A0" strokeWidth={2} dot={{ r: 3, fill: "#00D4A0" }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>

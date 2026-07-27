@@ -1,32 +1,6 @@
-import { Panel, scoreColor } from "./ui";
+import { Panel, Stat, scoreColor } from "./ui";
 import { PERSONALITY_TYPE_META } from "@/lib/disc-reference";
 import type { AnalyticsStats } from "@/lib/analytics";
-
-function Metric({
-  label,
-  value,
-  valueClassName,
-  mono = true,
-}: {
-  label: string;
-  value: string;
-  valueClassName?: string;
-  /** Numeric metrics render in JetBrains Mono; the Hebrew personality label does not. */
-  mono?: boolean;
-}) {
-  return (
-    <div className="flex flex-col gap-1">
-      <span className="text-xs font-medium uppercase text-zinc-500">{label}</span>
-      <span
-        className={`text-2xl font-bold tabular-nums ${mono ? "font-mono" : ""} ${
-          valueClassName ?? "text-foreground"
-        }`}
-      >
-        {value}
-      </span>
-    </div>
-  );
-}
 
 /**
  * Four headline metrics across the user's v2 (scored) calls:
@@ -61,14 +35,14 @@ export function StatsBar({ stats }: { stats: AnalyticsStats }) {
   return (
     <Panel eyebrow="סטטיסטיקות" title="סיכום ביצועים">
       <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
-        <Metric label="מספר שיחות" value={String(stats.callCount)} />
-        <Metric
+        <Stat label="מספר שיחות" value={String(stats.callCount)} />
+        <Stat
           label="ציון ממוצע"
           value={stats.averageScore.toFixed(1)}
           valueClassName={avgColor.text}
         />
-        <Metric label="שיפור" value={deltaText} valueClassName={deltaColor} />
-        <Metric label="טיפוס לקוח נפוץ" value={personalityText} mono={false} />
+        <Stat label="שיפור" value={deltaText} valueClassName={deltaColor} />
+        <Stat label="טיפוס לקוח נפוץ" value={personalityText} mono={false} />
       </div>
     </Panel>
   );

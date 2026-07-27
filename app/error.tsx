@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { Button, buttonVariants } from "@/components/salezy/ui";
+import { Button, buttonVariants, Card } from "@/components/salezy/ui";
 
 /**
  * Route-segment error boundary. Catches render/data errors anywhere under the
@@ -28,7 +28,7 @@ export default function Error({
       tabIndex={-1}
       className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center px-4 py-16 text-center outline-none"
     >
-      <div className="w-full rounded-xl border border-zinc-800 bg-zinc-900 p-8">
+      <Card className="w-full p-8">
         <h1 className="text-xl font-bold text-foreground">משהו השתבש</h1>
         <p className="mt-2 text-sm leading-relaxed text-zinc-400">
           נתקלנו בתקלה בלתי צפויה. אפשר לנסות שוב — ואם זה חוזר, חזרו לדשבורד
@@ -40,7 +40,7 @@ export default function Error({
             חזרה לדשבורד
           </Link>
         </div>
-      </div>
+      </Card>
     </main>
   );
 }

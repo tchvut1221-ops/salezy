@@ -7,7 +7,7 @@ import * as tus from "tus-js-client";
 import { UploadCloud } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { isAllowedAudio, MAX_FILE_BYTES } from "@/lib/constants";
-import { Button } from "@/components/salezy/ui";
+import { Button, Meter } from "@/components/salezy/ui";
 import { AUDIO_RETENTION_DAYS } from "@/lib/retention-policy";
 import { startAnalysis } from "./actions";
 
@@ -207,19 +207,11 @@ export default function UploadPage() {
 
       {busy && (
         <div className="mt-6" role="status" aria-live="polite">
-          <div
-            role="progressbar"
-            aria-label="התקדמות העלאה"
-            aria-valuenow={progress}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            className="h-2 w-full overflow-hidden rounded-full bg-zinc-800"
-          >
-            <div
-              className="h-full rounded-full bg-primary transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+          <Meter
+            value={progress}
+            ariaLabel="התקדמות העלאה"
+            fillClassName="h-full rounded-full bg-primary transition-all duration-300"
+          />
           <p className="mt-2 text-center text-sm text-zinc-400">
             {progress < 100 ? (
               <>

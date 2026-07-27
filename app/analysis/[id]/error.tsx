@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { Button, buttonVariants } from "@/components/salezy/ui";
+import { Button, buttonVariants, Card } from "@/components/salezy/ui";
 
 export default function AnalysisError({
   error,
@@ -21,7 +21,7 @@ export default function AnalysisError({
       tabIndex={-1}
       className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center px-4 py-16 text-center outline-none"
     >
-      <div className="w-full rounded-xl border border-zinc-800 bg-zinc-900 p-8">
+      <Card className="w-full p-8">
         <h1 className="text-xl font-bold text-foreground">לא הצלחנו לטעון את הניתוח</h1>
         <p className="mt-2 text-sm leading-relaxed text-zinc-400">
           נתקלנו בתקלה בלתי צפויה בטעינת השיחה הזו. אפשר לנסות שוב — ואם זה
@@ -33,7 +33,7 @@ export default function AnalysisError({
             חזרה לדשבורד
           </Link>
         </div>
-      </div>
+      </Card>
     </main>
   );
 }

@@ -15,7 +15,7 @@ import {
   DeleteAnalysisButton,
   ResumeAnalysisButton,
 } from "./analysis-actions";
-import { Button } from "./ui";
+import { Button, Alert } from "./ui";
 
 const STEPS: { key: AnalysisStatus; label: string }[] = [
   { key: "uploaded", label: "הועלה" },
@@ -153,7 +153,7 @@ export function AnalysisView({ initial }: { initial: Analysis }) {
         {analysis.status === "failed" ||
         analysis.status === "no_speech_detected" ||
         isCancelled ? (
-          <div role="alert" className="mt-6 rounded-lg border border-score-low/30 bg-score-low/10 p-5">
+          <Alert className="mt-6">
             <p className="text-sm font-medium text-score-low">
               {isCancelled
                 ? "הניתוח בוטל"
@@ -183,7 +183,7 @@ export function AnalysisView({ initial }: { initial: Analysis }) {
                 {retrying ? "מתחיל מחדש..." : "נסה שוב"}
               </Button>
             )}
-          </div>
+          </Alert>
         ) : isReady && analysis.result ? (
           <AnalysisSections analysisId={initial.id} result={analysis.result} />
         ) : (

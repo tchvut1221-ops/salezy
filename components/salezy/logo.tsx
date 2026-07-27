@@ -1,3 +1,9 @@
+const LOGO_SIZES = {
+  sm: { icon: "h-6 w-6", wordmark: "text-base" },
+  md: { icon: "h-8 w-8", wordmark: "text-lg" },
+  lg: { icon: "h-10 w-10", wordmark: "text-2xl" },
+} as const;
+
 /**
  * Salezy brand mark — a hexagonal "S" monogram whose top stroke flows up into a
  * growth arrow that breaks out of the hexagon (top-right), with two parallel
@@ -5,14 +11,22 @@
  * any size and inherits the accent color via `currentColor`. The wordmark is
  * rendered as live text (Inter) rather than traced paths, so it stays sharp and
  * selectable.
+ *
+ * `size` defaults to "md" — the icon's original hardcoded h-8 w-8 — so every
+ * existing call site (header, footer) is visually unchanged. "sm"/"lg" are
+ * for upcoming surfaces (a collapsed sidebar, an onboarding hero) that don't
+ * exist yet.
  */
 export function Logo({
   withWordmark = true,
+  size = "md",
   className,
 }: {
   withWordmark?: boolean;
+  size?: keyof typeof LOGO_SIZES;
   className?: string;
 }) {
+  const s = LOGO_SIZES[size];
   return (
     <span
       className={`inline-flex items-center gap-2.5 ${className ?? ""}`}
@@ -20,7 +34,7 @@ export function Logo({
     >
       <svg
         viewBox="0 0 64 64"
-        className="h-8 w-8 shrink-0 text-primary"
+        className={`${s.icon} shrink-0 text-primary`}
         fill="none"
         aria-hidden="true"
       >
@@ -41,7 +55,7 @@ export function Logo({
         </g>
       </svg>
       {withWordmark && (
-        <span className="text-lg font-bold tracking-tight text-foreground">
+        <span className={`${s.wordmark} font-bold tracking-tight text-foreground`}>
           Salezy
         </span>
       )}

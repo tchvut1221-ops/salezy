@@ -1,3 +1,5 @@
+import { Skeleton } from "@/components/salezy/ui";
+
 /**
  * Skeleton shown while the dashboard server component fetches the analyses list
  * + analytics. Mirrors the real layout (title, upload button, a few list rows)
@@ -11,8 +13,8 @@ export default function DashboardLoading() {
       className="mx-auto max-w-4xl px-4 py-8 outline-none sm:py-12"
     >
       <p className="sr-only" role="status">טוען...</p>
-      <div className="h-8 w-40 animate-pulse rounded bg-zinc-800" />
-      <div className="mt-6 h-12 w-full animate-pulse rounded-lg bg-zinc-800" />
+      <Skeleton className="h-8 w-40" />
+      <Skeleton className="mt-6 h-12 w-full" />
 
       <div className="mt-8 space-y-3">
         {Array.from({ length: 4 }).map((_, i) => (
@@ -21,10 +23,10 @@ export default function DashboardLoading() {
             className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3.5 sm:px-5 sm:py-4"
           >
             <div className="min-w-0 flex-1 space-y-2">
-              <div className="h-4 w-1/2 animate-pulse rounded bg-zinc-800" />
-              <div className="h-3 w-20 animate-pulse rounded bg-zinc-800" />
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-3 w-20" />
             </div>
-            <div className="h-6 w-8 animate-pulse rounded bg-zinc-800" />
+            <Skeleton className="h-6 w-8" />
             <div className="h-6 w-16 animate-pulse rounded-full bg-zinc-800" />
           </div>
         ))}
