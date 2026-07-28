@@ -1,4 +1,5 @@
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
 
 /** Sends the OTP code via Resend's HTTP API. Server-only. */
 export async function sendOtpEmail(email: string, code: string): Promise<void> {
@@ -13,7 +14,7 @@ export async function sendOtpEmail(email: string, code: string): Promise<void> {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Salezy <noreply@httpssalezy.com>",
+      from: `Salezy <${RESEND_FROM_EMAIL}>`,
       to: email,
       subject: "קוד הכניסה שלך ל-Salezy",
       html: otpEmailHtml(code),
