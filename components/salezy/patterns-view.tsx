@@ -11,7 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Panel } from "./ui";
+import { Panel, EmptyNote } from "./ui";
 import {
   CHART_AXIS_STROKE,
   CHART_AXIS_TICK,
@@ -103,7 +103,7 @@ export function PatternsView({ data }: { data: Extract<PatternsData, { eligible:
             </p>
           </div>
         ) : (
-          <p className="text-sm text-zinc-500">אין מספיק נתוני יחס דיבור עדיין</p>
+          <EmptyNote>אין מספיק נתוני יחס דיבור עדיין</EmptyNote>
         )}
       </Panel>
 
@@ -120,9 +120,7 @@ export function PatternsView({ data }: { data: Extract<PatternsData, { eligible:
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-zinc-500">
-            לא זוהו דפוסים חוזרים משמעותיים עדיין — המשך להעלות שיחות.
-          </p>
+          <EmptyNote>לא זוהו דפוסים חוזרים משמעותיים עדיין — המשך להעלות שיחות.</EmptyNote>
         )}
       </Panel>
 

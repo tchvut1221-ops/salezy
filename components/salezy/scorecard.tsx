@@ -8,7 +8,7 @@ import {
   Handshake,
   Scale,
 } from "lucide-react";
-import { Panel, scorecardScoreColor, Meter } from "./ui";
+import { Panel, scorecardScoreColor, Meter, EmptyNote } from "./ui";
 import { useCountUp } from "./use-count-up";
 import { Quote } from "./quote";
 import type {
@@ -173,7 +173,7 @@ export function Scorecard({ scorecard }: { scorecard: Scorecard }) {
             {display.toFixed(2)}
           </span>
         ) : (
-          <span className="text-lg text-zinc-500">אין מספיק נתונים</span>
+          <EmptyNote className="justify-center text-lg">אין מספיק נתונים</EmptyNote>
         )}
         <p className="mt-1 text-xs text-zinc-500">ציון סקורקארד כולל (מתוך 5)</p>
       </div>

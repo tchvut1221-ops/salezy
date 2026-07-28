@@ -2,7 +2,10 @@ import { z } from "zod";
 import Anthropic from "@anthropic-ai/sdk";
 import { STYLE_PROFILES, PERSONALITY_TYPE_META } from "@/lib/disc-reference";
 import { parseModelJson } from "@/lib/analysis";
+import type { createClient } from "@/lib/supabase/server";
 import type { PersonalityType, PracticeMessage, PracticeSectionKey } from "@/types";
+
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
 export const PRACTICE_MODEL_ID = "claude-sonnet-4-6";
 
@@ -146,6 +149,24 @@ export async function generateFeedback(
  * (app/actions.ts's endPracticeSession) rather than querying itself, so it
  * stays trivially testable and has no Supabase dependency.
  */
+/**
+ * D6 onboarding checklist: has this user ever finished a practice session?
+ * A single `head: true, limit: 1` existence check over the indexed user_id
+ * column — cheap enough to run alongside the dashboard's other reads.
+ */
+export async function hasCompletedPracticeSession(
+  supabase: SupabaseServerClient,
+  userId: string
+): Promise<boolean> {
+  const { count } = await supabase
+    .from("practice_sessions")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("status", "completed")
+    .limit(1);
+  return Boolean(count && count > 0);
+}
+
 export function computeStreakDays(completedCreatedAt: string[]): number {
   const days = new Set(
     completedCreatedAt.map((iso) => new Date(iso).toISOString().slice(0, 10))

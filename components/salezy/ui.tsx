@@ -1,6 +1,6 @@
 import type { ComponentPropsWithRef, InputHTMLAttributes, ReactNode } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
-import type { LucideIcon } from "lucide-react";
+import { Info, type LucideIcon } from "lucide-react";
 
 /**
  * Shared presentational primitives for the premium analysis view. They follow the
@@ -345,6 +345,32 @@ export function EmptyState({
       )}
       {action && <div className="mt-6">{action}</div>}
     </div>
+  );
+}
+
+/**
+ * Compact inline "nothing here" note — for a single missing/degraded field
+ * WITHIN an already-boxed section (a section summary, a Panel), where the
+ * full EmptyState's dashed-border box would be too heavy for what's often
+ * a one-line gap next to otherwise-real content. No CTA, unlike EmptyState:
+ * these are all "the AI didn't produce this field for this call" cases —
+ * there's nothing for the user to immediately do about it, unlike
+ * EmptyState's zero-analyses/zero-patterns cases, which do have one.
+ */
+export function EmptyNote({
+  icon: Icon = Info,
+  children,
+  className,
+}: {
+  icon?: LucideIcon;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <p className={`flex items-center gap-2 text-sm text-zinc-500 ${className ?? ""}`}>
+      <Icon className="h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden="true" />
+      {children}
+    </p>
   );
 }
 

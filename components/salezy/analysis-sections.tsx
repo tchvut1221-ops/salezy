@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useMemo, useState, type ReactNode } from "react";
-import { Panel, Button, scoreColor, scorecardScoreColor } from "./ui";
+import { Panel, Button, scoreColor, scorecardScoreColor, EmptyNote } from "./ui";
 import { AnalysisSection } from "./analysis-section";
 import { ExecutiveSummary } from "./executive-summary";
 import { ScoreGauge } from "./score-gauge";
@@ -108,7 +108,7 @@ export function AnalysisSections({
             {Math.round(overallScore)}
           </span>
         ) : (
-          <span className="text-lg text-zinc-500">אין ציון זמין</span>
+          <EmptyNote className="text-lg">אין ציון זמין</EmptyNote>
         )}
         {typeof overallScore === "number" && (
           <span className="text-sm text-zinc-500">מתוך 100</span>
@@ -172,7 +172,7 @@ export function AnalysisSections({
       <p className="mt-1 text-zinc-100">{firstNextStep.action}</p>
     </div>
   ) : (
-    <p className="text-sm text-zinc-500">אין עדיין המלצות המשך טיפול לשיחה זו.</p>
+    <EmptyNote>אין עדיין המלצות המשך טיפול לשיחה זו.</EmptyNote>
   );
 
   // Only the full next-steps list is new information beyond the summary —
@@ -230,7 +230,7 @@ export function AnalysisSections({
             {overallScorecardScore.toFixed(2)}
           </span>
         ) : (
-          <span className="text-lg text-zinc-500">אין מספיק נתונים</span>
+          <EmptyNote className="text-lg">אין מספיק נתונים</EmptyNote>
         )}
         <span className="text-sm text-zinc-500">מתוך 5</span>
       </div>
@@ -249,11 +249,11 @@ export function AnalysisSections({
           )}
         </div>
       ) : (
-        <p className="text-sm text-zinc-500">אין מספיק נתונים לזהות תחום לשיפור.</p>
+        <EmptyNote>אין מספיק נתונים לזהות תחום לשיפור.</EmptyNote>
       )}
     </div>
   ) : (
-    <p className="text-sm text-zinc-500">אין עדיין Scorecard לשיחה זו.</p>
+    <EmptyNote>אין עדיין Scorecard לשיחה זו.</EmptyNote>
   );
 
   const section4Details = scorecard ? (
