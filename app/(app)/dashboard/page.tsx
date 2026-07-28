@@ -93,15 +93,25 @@ export default async function DashboardPage() {
       */}
       {scorePoints.length > 0 && (
         <div className="mt-8 grid gap-6 lg:grid-cols-3">
-          <PerformanceSummary
-            stats={stats}
-            points={scorePoints}
-            className="lg:col-span-2"
-          />
-          <PatternAlert insights={insights} />
-          <ScoreChart points={scorePoints} className="lg:col-span-2" />
-          <DiscDistribution shares={personalityShares} />
-          <CoachingQueue latest={insights.latestCoaching} className="lg:col-span-3" />
+          {/* D7: staggered entrance (same animate-fade-up + delay pattern already
+              used by analysis-sections.tsx's cards and the calls list below) — the
+              wrapper carries both the animation and the grid col-span, since the
+              widgets themselves only accept className for their own inner Panel. */}
+          <div className="animate-fade-up lg:col-span-2" style={{ animationDelay: "0ms" }}>
+            <PerformanceSummary stats={stats} points={scorePoints} />
+          </div>
+          <div className="animate-fade-up" style={{ animationDelay: "60ms" }}>
+            <PatternAlert insights={insights} />
+          </div>
+          <div className="animate-fade-up lg:col-span-2" style={{ animationDelay: "120ms" }}>
+            <ScoreChart points={scorePoints} />
+          </div>
+          <div className="animate-fade-up" style={{ animationDelay: "180ms" }}>
+            <DiscDistribution shares={personalityShares} />
+          </div>
+          <div className="animate-fade-up lg:col-span-3" style={{ animationDelay: "240ms" }}>
+            <CoachingQueue latest={insights.latestCoaching} />
+          </div>
         </div>
       )}
 
