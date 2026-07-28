@@ -153,6 +153,18 @@ export interface AnalysisResult {
     talkRatioSalesperson?: number;
     energyLevel?: "low" | "medium" | "high";
     callPace?: "rushed" | "optimal" | "slow";
+    /**
+     * Which transcript speaker label ("דובר 1"/"דובר 2") is the salesperson,
+     * exactly as it appears in the transcript. Omitted when the model couldn't
+     * tell — it's instructed never to guess.
+     *
+     * Already produced, validated and persisted today (lib/analysis.ts's Zod
+     * schema declares it, and normalizeScorecard feeds it to
+     * computeRepPercentage for the measured talk ratio) — it was simply
+     * missing from this interface, so no UI could read it. Declaring it here
+     * is a type-only change: no pipeline, schema or prompt is touched.
+     */
+    salespersonSpeakerLabel?: string;
     sentiment?: {
       start: "positive" | "neutral" | "negative";
       middle: "positive" | "neutral" | "negative";

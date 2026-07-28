@@ -29,6 +29,15 @@
     display: block !important;
   }
 
+  /* התמלול (components/salezy/transcript-view.tsx) יושב מחוץ ל-#analysis-content
+     ולכן אינו חלק מהדוח המודפס. `body *` למעלה כבר מסתיר אותו ויזואלית — אבל
+     visibility: hidden משאיר את הגובה שלו בזרימת הדף, ותמלול של שיחה ארוכה היה
+     מייצר עשרות עמודים ריקים אחרי הדוח. display: none מוציא אותו מהזרימה לגמרי.
+     על המסך הפאנל נשאר גלול (max-h), מה שאינו רלוונטי כאן בגלל הכלל הזה. */
+  #call-transcript {
+    display: none !important;
+  }
+
   /* שמור על עברית ו-RTL בהדפסה. */
   html {
     direction: rtl;

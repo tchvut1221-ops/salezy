@@ -1,23 +1,28 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { cancelAnalysis, deleteAnalysis, resumeAnalysis } from "@/app/actions";
 import { Button } from "./ui";
+import { ConfirmDialog } from "./confirm-dialog";
+
+/*
+ * Both destructive actions below used to gate on a raw `window.confirm()`.
+ * They now open the shared ConfirmDialog (components/salezy/confirm-dialog.tsx)
+ * instead — same semantics exactly: the action still runs only on an explicit
+ * confirm, Esc/backdrop/cancel are all no-ops, and the Hebrew copy is the
+ * verbatim text each window.confirm() used to pass, split into the dialog's
+ * title (the question) and description (the consequence). Only the chrome
+ * changed.
+ */
 
 /** Shown only while an analysis is still running (next to the progress indicator). */
 export function StopAnalysisButton({ analysisId }: { analysisId: string }) {
   const [pending, startTransition] = useTransition();
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
-  function onClick() {
-    if (
-      !window.confirm(
-        "לעצור את הניתוח? הפעולה תפסיק את העיבוד מיד ולא ניתן לבטל אותה."
-      )
-    ) {
-      return;
-    }
+  function onConfirm() {
     startTransition(async () => {
       try {
         await cancelAnalysis(analysisId);
@@ -29,9 +34,20 @@ export function StopAnalysisButton({ analysisId }: { analysisId: string }) {
   }
 
   return (
-    <Button variant="secondary" onClick={onClick} disabled={pending}>
-      {pending ? "עוצר..." : "עצור ניתוח"}
-    </Button>
+    <>
+      <Button variant="secondary" onClick={() => setConfirmOpen(true)} disabled={pending}>
+        {pending ? "עוצר..." : "עצור ניתוח"}
+      </Button>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="לעצור את הניתוח?"
+        description="הפעולה תפסיק את העיבוד מיד ולא ניתן לבטל אותה."
+        confirmLabel="עצור ניתוח"
+        pending={pending}
+        onConfirm={onConfirm}
+      />
+    </>
   );
 }
 
@@ -75,19 +91,20 @@ export function DeleteAnalysisButton({
   compact?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const router = useRouter();
   const label = fileName ? `מחק ניתוח ${fileName}` : "מחק ניתוח";
 
+  // Still needed on the trigger: on the dashboard this button sits inside a
+  // <Link> row, and without these the click would navigate to the analysis
+  // instead of opening the dialog.
   function onClick(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    if (
-      !window.confirm(
-        "למחוק את הניתוח לצמיתות? הקובץ והנתונים יימחקו ולא ניתן לשחזר אותם."
-      )
-    ) {
-      return;
-    }
+    setConfirmOpen(true);
+  }
+
+  function onConfirm() {
     startTransition(async () => {
       try {
         await deleteAnalysis(analysisId);
@@ -101,16 +118,31 @@ export function DeleteAnalysisButton({
   }
 
   return (
-    <Button
-      variant="danger"
-      size={compact ? "sm" : "md"}
-      onClick={onClick}
-      disabled={pending}
-      aria-label={label}
-      title={label}
-      className={compact ? "shrink-0" : undefined}
-    >
-      {compact ? (pending ? "מוחק..." : "מחק") : pending ? "מוחק..." : "מחק ניתוח"}
-    </Button>
+    <>
+      <Button
+        variant="danger"
+        size={compact ? "sm" : "md"}
+        onClick={onClick}
+        disabled={pending}
+        aria-label={label}
+        title={label}
+        className={compact ? "shrink-0" : undefined}
+      >
+        {compact ? (pending ? "מוחק..." : "מחק") : pending ? "מוחק..." : "מחק ניתוח"}
+      </Button>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="למחוק את הניתוח לצמיתות?"
+        description={
+          fileName
+            ? `הקובץ והנתונים של "${fileName}" יימחקו — כולל התמלול — ולא ניתן לשחזר אותם.`
+            : "הקובץ והנתונים יימחקו — כולל התמלול — ולא ניתן לשחזר אותם."
+        }
+        confirmLabel="מחק לצמיתות"
+        pending={pending}
+        onConfirm={onConfirm}
+      />
+    </>
   );
 }

@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from "react";
+import type { ComponentPropsWithRef, InputHTMLAttributes, ReactNode } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import type { LucideIcon } from "lucide-react";
 
@@ -170,6 +170,13 @@ export const buttonVariants = cva(
  * Shared button. Defaults to type="button" (NOT the browser's in-form
  * "submit" default) — form submitters must say type="submit" explicitly, so
  * a stray action button inside a form can never submit it by accident.
+ *
+ * Typed as ComponentPropsWithRef rather than ButtonHTMLAttributes so a `ref`
+ * can be forwarded through: React 19 passes `ref` to function components as an
+ * ordinary prop, so it rides along in `...props` and lands on the <button>
+ * with no forwardRef wrapper — but only ButtonHTMLAttributes' *type* was
+ * hiding it. ConfirmDialog needs this to hand Base UI's `initialFocus` a
+ * handle on its cancel button.
  */
 export function Button({
   className,
@@ -177,7 +184,7 @@ export function Button({
   size,
   type = "button",
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & VariantProps<typeof buttonVariants>) {
+}: ComponentPropsWithRef<"button"> & VariantProps<typeof buttonVariants>) {
   return (
     <button
       type={type}
