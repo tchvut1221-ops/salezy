@@ -29,6 +29,10 @@ function applyToDocument(scale: number, highContrast: boolean, reduceMotion: boo
  *
  * Base UI's Popover (same library as PracticeDialog's Dialog) gives real
  * focus handling / Esc-to-close / outside-dismiss for free.
+ *
+ * The `a11y-fab` class on the trigger is a positioning hook, not a style: see
+ * the `has-bottom-nav` rule in globals.css, which lifts the button above the
+ * app shell's mobile tab bar on the authenticated routes.
  */
 export function AccessibilityWidget() {
   const [scale, setScale] = useState(MIN_SCALE);
@@ -98,7 +102,7 @@ export function AccessibilityWidget() {
         type="button"
         aria-label="פתיחת סרגל נגישות"
         disabled
-        className="fixed bottom-6 end-6 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-zinc-800 bg-zinc-900 text-zinc-500"
+        className="a11y-fab fixed bottom-6 end-6 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-zinc-800 bg-zinc-900 text-zinc-500"
       >
         <Accessibility className="h-5 w-5" strokeWidth={1.5} aria-hidden="true" />
       </button>
@@ -109,7 +113,7 @@ export function AccessibilityWidget() {
     <Popover.Root>
       <Popover.Trigger
         aria-label="פתיחת סרגל נגישות"
-        className="fixed bottom-6 end-6 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-zinc-700 bg-primary text-primary-foreground shadow-lg outline-none transition-colors hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        className="a11y-fab fixed bottom-6 end-6 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-zinc-700 bg-accent-blue-deep text-primary-foreground shadow-lg outline-none transition-colors hover:bg-accent-blue-deep/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       >
         <Accessibility className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
       </Popover.Trigger>

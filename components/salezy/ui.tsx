@@ -1,5 +1,6 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ComponentPropsWithRef, InputHTMLAttributes, ReactNode } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
+import { Info, type LucideIcon } from "lucide-react";
 
 /**
  * Shared presentational primitives for the premium analysis view. They follow the
@@ -50,6 +51,14 @@ export function scorecardScoreColor(score: number) {
 }
 
 /**
+ * The base surface treatment shared by every boxed element in the app — one
+ * radius convention (rounded-xl, the design system's 12px), one border, one
+ * bg. Panel and Card both build on this so the two stay in lockstep instead
+ * of drifting into slightly-different card shells over time.
+ */
+const CARD_CLASS = "rounded-xl border border-zinc-800 bg-zinc-900 p-6";
+
+/**
  * THE card. Every boxed surface in the app goes through Panel (or at least
  * copies its exact wrapper classes) — one radius convention (rounded-xl,
  * which the theme maps to the design system's 12px), one border, one bg.
@@ -66,11 +75,7 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <section
-      className={`rounded-xl border border-zinc-800 bg-zinc-900 p-6 ${
-        className ?? ""
-      }`}
-    >
+    <section className={`${CARD_CLASS} ${className ?? ""}`}>
       {(title || eyebrow) && (
         <div className="mb-4">
           {eyebrow && (
@@ -86,6 +91,22 @@ export function Panel({
       {children}
     </section>
   );
+}
+
+/**
+ * Bare surface — Panel's exact visual treatment without Panel's built-in
+ * eyebrow/title header. For shells that need the surface but not a header
+ * (auth card, error/404 cards, dialogs) — several of these previously
+ * hand-rolled this same class string independently (D0 audit finding).
+ */
+export function Card({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return <div className={`${CARD_CLASS} ${className ?? ""}`}>{children}</div>;
 }
 
 const PILL_TONES = {
@@ -123,7 +144,12 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: "bg-primary text-primary-foreground hover:bg-primary/90",
+        // bg-accent-blue-deep, not bg-primary: white text (#F0F0FF) on the
+        // plain accent blue (#4D7EFF) is only 3.24:1, below the 4.5:1 AA
+        // minimum for text. The deepened shade clears ~4.8:1 while --primary
+        // itself (used for text/border/ring elsewhere) stays untouched.
+        primary:
+          "bg-accent-blue-deep text-primary-foreground hover:bg-accent-blue-deep/90",
         secondary:
           "border border-zinc-700 text-zinc-300 hover:border-zinc-600 hover:text-foreground",
         ghost: "text-zinc-400 hover:text-foreground",
@@ -144,6 +170,13 @@ export const buttonVariants = cva(
  * Shared button. Defaults to type="button" (NOT the browser's in-form
  * "submit" default) — form submitters must say type="submit" explicitly, so
  * a stray action button inside a form can never submit it by accident.
+ *
+ * Typed as ComponentPropsWithRef rather than ButtonHTMLAttributes so a `ref`
+ * can be forwarded through: React 19 passes `ref` to function components as an
+ * ordinary prop, so it rides along in `...props` and lands on the <button>
+ * with no forwardRef wrapper — but only ButtonHTMLAttributes' *type* was
+ * hiding it. ConfirmDialog needs this to hand Base UI's `initialFocus` a
+ * handle on its cancel button.
  */
 export function Button({
   className,
@@ -151,12 +184,227 @@ export function Button({
   size,
   type = "button",
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & VariantProps<typeof buttonVariants>) {
+}: ComponentPropsWithRef<"button"> & VariantProps<typeof buttonVariants>) {
   return (
     <button
       type={type}
       className={buttonVariants({ variant, size, className })}
       {...props}
     />
+  );
+}
+
+/**
+ * Text input — bg-elevated + hairline border + primary focus ring. Label is
+ * always rendered separately, above the field, by the caller (DESIGN.md:
+ * never floating-label — breaks Hebrew RTL alignment). Matches the classes
+ * login's email/OTP fields already used; also the fix for the one input
+ * that had drifted to a different background (practice-dialog's composer).
+ *
+ * border-border-interactive (D8), not border-zinc-700: a text input's
+ * boundary is its ONLY visual cue when unfocused — border-zinc-700
+ * resolves to --border-strong (#3D3D5C), 1.90:1 against --bg-elevated,
+ * well under the 3:1 WCAG 1.4.11 minimum for UI component boundaries.
+ * --border-interactive (~3.2:1) was added in D0 specifically for this and
+ * had no consumer until now.
+ */
+export function Input({
+  className,
+  ...props
+}: InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <input
+      className={`w-full rounded-lg border border-border-interactive bg-elevated px-4 py-2.5 text-foreground placeholder-zinc-500 outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-ring ${
+        className ?? ""
+      }`}
+      {...props}
+    />
+  );
+}
+
+/**
+ * Linear-fill meter — a track + fill bar for a plain 0-100 value. NOT for
+ * segmented multi-step indicators (the analysis pipeline stepper, the
+ * section-opened count in analysis-sections.tsx) or RTL-anchored/
+ * bidirectional bars (ScoreGauge's sub-scores, Scorecard's talk-ratio
+ * track) — those have their own geometry and stay purpose-built.
+ * `ariaLabel` is optional: when omitted the bar is purely decorative,
+ * matching call sites that already surface the value as adjacent visible
+ * text (screen readers would otherwise hear the number twice).
+ */
+export function Meter({
+  value,
+  size = "md",
+  trackClassName,
+  fillClassName,
+  ariaLabel,
+}: {
+  value: number;
+  size?: "xs" | "sm" | "md";
+  trackClassName?: string;
+  fillClassName?: string;
+  ariaLabel?: string;
+}) {
+  const pct = Math.max(0, Math.min(100, value));
+  const height = size === "xs" ? "h-1" : size === "sm" ? "h-1.5" : "h-2";
+  const ariaProps = ariaLabel
+    ? {
+        role: "progressbar" as const,
+        "aria-label": ariaLabel,
+        "aria-valuenow": Math.round(pct),
+        "aria-valuemin": 0,
+        "aria-valuemax": 100,
+      }
+    : {};
+  return (
+    <div
+      className={`${height} w-full overflow-hidden rounded-full bg-zinc-800 ${
+        trackClassName ?? ""
+      }`}
+      {...ariaProps}
+    >
+      <div
+        className={
+          fillClassName ??
+          "h-full rounded-full bg-primary transition-[width] duration-700 ease-out"
+        }
+        style={{ width: `${pct}%` }}
+      />
+    </div>
+  );
+}
+
+/** Shimmer placeholder rectangle. Compose with sizing: `<Skeleton className="h-4 w-24" />`. */
+export function Skeleton({ className }: { className?: string }) {
+  return <div className={`animate-pulse rounded-md bg-zinc-800 ${className ?? ""}`} />;
+}
+
+/**
+ * Label-above-value stat cell (StatsBar's building block, factored out so
+ * D2's dashboard widgets can reuse it without re-implementing the same
+ * label/value/mono handling).
+ */
+export function Stat({
+  label,
+  value,
+  valueClassName,
+  mono = true,
+}: {
+  label: string;
+  value: string;
+  valueClassName?: string;
+  /** Numeric values render in JetBrains Mono; non-numeric ones (e.g. a
+   *  Hebrew personality label) should pass mono={false}. */
+  mono?: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-xs font-medium uppercase text-zinc-500">{label}</span>
+      <span
+        className={`text-2xl font-bold tabular-nums ${mono ? "font-mono" : ""} ${
+          valueClassName ?? "text-foreground"
+        }`}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Dashed-border empty state — matches the dashboard/patterns "not enough
+ * data yet" cards exactly (D0 audit: previously duplicated markup, no icon
+ * support). Icon is optional so D1's migration of the two existing call
+ * sites stays visually identical; D6 (onboarding) is where illustrations
+ * get wired in for real.
+ */
+export function EmptyState({
+  icon: Icon,
+  title,
+  description,
+  action,
+  className,
+}: {
+  icon?: LucideIcon;
+  title: string;
+  description?: string;
+  action?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`rounded-xl border border-dashed border-zinc-800 bg-zinc-900/40 px-6 py-10 text-center ${
+        className ?? ""
+      }`}
+    >
+      {Icon && (
+        <Icon
+          className="mx-auto mb-3 h-8 w-8 text-zinc-600"
+          strokeWidth={1.5}
+          aria-hidden="true"
+        />
+      )}
+      <p className="font-medium text-zinc-200">{title}</p>
+      {description && (
+        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-zinc-500">
+          {description}
+        </p>
+      )}
+      {action && <div className="mt-6">{action}</div>}
+    </div>
+  );
+}
+
+/**
+ * Compact inline "nothing here" note — for a single missing/degraded field
+ * WITHIN an already-boxed section (a section summary, a Panel), where the
+ * full EmptyState's dashed-border box would be too heavy for what's often
+ * a one-line gap next to otherwise-real content. No CTA, unlike EmptyState:
+ * these are all "the AI didn't produce this field for this call" cases —
+ * there's nothing for the user to immediately do about it, unlike
+ * EmptyState's zero-analyses/zero-patterns cases, which do have one.
+ */
+export function EmptyNote({
+  icon: Icon = Info,
+  children,
+  className,
+}: {
+  icon?: LucideIcon;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <p className={`flex items-center gap-2 text-sm text-zinc-500 ${className ?? ""}`}>
+      <Icon className="h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden="true" />
+      {children}
+    </p>
+  );
+}
+
+const ALERT_TONES = {
+  error: "border-score-low/30 bg-score-low/10",
+  warn: "border-score-mid/30 bg-score-mid/10",
+  info: "border-primary/25 bg-primary/5",
+} as const;
+
+/**
+ * Bordered/tinted callout box — for block-level state messages (e.g. the
+ * analysis failure states). NOT for single-line inline field validation:
+ * login/upload keep their plain `<p role="alert">` — wrapping one line of
+ * validation text in a padded box would be a visual regression there.
+ */
+export function Alert({
+  tone = "error",
+  children,
+  className,
+}: {
+  tone?: keyof typeof ALERT_TONES;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div role="alert" className={`rounded-lg border p-5 ${ALERT_TONES[tone]} ${className ?? ""}`}>
+      {children}
+    </div>
   );
 }

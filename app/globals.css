@@ -40,16 +40,81 @@
   --color-score-mid: #f5a623;
   --color-score-low: #ff4d6a;
 
+  /*
+    Deepened blue for primary-button fills only (see the --accent-blue-deep
+    comment in :root below for the contrast rationale). --accent-blue itself
+    stays untouched for text/border/ring use.
+  */
+  --color-accent-blue-deep: #2e5fe8;
+
+  /* Border shade for interactive controls — see --border-interactive in :root (D8-corrected value). */
+  --color-border-interactive: #6b6b8f;
+
+  /* Amber for callouts/insights — see --insight in :root. */
+  --color-insight: #f5a623;
+
   /* Customer DISC personality (locked to lib/sales-knowledge.ts: Red/Yellow/Green/Blue) */
   --color-disc-d: #ff4d4d;
   --color-disc-i: #ffd400;
   --color-disc-s: #00c48c;
   --color-disc-c: #4d7eff;
 
-  /* Type system: Inter (Latin) + Assistant (Hebrew) for sans, JetBrains Mono for every number */
-  --font-sans: var(--font-inter), var(--font-assistant), ui-sans-serif, system-ui,
-    sans-serif;
+  /*
+    Type system: Inter (Latin) + Assistant (Hebrew) for sans, JetBrains Mono
+    for every number. --font-inter-primary (not --font-inter) deliberately —
+    see the comment above the Inter() call in app/layout.tsx for why: Next's
+    own --font-inter variable carries a broken synthetic fallback face that
+    claims Hebrew coverage and pre-empts Assistant.
+  */
+  --font-sans: var(--font-inter-primary), var(--font-assistant), ui-sans-serif,
+    system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  /*
+    D1 additions — net-new, opt-in tokens for the v2 design system. Nothing
+    above this point changes, and no existing component references any of
+    these yet; they're picked up by components built from D2 onward. Named
+    "h1/h2/h3/body/caption" (DESIGN.md's own vocabulary) rather than
+    Tailwind's default xs/sm/base/... scale, so `text-h1` etc. can't be
+    confused with — or accidentally collide with — the stock scale still
+    used everywhere else in the app.
+  */
+  --text-h1: clamp(1.75rem, 1.6rem + 1vw, 2.25rem); /* 28px → 36px, DESIGN.md H1 */
+  --text-h1--line-height: 1.15;
+  --text-h2: clamp(1.25rem, 1.15rem + 0.5vw, 1.5rem); /* 20px → 24px, DESIGN.md H2 */
+  --text-h2--line-height: 1.25;
+  --text-h3: 1.125rem; /* 18px, DESIGN.md H3 — fixed, small enough not to need scaling */
+  --text-h3--line-height: 1.4;
+  --text-body: 1rem; /* 16px, DESIGN.md body minimum */
+  --text-body--line-height: 1.6;
+  --text-caption: 0.8125rem; /* 13px, DESIGN.md caption/label */
+  --text-caption--line-height: 1.5;
+
+  /*
+    Unified container widths. The app today has six different max-w-* values
+    scattered across routes (3xl/4xl/5xl/6xl/xl) with no single source of
+    truth (D0 audit finding). These are the two targets — max-w-app for the
+    dashboard/sidebar shell, max-w-content for single-column reading content
+    (analysis detail, legal docs) — declared here so D2+ can adopt them
+    route by route without every route needing to agree on the number at
+    once. Tailwind's own --container-* namespace (max-w-3xs..7xl) is
+    untouched; "app"/"content" don't collide with any of those names.
+  */
+  --container-app: 87.5rem; /* 1400px */
+  --container-content: 50rem; /* 800px */
+
+  /*
+    Overlay-only shadow scale, deliberately NOT named --shadow-sm/md/lg —
+    those are Tailwind's own built-in shadow tokens (already consumed by
+    shadow-lg/shadow-xl in accessibility-widget.tsx), so redeclaring them
+    here would silently change what those existing classes render. DESIGN.md
+    is explicit that cards use background-step elevation, not shadows — this
+    scale is only for genuinely floating surfaces added going forward
+    (popovers/modals/toasts), via shadow-overlay-sm/md/lg.
+  */
+  --shadow-overlay-sm: 0 1px 2px 0 rgb(0 0 0 / 0.24);
+  --shadow-overlay-md: 0 4px 12px -2px rgb(0 0 0 / 0.32);
+  --shadow-overlay-lg: 0 12px 32px -8px rgb(0 0 0 / 0.4);
 }
 
 @theme inline {
@@ -120,6 +185,52 @@
   --score-high: #00d4a0;
   --score-mid: #f5a623;
   --score-low: #ff4d6a;
+
+  /*
+    Customer DISC personality (locked to lib/sales-knowledge.ts: Red/Yellow/
+    Green/Blue). Previously only declared inside @theme as --color-disc-*,
+    which Tailwind uses to generate utilities (bg-disc-d, text-disc-i, ...)
+    but never resolves as a plain CSS custom property. --chart-4 below
+    referenced --disc-s directly and silently resolved to nothing as a
+    result — these four are the fix.
+  */
+  --disc-d: #ff4d4d;
+  --disc-i: #ffd400;
+  --disc-s: #00c48c;
+  --disc-c: #4d7eff;
+
+  /*
+    Primary-button fill only. --accent-blue (#4D7EFF) stays the source of
+    truth for text, links, borders, and focus rings, where it passes AA
+    (5.40:1 on --bg-base). But white text (#F0F0FF) on a #4D7EFF *fill* is
+    only 3.24:1 — below the 4.5:1 AA text minimum — so primary buttons use
+    this deliberately-deepened shade for their background instead.
+  */
+  --accent-blue-deep: #2e5fe8;
+
+  /*
+    Border shade for interactive controls (inputs, focus outlines on
+    non-focus-visible elements) — plain --border (#2A2A3D) is only 1.41:1
+    against --bg-base, well under the 3:1 WCAG 1.4.11 minimum for UI
+    component boundaries.
+
+    D8 correction: the original value here (#5A5A7A, added in D0) was never
+    actually verified against real background math — it turns out to only
+    reach 2.99:1 against --bg-base and drops to 2.46:1 against --bg-hover,
+    failing 3:1 everywhere. Caught while wiring this token into its first
+    real consumer (ui.tsx's Input) in D8. This corrected value clears 3:1
+    against all four elevation levels, worst case (--bg-hover) at 3.19:1.
+  */
+  --border-interactive: #6b6b8f;
+
+  /*
+    Amber for callouts/insights/highlights (D1 addition) — a semantically
+    distinct name from --score-mid even though it currently shares the same
+    value. Score bands and "here's an insight" emphasis are different
+    concepts that happen to look the same today; keeping separate names
+    means a future change to one doesn't silently recolor the other.
+  */
+  --insight: #f5a623;
 
   /* ── shadcn semantic tokens, derived from the brand tokens above ── */
   --background: var(--bg-base);
@@ -207,8 +318,25 @@
   .legal-prose a {
     @apply text-primary underline underline-offset-2;
   }
+  /*
+    D8: the sub-processor/data-type reference tables on privacy/dpa have 3
+    columns of real content and were silently overflowing the page at
+    narrow widths with no way to reach the clipped columns. `overflow-x`
+    does NOT reliably apply to a `display: table` box in real browsers
+    (verified live — border-collapse/mt-4/rounded-lg from this same @apply
+    all took effect, overflow-x-auto specifically did not, confirming this
+    is a platform limitation, not a build issue) — the standard fix is a
+    wrapping element, applied at each of the 5 call sites via a shared
+    .legal-prose-table-wrap class instead of overflow on the table itself.
+  */
   .legal-prose table {
-    @apply mt-4 w-full border-collapse overflow-hidden rounded-lg text-sm;
+    @apply mt-4 w-full border-collapse rounded-lg text-sm;
+  }
+  .legal-prose-table-wrap {
+    @apply mt-4 overflow-x-auto rounded-lg;
+  }
+  .legal-prose-table-wrap table {
+    @apply mt-0;
   }
   .legal-prose th {
     @apply border-b border-zinc-700 bg-zinc-900 px-3 py-2 text-start font-medium text-zinc-300;
@@ -248,6 +376,20 @@
   unless a user explicitly turns one of these on, and the choice persists via
   localStorage across visits.
 */
+
+/*
+  The floating a11y button sits at `bottom-6` (1.5rem), which on a phone lands
+  directly on top of the app shell's bottom tab bar (h-16 = 4rem + the safe
+  area). AppBottomNav tags <html> with `has-bottom-nav` while it's mounted —
+  i.e. only on the four authenticated app routes — and this lifts the button
+  clear of the bar there, without moving it on the marketing pages that have
+  no bottom nav. Scoped below `md` because that's where the bar renders.
+*/
+@media (max-width: 47.999rem) {
+  html.has-bottom-nav .a11y-fab {
+    bottom: calc(4.75rem + env(safe-area-inset-bottom));
+  }
+}
 
 /* "עצירת אנימציות" — a user-facing kill switch in addition to the OS-level
    prefers-reduced-motion support already elsewhere in this file. */

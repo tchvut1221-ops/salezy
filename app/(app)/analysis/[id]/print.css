@@ -1,0 +1,56 @@
+/* סגנונות הדפסה לדף הניתוח — מאפשרים ייצוא PDF דרך הדפדפן (window.print). */
+@media print {
+  /* הסתר את כל הדף, חשוף רק את תוכן הניתוח. */
+  body * {
+    visibility: hidden;
+  }
+  #analysis-content,
+  #analysis-content * {
+    visibility: visible;
+  }
+  #analysis-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+
+  /* הסתר אלמנטים שאינם חלק מהתוכן (כולל כפתור "הורד PDF"). */
+  button,
+  nav,
+  header,
+  footer {
+    display: none !important;
+  }
+
+  /* גלה את כל התוכן המורחב (מאחורי "פרטים נוספים") — הדפסה היא דוח מלא,
+     לא צילום מסך של מה שקרה להיות פתוח. ראה components/salezy/analysis-section.tsx. */
+  #analysis-content [data-analysis-details] {
+    display: block !important;
+  }
+
+  /* התמלול (components/salezy/transcript-view.tsx) יושב מחוץ ל-#analysis-content
+     ולכן אינו חלק מהדוח המודפס. `body *` למעלה כבר מסתיר אותו ויזואלית — אבל
+     visibility: hidden משאיר את הגובה שלו בזרימת הדף, ותמלול של שיחה ארוכה היה
+     מייצר עשרות עמודים ריקים אחרי הדוח. display: none מוציא אותו מהזרימה לגמרי.
+     על המסך הפאנל נשאר גלול (max-h), מה שאינו רלוונטי כאן בגלל הכלל הזה. */
+  #call-transcript {
+    display: none !important;
+  }
+
+  /* שמור על עברית ו-RTL בהדפסה. */
+  html {
+    direction: rtl;
+  }
+
+  /* ה-UI כהה (טקסט לבן על רקע כהה) — בלי ההיפוך הזה ה-PDF יוצא לבן-על-לבן וריק.
+     הופך את הטקסט לכהה ואת הרקעים לשקופים כדי שיהיה קריא על נייר לבן. */
+  #analysis-content,
+  #analysis-content * {
+    color: #111 !important;
+    background: transparent !important;
+    border-color: #d4d4d8 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

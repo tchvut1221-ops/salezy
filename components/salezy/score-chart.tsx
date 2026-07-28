@@ -10,6 +10,16 @@ import {
   YAxis,
 } from "recharts";
 import { Panel } from "./ui";
+import {
+  CHART_AXIS_STROKE,
+  CHART_AXIS_TICK,
+  CHART_GRID_STROKE,
+  CHART_SCORE_LINE_COLOR,
+  CHART_TOOLTIP_CONTENT_STYLE,
+  CHART_TOOLTIP_LABEL_STYLE,
+  CHART_TREND_LINE_COLOR,
+  formatChartDates,
+} from "./chart-theme";
 import type { ScorePoint } from "@/lib/analytics";
 
 /**
@@ -39,27 +49,20 @@ function linearRegression(values: number[]): number[] {
   return xs.map((x) => slope * x + intercept);
 }
 
-const DAY_MONTH_FORMATTER = new Intl.DateTimeFormat("he-IL", {
-  day: "2-digit",
-  month: "2-digit",
-});
-const DAY_MONTH_YEAR_FORMATTER = new Intl.DateTimeFormat("he-IL", {
-  day: "2-digit",
-  month: "2-digit",
-  year: "2-digit",
-});
-
 /** Line chart of score-per-call over time, with a linear trend line. v2-only, non-null scores. */
-export function ScoreChart({ points }: { points: ScorePoint[] }) {
+export function ScoreChart({
+  points,
+  className,
+}: {
+  points: ScorePoint[];
+  /** Grid placement from the dashboard (e.g. "lg:col-span-2"). */
+  className?: string;
+}) {
   const trend = linearRegression(points.map((p) => p.overall));
-
-  // Only show the year once calls actually span more than one — otherwise
-  // "01/01" x2 from two different years would look like a duplicate point.
-  const years = new Set(points.map((p) => new Date(p.created_at).getFullYear()));
-  const dateFormatter = years.size > 1 ? DAY_MONTH_YEAR_FORMATTER : DAY_MONTH_FORMATTER;
+  const dates = formatChartDates(points.map((p) => p.created_at));
 
   const data = points.map((p, i) => ({
-    date: dateFormatter.format(new Date(p.created_at)),
+    date: dates[i],
     score: Math.round(p.overall),
     trend: Math.round(trend[i] * 10) / 10,
   }));
@@ -77,53 +80,32 @@ export function ScoreChart({ points }: { points: ScorePoint[] }) {
   } מתוך 100, מגמה ${trendDirection}.`;
 
   return (
-    <Panel eyebrow="מגמה" title="ציון לאורך זמן">
+    <Panel eyebrow="מגמה" title="ציון לאורך זמן" className={className}>
       <div className="h-64 w-full" dir="ltr" role="img" aria-label={chartSummary}>
         <div aria-hidden="true" className="h-full w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2A2A3D" />
-              <XAxis
-                dataKey="date"
-                stroke="#2A2A3D"
-                tick={{
-                  fill: "#8888AA",
-                  fontFamily: "var(--font-jetbrains-mono)",
-                  fontSize: 12,
-                }}
-              />
-              <YAxis
-                domain={[0, 100]}
-                stroke="#2A2A3D"
-                tick={{
-                  fill: "#8888AA",
-                  fontFamily: "var(--font-jetbrains-mono)",
-                  fontSize: 12,
-                }}
-              />
+              <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
+              <XAxis dataKey="date" stroke={CHART_AXIS_STROKE} tick={CHART_AXIS_TICK} />
+              <YAxis domain={[0, 100]} stroke={CHART_AXIS_STROKE} tick={CHART_AXIS_TICK} />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: "#1A1A26",
-                  border: "1px solid #2A2A3D",
-                  borderRadius: 8,
-                  color: "#F0F0FF",
-                }}
-                labelStyle={{ color: "#8888AA" }}
+                contentStyle={CHART_TOOLTIP_CONTENT_STYLE}
+                labelStyle={CHART_TOOLTIP_LABEL_STYLE}
               />
               <Line
                 type="monotone"
                 dataKey="score"
                 name="ציון"
-                stroke="#00D4A0"
+                stroke={CHART_SCORE_LINE_COLOR}
                 strokeWidth={2}
-                dot={{ r: 3, fill: "#00D4A0" }}
+                dot={{ r: 3, fill: CHART_SCORE_LINE_COLOR }}
                 activeDot={{ r: 5 }}
               />
               <Line
                 type="monotone"
                 dataKey="trend"
                 name="מגמה"
-                stroke="#3D3D5C"
+                stroke={CHART_TREND_LINE_COLOR}
                 strokeWidth={2}
                 strokeDasharray="6 4"
                 dot={false}

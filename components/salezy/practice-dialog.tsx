@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { Dialog } from "@base-ui/react/dialog";
-import { Button } from "./ui";
+import { Flame } from "lucide-react";
+import { Button, Input, scorecardScoreColor } from "./ui";
 import { HighlightRow } from "./analysis-sections";
+import { ICON_STROKE_WIDTH } from "./icons";
 import {
   startPracticeSession,
   sendPracticeMessage,
@@ -12,14 +14,14 @@ import {
 import type {
   PracticeSectionKey,
   PracticeSession,
-  PracticeFeedback,
+  PracticeSessionOutcome,
   PersonalityType,
 } from "@/types";
 
 type DialogState =
   | { phase: "starting" }
   | { phase: "chat"; session: PracticeSession; isWaitingForReply: boolean; isEnding: boolean }
-  | { phase: "feedback"; feedback: PracticeFeedback }
+  | ({ phase: "feedback" } & PracticeSessionOutcome)
   | { phase: "error"; message: string };
 
 /**
@@ -91,8 +93,8 @@ export function PracticeDialog({
     const sessionId = state.session.id;
     setState({ ...state, isEnding: true });
     try {
-      const feedback = await endPracticeSession(sessionId);
-      setState({ phase: "feedback", feedback });
+      const outcome = await endPracticeSession(sessionId);
+      setState({ phase: "feedback", ...outcome });
     } catch {
       setState({ phase: "error", message: "לא הצלחנו לסיים את התרגול. נסו שוב." });
     }
@@ -139,7 +141,7 @@ export function PracticeDialog({
                     key={i}
                     className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
                       m.role === "user"
-                        ? "me-auto bg-primary text-primary-foreground"
+                        ? "me-auto bg-accent-blue-deep text-primary-foreground"
                         : "ms-auto bg-zinc-800 text-zinc-100"
                     }`}
                   >
@@ -155,7 +157,7 @@ export function PracticeDialog({
                 <label htmlFor="practice-reply" className="sr-only">
                   הקלד תגובה
                 </label>
-                <input
+                <Input
                   id="practice-reply"
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
@@ -167,7 +169,7 @@ export function PracticeDialog({
                   }}
                   disabled={state.isWaitingForReply || state.isEnding}
                   placeholder="הקלד תגובה..."
-                  className="flex-1 rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-foreground placeholder:text-zinc-600"
+                  className="flex-1 text-sm"
                 />
                 <Button
                   onClick={onSend}
@@ -193,6 +195,20 @@ export function PracticeDialog({
               <Dialog.Title className="text-lg font-semibold text-foreground">
                 משוב על התרגול
               </Dialog.Title>
+
+              {typeof state.feedback.score === "number" && (
+                <div className="mt-3 flex items-center justify-center gap-2" dir="ltr">
+                  <span
+                    className={`font-mono text-4xl font-bold tabular-nums ${
+                      scorecardScoreColor(state.feedback.score).text
+                    }`}
+                  >
+                    {state.feedback.score}
+                  </span>
+                  <span className="text-sm text-zinc-500">/5</span>
+                </div>
+              )}
+
               <div className="mt-4 space-y-3">
                 <HighlightRow tone="positive" label="מה עבד" text={state.feedback.whatWorked} />
                 <HighlightRow
@@ -201,6 +217,32 @@ export function PracticeDialog({
                   text={state.feedback.whatToImprove}
                 />
               </div>
+
+              {/* D5 "gentle gamification" — a count, not a badge/mascot (DESIGN.md:
+                  no mascots). Ordinal phrasing ("תרגול מס' N") sidesteps Hebrew
+                  singular/plural agreement for the attempt count entirely. */}
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 border-t border-zinc-800 pt-4 text-xs text-zinc-500">
+                {state.streakDays > 0 && (
+                  <span className="flex items-center gap-1.5">
+                    <Flame className="h-4 w-4 text-insight" strokeWidth={ICON_STROKE_WIDTH} aria-hidden="true" />
+                    <span>
+                      רצף תרגול:{" "}
+                      <span dir="ltr" className="font-mono tabular-nums text-zinc-300">
+                        {state.streakDays}
+                      </span>{" "}
+                      {state.streakDays === 1 ? "יום" : "ימים"}
+                    </span>
+                  </span>
+                )}
+                <span>
+                  תרגול מס&apos;{" "}
+                  <span dir="ltr" className="font-mono tabular-nums text-zinc-300">
+                    {state.attemptCount}
+                  </span>{" "}
+                  בנושא זה
+                </span>
+              </div>
+
               <Button onClick={() => onOpenChange(false)} className="mt-6">
                 סגור
               </Button>

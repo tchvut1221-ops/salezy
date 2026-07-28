@@ -2,20 +2,23 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { Sparkles, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { retryAnalysis } from "@/app/actions";
 import { AUDIO_RETENTION_DAYS } from "@/lib/retention-policy";
 import { exportElementToPdf, toPdfFileName } from "@/lib/export-pdf";
 import type { Analysis, AnalysisStatus } from "@/types";
 import { AnalysisSections } from "./analysis-sections";
+import { TranscriptView } from "./transcript-view";
 import { LoadingMessages } from "./loading-messages";
 import { ResultSkeleton } from "./result-skeleton";
+import { ICON_STROKE_WIDTH } from "./icons";
 import {
   StopAnalysisButton,
   DeleteAnalysisButton,
   ResumeAnalysisButton,
 } from "./analysis-actions";
-import { Button } from "./ui";
+import { Button, Alert } from "./ui";
 
 const STEPS: { key: AnalysisStatus; label: string }[] = [
   { key: "uploaded", label: "הועלה" },
@@ -37,10 +40,21 @@ const TERMINAL: AnalysisStatus[] = [
   "cancelled",
 ];
 
-export function AnalysisView({ initial }: { initial: Analysis }) {
+export function AnalysisView({
+  initial,
+  isFirstAnalysis = false,
+}: {
+  initial: Analysis;
+  /** D6 celebration: true when no OTHER completed analysis exists for this
+   *  user yet (computed server-side in the page). Self-resolving — once a
+   *  second analysis completes, this is false everywhere, so no dismissal
+   *  state needs to be persisted. */
+  isFirstAnalysis?: boolean;
+}) {
   const [analysis, setAnalysis] = useState<Analysis>(initial);
   const [retrying, startRetry] = useTransition();
   const [exportingPdf, startExportPdf] = useTransition();
+  const [showCelebration, setShowCelebration] = useState(isFirstAnalysis);
 
   const isDone = TERMINAL.includes(analysis.status);
 
@@ -141,6 +155,36 @@ export function AnalysisView({ initial }: { initial: Analysis }) {
         )}
       </div>
 
+      {/* D6 first-analysis celebration — outside #analysis-content on
+          purpose, same as the action row above: it's a one-time UI moment,
+          not part of the exported/printed report. */}
+      {isReady && showCelebration && (
+        <Alert tone="info" className="mb-4">
+          <div className="flex items-start gap-3">
+            <Sparkles
+              className="mt-0.5 h-5 w-5 shrink-0 text-primary"
+              strokeWidth={ICON_STROKE_WIDTH}
+              aria-hidden="true"
+            />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground">הניתוח הראשון שלך מוכן!</p>
+              <p className="mt-1 text-sm text-zinc-400">
+                עברו על הכרטיסים למטה כדי לראות את פרופיל הלקוח, כרטיס הציון שלך, והצעדים
+                הבאים המומלצים.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowCelebration(false)}
+              aria-label="סגור הודעה"
+              className="shrink-0 rounded-lg p-1 text-zinc-500 outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <X className="h-4 w-4" strokeWidth={ICON_STROKE_WIDTH} aria-hidden="true" />
+            </button>
+          </div>
+        </Alert>
+      )}
+
       <div id="analysis-content">
         <h1 className="text-2xl font-bold text-foreground">{analysis.file_name}</h1>
         {audioDeleted && isReady && (
@@ -153,7 +197,7 @@ export function AnalysisView({ initial }: { initial: Analysis }) {
         {analysis.status === "failed" ||
         analysis.status === "no_speech_detected" ||
         isCancelled ? (
-          <div role="alert" className="mt-6 rounded-lg border border-score-low/30 bg-score-low/10 p-5">
+          <Alert className="mt-6">
             <p className="text-sm font-medium text-score-low">
               {isCancelled
                 ? "הניתוח בוטל"
@@ -183,13 +227,50 @@ export function AnalysisView({ initial }: { initial: Analysis }) {
                 {retrying ? "מתחיל מחדש..." : "נסה שוב"}
               </Button>
             )}
-          </div>
+          </Alert>
         ) : isReady && analysis.result ? (
           <AnalysisSections analysisId={initial.id} result={analysis.result} />
         ) : (
           <Progress status={analysis.status} analysisId={initial.id} />
         )}
       </div>
+
+      {/*
+        התמלול — מחוץ ל-#analysis-content בכוונה (ראה ההסבר למטה), ולכן אינו
+        נכלל ב"הורד PDF". ממוקם מיד אחרי כרטיס ה-Scorecard כדי שהציטוטים
+        המסומנים והקטגוריה שהם מבססים יישבו זה לצד זה.
+
+        Placed OUTSIDE #analysis-content deliberately, so the "הורד PDF" export
+        (lib/export-pdf.ts, html2canvas over #analysis-content) does not include
+        it. Three reasons, in order of weight:
+         1. Correctness. That export rasterizes the whole node into ONE canvas
+            and slices it into A4 pages. A 30-minute call transcript adds
+            thousands of pixels of height at scale:2, and browsers cap canvas
+            dimensions (~32k px in Chrome) — past that html2canvas yields a
+            blank or truncated bitmap, so including it would risk silently
+            breaking an export that works today.
+         2. Privacy. The transcript is verbatim customer speech. Keeping it out
+            of a one-click, easily-forwarded file is the more conservative
+            default, and matches the disclosure this panel carries.
+         3. Precedent. The delete/PDF action bar above is already deliberately
+            outside #analysis-content for the same "not part of the report"
+            reason.
+        The transcript is still on the page, still selectable and copyable —
+        this only scopes the generated file. app/(app)/analysis/[id]/print.css
+        additionally sets `display: none` on this wrapper, because print.css
+        hides non-report content with `visibility: hidden`, which would
+        otherwise leave the transcript's full height behind as blank pages.
+
+        Rendered whenever a completed analysis exists (even with a null
+        transcript — that's the legacy/empty case the panel handles itself), and
+        also on a terminal failure that nonetheless produced a transcript, since
+        the words spoken are still worth reading when the analysis didn't land.
+      */}
+      {(isReady || (isDone && Boolean(analysis.transcript))) && (
+        <div id="call-transcript">
+          <TranscriptView transcript={analysis.transcript} result={analysis.result} />
+        </div>
+      )}
     </div>
   );
 }

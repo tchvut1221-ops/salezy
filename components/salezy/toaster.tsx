@@ -15,9 +15,9 @@ export function Toaster() {
       position="top-center"
       toastOptions={{
         style: {
-          background: "#111118",
-          border: "1px solid #2A2A3D",
-          color: "#F0F0FF",
+          background: "var(--bg-surface)",
+          border: "1px solid var(--border)",
+          color: "var(--text-primary)",
           fontFamily: "var(--font-assistant), var(--font-inter), sans-serif",
         },
       }}

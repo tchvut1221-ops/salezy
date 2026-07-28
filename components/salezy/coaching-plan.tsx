@@ -12,25 +12,13 @@ const PRIORITY_META: Record<
 
 export function CoachingPlan({
   actions,
-  weeklyFocus,
 }: {
   actions?: Array<{ action: string; why: string; how: string; priority: CoachingPriority }>;
-  weeklyFocus?: { primaryGoal: string; successMetric: string };
 }) {
-  if (!actions?.length && !weeklyFocus) return null;
+  if (!actions?.length) return null;
 
   return (
     <Panel title="תוכנית אימון לשבוע הקרוב">
-      {weeklyFocus && (
-        <div className="mb-5 rounded-xl border border-primary/25 bg-primary/5 p-5">
-          <p className="text-sm font-medium text-primary">היעד המרכזי לשבוע</p>
-          <p className="mt-1 text-zinc-100">{weeklyFocus.primaryGoal}</p>
-          <p className="mt-2 text-sm text-zinc-400">
-            איך תדע שהצלחת: {weeklyFocus.successMetric}
-          </p>
-        </div>
-      )}
-
       {actions?.length ? (
         <ul className="space-y-3">
           {actions.map((a, i) => {

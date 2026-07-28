@@ -30,7 +30,7 @@ export function ObjectionTracker({
   return (
     <Panel title="מעקב התנגדויות">
       <div className="overflow-x-auto rounded-xl border border-zinc-800">
-        <table className="w-full text-right text-sm">
+        <table className="w-full text-start text-sm">
           <thead className="bg-zinc-950/40 text-xs uppercase text-zinc-500">
             <tr>
               <th className="px-4 py-2.5 font-medium">מה הלקוח אמר</th>

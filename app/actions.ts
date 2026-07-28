@@ -8,13 +8,14 @@ import {
   buildPersonaSystemPrompt,
   sendPracticeTurn,
   generateFeedback,
+  computeStreakDays,
 } from "@/lib/practice";
 import type { AnalysisStatus, PersonalityType } from "@/types";
 import type {
   PracticeSectionKey,
   PracticeSession,
   PracticeMessage,
-  PracticeFeedback,
+  PracticeSessionOutcome,
 } from "@/types";
 
 /** Non-terminal statuses — the pipeline is still actively running. */
@@ -330,8 +331,16 @@ export async function sendPracticeMessage(
   return updated as PracticeSession;
 }
 
-/** Ends a session: generates short feedback, marks the session completed. */
-export async function endPracticeSession(sessionId: string): Promise<PracticeFeedback> {
+/**
+ * Ends a session: generates short scored feedback, marks the session
+ * completed, then computes the two D5 "gentle gamification" numbers —
+ * streakDays (consecutive-day habit across ALL of this user's practice, not
+ * just this section) and attemptCount (completed sessions for this exact
+ * analysis+section, including the one just finished). Both are cheap
+ * server-side reads over an already-indexed column (user_id), not a new
+ * aggregation table.
+ */
+export async function endPracticeSession(sessionId: string): Promise<PracticeSessionOutcome> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -359,5 +368,28 @@ export async function endPracticeSession(sessionId: string): Promise<PracticeFee
     .eq("user_id", user.id);
   if (updateError) throw updateError;
 
-  return feedback;
+  // 90 days of completed-session dates is comfortably more than any real
+  // streak; a Nth-attempt count is a plain row count. Independent reads, run
+  // together.
+  const [{ data: recentCompletions }, { count: attemptCount }] = await Promise.all([
+    supabase
+      .from("practice_sessions")
+      .select("created_at")
+      .eq("user_id", user.id)
+      .eq("status", "completed")
+      .gte("created_at", new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()),
+    supabase
+      .from("practice_sessions")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("analysis_id", session.analysis_id)
+      .eq("section_key", session.section_key)
+      .eq("status", "completed"),
+  ]);
+
+  return {
+    feedback,
+    streakDays: computeStreakDays((recentCompletions ?? []).map((r) => r.created_at)),
+    attemptCount: attemptCount ?? 1,
+  };
 }

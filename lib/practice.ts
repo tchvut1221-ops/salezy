@@ -2,7 +2,10 @@ import { z } from "zod";
 import Anthropic from "@anthropic-ai/sdk";
 import { STYLE_PROFILES, PERSONALITY_TYPE_META } from "@/lib/disc-reference";
 import { parseModelJson } from "@/lib/analysis";
+import type { createClient } from "@/lib/supabase/server";
 import type { PersonalityType, PracticeMessage, PracticeSectionKey } from "@/types";
+
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
 export const PRACTICE_MODEL_ID = "claude-sonnet-4-6";
 
@@ -50,17 +53,21 @@ export function buildFeedbackPrompt(messages: PracticeMessage[], focusText: stri
 
 ${transcript}
 
-תן משוב קצר וממוקד על ביצועי איש המכירות בתרגול הזה — לא ניתוח מלא, רק משפט אחד לכל שדה. החזר אך ורק JSON תקין (בלי גדרות markdown, בלי טקסט נוסף) במבנה:
+תן משוב קצר וממוקד על ביצועי איש המכירות בתרגול הזה — לא ניתוח מלא, רק משפט אחד לכל שדה, ועוד ציון 1-5. החזר אך ורק JSON תקין (בלי גדרות markdown, בלי טקסט נוסף) במבנה:
 
 {
   "whatWorked": "משפט אחד קצר על מה שעבד טוב",
-  "whatToImprove": "משפט אחד קצר על הדבר הכי חשוב לשפר"
-}`;
+  "whatToImprove": "משפט אחד קצר על הדבר הכי חשוב לשפר",
+  "score": 4
+}
+
+"score" — הערכה כוללת של הביצוע בתרגול הזה בלבד (לא של השיחה המקורית), בסולם 1-5, באותו היגיון של Scorecard השיחה: 5=מצוין, 4=טוב, 3=סביר, 2=חלש, 1=לא מספק. שקול את מיקוד התרגול הספציפי (${focusText}) בלבד — לא ביצועים כלליים.`;
 }
 
 export const practiceFeedbackSchema = z.object({
   whatWorked: z.string(),
   whatToImprove: z.string(),
+  score: z.number().int().min(1).max(5),
 });
 
 // Lazy singleton, mirrors lib/disc.ts's getDiscClient() pattern exactly.
@@ -124,4 +131,56 @@ export async function generateFeedback(
     .join("\n")
     .trim();
   return practiceFeedbackSchema.parse(parseModelJson(text));
+}
+
+/**
+ * Consecutive-day coaching streak (D5, "gentle gamification" per the design
+ * brief — a count, not a badge/mascot). Counts calendar days (UTC — the
+ * stored `created_at` is a timestamptz; a day boundary in any single fixed
+ * timezone is an acceptable simplification for a motivational counter, not
+ * something a user would audit) with at least one COMPLETED practice
+ * session, walking backward from today. A day with no practice breaks the
+ * streak — except today itself: if the user hasn't practiced yet today the
+ * streak up through yesterday is still "alive" (it isn't broken until a
+ * full day passes with nothing), so today is only required to be non-empty
+ * if it's already the most recent day with any activity.
+ *
+ * Pure function — takes `created_at` strings already fetched by the caller
+ * (app/actions.ts's endPracticeSession) rather than querying itself, so it
+ * stays trivially testable and has no Supabase dependency.
+ */
+/**
+ * D6 onboarding checklist: has this user ever finished a practice session?
+ * A single `head: true, limit: 1` existence check over the indexed user_id
+ * column — cheap enough to run alongside the dashboard's other reads.
+ */
+export async function hasCompletedPracticeSession(
+  supabase: SupabaseServerClient,
+  userId: string
+): Promise<boolean> {
+  const { count } = await supabase
+    .from("practice_sessions")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("status", "completed")
+    .limit(1);
+  return Boolean(count && count > 0);
+}
+
+export function computeStreakDays(completedCreatedAt: string[]): number {
+  const days = new Set(
+    completedCreatedAt.map((iso) => new Date(iso).toISOString().slice(0, 10))
+  );
+  const cursor = new Date();
+  cursor.setUTCHours(0, 0, 0, 0);
+  const todayKey = cursor.toISOString().slice(0, 10);
+  if (!days.has(todayKey)) {
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
+  }
+  let streak = 0;
+  while (days.has(cursor.toISOString().slice(0, 10))) {
+    streak++;
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
+  }
+  return streak;
 }

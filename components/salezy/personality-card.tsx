@@ -1,7 +1,8 @@
-import { Panel, Pill, scoreColor } from "./ui";
+import { Panel, Pill, scoreColor, Meter } from "./ui";
+import { Quote } from "./quote";
 import { PERSONALITY_TYPE_META as TYPE_META } from "@/lib/disc-reference";
 import { PERSONALITY_TYPE_ICON, ICON_STROKE_WIDTH } from "./icons";
-import type { AnalysisResult } from "@/types";
+import type { AnalysisResult, PersonalityType } from "@/types";
 
 /**
  * Customer DISC personality. Upgraded from the old type+explanation card to
@@ -59,7 +60,12 @@ export function PersonalityCard({
           </div>
           <p className="text-sm leading-relaxed text-zinc-400">{explanation}</p>
           {typeof confidence === "number" && <Confidence value={confidence} />}
-          {discAxes && <AxisMeters discAxes={discAxes} />}
+          {discAxes && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <AxisMeters discAxes={discAxes} type={type} indeterminate />
+              <DiscQuadrant discAxes={discAxes} type={type} indeterminate />
+            </div>
+          )}
         </div>
       </Panel>
     );
@@ -101,7 +107,12 @@ export function PersonalityCard({
           </div>
         )}
 
-        {discAxes && <AxisMeters discAxes={discAxes} />}
+        {discAxes && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <AxisMeters discAxes={discAxes} type={type} />
+            <DiscQuadrant discAxes={discAxes} type={type} />
+          </div>
+        )}
 
         <p className="text-sm leading-relaxed text-zinc-300">{explanation}</p>
 
@@ -117,7 +128,9 @@ export function PersonalityCard({
                   key={i}
                   className="border-s-2 border-zinc-700 ps-3 text-sm"
                 >
-                  <p className="text-zinc-200">“{s.quote}”</p>
+                  <p className="text-zinc-200">
+                    <Quote>{s.quote}</Quote>
+                  </p>
                   <p className="mt-0.5 text-zinc-500">{s.interpretation}</p>
                 </li>
               ))}
@@ -143,35 +156,66 @@ export function PersonalityCard({
 
 function AxisMeters({
   discAxes,
+  type,
+  indeterminate = false,
 }: {
   discAxes: NonNullable<AnalysisResult["customerPersonality"]["discAxes"]>;
+  type: PersonalityType;
+  /** Low-confidence read: show the raw evidence in neutral gray rather than
+   *  the type's color, matching the indeterminate branch's "no confident
+   *  colored headline" rule elsewhere in this card. */
+  indeterminate?: boolean;
 }) {
+  const colorClass = indeterminate ? "bg-zinc-500" : TYPE_META[type].dot;
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-3">
       <AxisMeter
         label="רשמי ↔ בלתי-רשמי"
+        lowPoleLabel="בלתי-רשמי"
+        highPoleLabel="רשמי"
         score={discAxes.formalInformal.score}
         signalCount={discAxes.formalInformal.signalCount}
+        colorClass={colorClass}
       />
       <AxisMeter
         label="דומיננטי ↔ פאסיבי"
+        lowPoleLabel="פאסיבי"
+        highPoleLabel="דומיננטי"
         score={discAxes.dominantPassive.score}
         signalCount={discAxes.dominantPassive.signalCount}
+        colorClass={colorClass}
       />
     </div>
   );
 }
 
+/**
+ * A genuinely bipolar meter: score is 0-18 with 9 as a true neutral midpoint
+ * (lib/disc.ts's axisScore()), but the old version rendered it as a
+ * unipolar 0-100% fill from the start edge — so a perfectly neutral 9/18
+ * call visually read as "about half of something", not "dead center,
+ * neither pole". This version anchors the fill at the center and grows it
+ * toward whichever pole the score actually favors.
+ */
 function AxisMeter({
   label,
+  lowPoleLabel,
+  highPoleLabel,
   score,
   signalCount,
+  colorClass,
 }: {
   label: string;
+  lowPoleLabel: string;
+  highPoleLabel: string;
   score: number;
   signalCount: number;
+  colorClass: string;
 }) {
-  const pct = Math.max(0, Math.min(100, (score / 18) * 100));
+  const clamped = Math.max(0, Math.min(18, score));
+  const frac = (clamped - 9) / 9; // -1 (fully low pole) .. 0 (neutral) .. 1 (fully high pole)
+  const widthPct = Math.abs(frac) * 50;
+  const startPct = frac >= 0 ? 50 : 50 - widthPct;
   return (
     <div>
       <div className="mb-1 flex items-center justify-between text-xs text-zinc-500">
@@ -180,8 +224,87 @@ function AxisMeter({
           {score}/18 · {signalCount} סימנים
         </span>
       </div>
-      <div className="h-1 w-full overflow-hidden rounded-full bg-zinc-800">
-        <div className="h-full rounded-full bg-zinc-500" style={{ width: `${pct}%` }} />
+      <div
+        dir="ltr"
+        className="relative h-1.5 w-full overflow-hidden rounded-full bg-zinc-800"
+      >
+        <div
+          className={`absolute inset-y-0 rounded-full ${colorClass}`}
+          style={{ insetInlineStart: `${startPct}%`, width: `${widthPct}%` }}
+        />
+        {/* Center marker — the true neutral point, not the fill's own edge. */}
+        <span
+          aria-hidden="true"
+          className="absolute inset-y-0 w-px -translate-x-1/2 bg-zinc-500"
+          style={{ insetInlineStart: "50%" }}
+        />
+      </div>
+      <div dir="ltr" className="mt-1 flex justify-between text-[11px] text-zinc-600">
+        <span>{lowPoleLabel}</span>
+        <span>{highPoleLabel}</span>
+      </div>
+    </div>
+  );
+}
+
+const QUADRANT_TINT: Record<PersonalityType, string> = {
+  Driver: "bg-disc-d/5",
+  Expressive: "bg-disc-i/5",
+  Amiable: "bg-disc-s/5",
+  Analytical: "bg-disc-c/5",
+};
+
+/**
+ * The 2x2 map the two axis scores actually describe. Deliberately NOT a
+ * 4-spoke radar chart — the DISC engine (lib/disc.ts) measures exactly two
+ * continuous axes (formalInformal, dominantPassive), not four independent
+ * D/I/S/C magnitudes, so a radar would have to fabricate two of its four
+ * spokes. This plots the real two-number position instead. Quadrant
+ * placement is lib/disc-reference.ts's QUADRANT_MAP, restated visually:
+ * top-left=Driver (task+high), top-right=Expressive (people+high),
+ * bottom-left=Analytical (task+low), bottom-right=Amiable (people+low).
+ */
+function DiscQuadrant({
+  discAxes,
+  type,
+  indeterminate = false,
+}: {
+  discAxes: NonNullable<AnalysisResult["customerPersonality"]["discAxes"]>;
+  type: PersonalityType;
+  indeterminate?: boolean;
+}) {
+  // x: formalInformal score, high(18)=task -> start(left in this LTR box), low(0)=people -> end.
+  // y: dominantPassive score, high(18)=dominant -> top, low(0)=passive -> bottom.
+  const xPct = 100 - (discAxes.formalInformal.score / 18) * 100;
+  const yPct = 100 - (discAxes.dominantPassive.score / 18) * 100;
+  const dotColor = indeterminate ? "bg-zinc-400" : TYPE_META[type].dot;
+  const positionLabel = indeterminate
+    ? `מיקום בפרופיל: לא ניתן לקבוע בביטחון, ${discAxes.formalInformal.score}/18 בציר משימה-אנשים, ${discAxes.dominantPassive.score}/18 בציר דומיננטיות-פאסיביות`
+    : `מיקום בפרופיל: ${TYPE_META[type].he}, ${discAxes.formalInformal.score}/18 בציר משימה-אנשים, ${discAxes.dominantPassive.score}/18 בציר דומיננטיות-פאסיביות`;
+
+  return (
+    <div>
+      {/* Container is the positioning context for the dot below: a 2-col grid
+          of aspect-square cells renders as an overall square, so the dot's
+          percentage-based inset lines up with the visual grid exactly. */}
+      <div
+        dir="ltr"
+        role="img"
+        aria-label={positionLabel}
+        className="relative grid grid-cols-2 grid-rows-2 gap-px overflow-hidden rounded-lg bg-zinc-800"
+      >
+        {(["Driver", "Expressive", "Analytical", "Amiable"] as const).map((cellType) => (
+          <div key={cellType} className={`aspect-square ${QUADRANT_TINT[cellType]}`} />
+        ))}
+        <span
+          aria-hidden="true"
+          className={`absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-zinc-950 ${dotColor}`}
+          style={{ insetInlineStart: `${xPct}%`, top: `${yPct}%` }}
+        />
+      </div>
+      <div dir="ltr" className="mt-1.5 flex justify-between text-[11px] text-zinc-600">
+        <span>ממוקד-משימה</span>
+        <span>ממוקד-אנשים</span>
       </div>
     </div>
   );
@@ -198,9 +321,7 @@ function Confidence({ value }: { value: number }) {
           {pct}%
         </span>
       </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
-        <div className={`h-full rounded-full ${c.bar}`} style={{ width: `${pct}%` }} />
-      </div>
+      <Meter value={pct} size="sm" fillClassName={`h-full rounded-full ${c.bar}`} />
     </div>
   );
 }

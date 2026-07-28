@@ -6,8 +6,9 @@ import {
   Presentation,
   ShieldQuestion,
   Handshake,
+  Scale,
 } from "lucide-react";
-import { Panel, scorecardScoreColor } from "./ui";
+import { Panel, scorecardScoreColor, Meter, EmptyNote } from "./ui";
 import { useCountUp } from "./use-count-up";
 import { Quote } from "./quote";
 import type {
@@ -79,6 +80,14 @@ function CategoryCard({
           );
         })}
       </div>
+      {category.score != null && (
+        <Meter
+          value={(category.score / 5) * 100}
+          size="xs"
+          trackClassName="mt-2"
+          fillClassName={`h-full rounded-full ${scorecardScoreColor(category.score).dot}`}
+        />
+      )}
       <p className="mt-3 text-sm text-zinc-400">{category.rationale}</p>
       {category.quote ? (
         <blockquote className="mt-3 rounded-lg border-e-4 border-primary bg-zinc-950/40 px-4 py-2.5 text-sm text-zinc-300">
@@ -94,15 +103,22 @@ function CategoryCard({
 function TalkRatioCard({ talkRatio }: { talkRatio: Scorecard["talkRatio"] }) {
   if (!talkRatio) {
     return (
-      <div className="flex items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 p-5 text-center text-sm text-zinc-500 sm:col-span-2">
-        לא ניתן היה להעריך יחס דיבור לשיחה זו
-      </div>
+      <article className="flex flex-col items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 p-5 text-center sm:col-span-2">
+        <div className="flex items-center gap-2 text-zinc-500">
+          <Scale className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
+          <h3 className="m-0 font-medium">יחס דיבור / הקשבה</h3>
+        </div>
+        <p className="mt-3 text-sm text-zinc-500">לא ניתן היה להעריך יחס דיבור לשיחה זו</p>
+      </article>
     );
   }
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5 sm:col-span-2">
-      <div className="flex items-baseline justify-between">
-        <span className="font-medium text-zinc-200">יחס דיבור / הקשבה</span>
+    <article className="rounded-xl border border-zinc-800 bg-zinc-900 p-5 sm:col-span-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Scale className="h-4 w-4 text-zinc-500" strokeWidth={1.5} aria-hidden="true" />
+          <h3 className="m-0 font-medium text-zinc-200">יחס דיבור / הקשבה</h3>
+        </div>
         <span dir="ltr" className="font-mono text-3xl font-bold tabular-nums text-primary">
           {Math.round(talkRatio.repPercentage)}%
         </span>
@@ -135,7 +151,7 @@ function TalkRatioCard({ talkRatio }: { talkRatio: Scorecard["talkRatio"] }) {
       <p className="mt-1 text-xs text-zinc-600">
         אידיאלי: 43% דיבור / 57% הקשבה (מחקר Gong Labs)
       </p>
-    </div>
+    </article>
   );
 }
 
@@ -157,7 +173,7 @@ export function Scorecard({ scorecard }: { scorecard: Scorecard }) {
             {display.toFixed(2)}
           </span>
         ) : (
-          <span className="text-lg text-zinc-500">אין מספיק נתונים</span>
+          <EmptyNote className="justify-center text-lg">אין מספיק נתונים</EmptyNote>
         )}
         <p className="mt-1 text-xs text-zinc-500">ציון סקורקארד כולל (מתוך 5)</p>
       </div>
