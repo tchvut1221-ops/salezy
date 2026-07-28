@@ -35,40 +35,47 @@ export function DealIntelligence({
     <Panel title="מודיעין עסקה">
       <div className="space-y-6">
         {idx >= 0 && (
-          <div className="flex items-center">
-            {STAGES.map((s, i) => {
-              const reached = i <= idx;
-              const current = i === idx;
-              return (
-                <div key={s.key} className="flex flex-1 items-center">
-                  <div className="flex flex-col items-center gap-1.5">
-                    <span
-                      className={`h-3 w-3 rounded-full ${
-                        current
-                          ? "bg-primary ring-4 ring-primary/20"
-                          : reached
-                            ? "bg-primary"
-                            : "bg-zinc-700"
-                      }`}
-                    />
-                    <span
-                      className={`whitespace-nowrap text-xs ${
-                        reached ? "text-primary" : "text-zinc-500"
-                      }`}
-                    >
-                      {s.label}
-                    </span>
+          // D8: overflow-x-auto + min-w-max — at narrow widths, five flex-1
+          // columns squeeze the longer Hebrew stage labels (e.g. "משא ומתן")
+          // past their whitespace-nowrap column, which used to just overlap
+          // silently. Now the stepper keeps its natural width and scrolls
+          // horizontally instead of visually breaking.
+          <div className="overflow-x-auto">
+            <div className="flex min-w-max items-center">
+              {STAGES.map((s, i) => {
+                const reached = i <= idx;
+                const current = i === idx;
+                return (
+                  <div key={s.key} className="flex flex-1 items-center">
+                    <div className="flex flex-col items-center gap-1.5">
+                      <span
+                        className={`h-3 w-3 rounded-full ${
+                          current
+                            ? "bg-primary ring-4 ring-primary/20"
+                            : reached
+                              ? "bg-primary"
+                              : "bg-zinc-700"
+                        }`}
+                      />
+                      <span
+                        className={`whitespace-nowrap text-xs ${
+                          reached ? "text-primary" : "text-zinc-500"
+                        }`}
+                      >
+                        {s.label}
+                      </span>
+                    </div>
+                    {i < STAGES.length - 1 && (
+                      <div
+                        className={`mx-1 h-px flex-1 ${
+                          i < idx ? "bg-primary/50" : "bg-zinc-800"
+                        }`}
+                      />
+                    )}
                   </div>
-                  {i < STAGES.length - 1 && (
-                    <div
-                      className={`mx-1 h-px flex-1 ${
-                        i < idx ? "bg-primary/50" : "bg-zinc-800"
-                      }`}
-                    />
-                  )}
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         )}
 

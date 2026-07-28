@@ -24,6 +24,7 @@ export default function DpaPage() {
       </p>
 
       <h2>1. מהות העיבוד</h2>
+      <div className="legal-prose-table-wrap">
       <table>
         <tbody>
           <tr>
@@ -47,6 +48,7 @@ export default function DpaPage() {
           </tr>
         </tbody>
       </table>
+      </div>
 
       <h2>2. התחייבויות המחזיק</h2>
       <p>המחזיק:</p>
@@ -106,6 +108,7 @@ export default function DpaPage() {
       </p>
 
       <h2>נספח ב׳ — רשימת מעבדי משנה</h2>
+      <div className="legal-prose-table-wrap">
       <table>
         <thead>
           <tr>
@@ -124,6 +127,7 @@ export default function DpaPage() {
           ))}
         </tbody>
       </table>
+      </div>
     </LegalLayout>
   );
 }

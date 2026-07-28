@@ -8,7 +8,12 @@ const LAST_UPDATED = "17 ביולי 2026";
 
 export default function AccessibilityPage() {
   return (
-    <LegalLayout title="הצהרת נגישות" version="1.0" updatedAt={LAST_UPDATED}>
+    <LegalLayout
+      title="הצהרת נגישות"
+      version="1.0"
+      updatedAt={LAST_UPDATED}
+      showDraftBanner={false}
+    >
       <p>
         חברת Salezy רואה חשיבות רבה במתן שירות שוויוני, מכובד ונגיש לכלל
         המשתמשים, לרבות אנשים עם מוגבלות. אנו פועלים להנגשת האתר בהתאם

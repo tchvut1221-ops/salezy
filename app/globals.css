@@ -47,8 +47,8 @@
   */
   --color-accent-blue-deep: #2e5fe8;
 
-  /* Border shade for interactive controls — see --border-interactive in :root. */
-  --color-border-interactive: #5a5a7a;
+  /* Border shade for interactive controls — see --border-interactive in :root (D8-corrected value). */
+  --color-border-interactive: #6b6b8f;
 
   /* Amber for callouts/insights — see --insight in :root. */
   --color-insight: #f5a623;
@@ -212,10 +212,16 @@
     Border shade for interactive controls (inputs, focus outlines on
     non-focus-visible elements) — plain --border (#2A2A3D) is only 1.41:1
     against --bg-base, well under the 3:1 WCAG 1.4.11 minimum for UI
-    component boundaries. This one clears it at ~3.2:1 without touching the
-    quieter --border used for purely decorative dividers.
+    component boundaries.
+
+    D8 correction: the original value here (#5A5A7A, added in D0) was never
+    actually verified against real background math — it turns out to only
+    reach 2.99:1 against --bg-base and drops to 2.46:1 against --bg-hover,
+    failing 3:1 everywhere. Caught while wiring this token into its first
+    real consumer (ui.tsx's Input) in D8. This corrected value clears 3:1
+    against all four elevation levels, worst case (--bg-hover) at 3.19:1.
   */
-  --border-interactive: #5a5a7a;
+  --border-interactive: #6b6b8f;
 
   /*
     Amber for callouts/insights/highlights (D1 addition) — a semantically
@@ -312,8 +318,25 @@
   .legal-prose a {
     @apply text-primary underline underline-offset-2;
   }
+  /*
+    D8: the sub-processor/data-type reference tables on privacy/dpa have 3
+    columns of real content and were silently overflowing the page at
+    narrow widths with no way to reach the clipped columns. `overflow-x`
+    does NOT reliably apply to a `display: table` box in real browsers
+    (verified live — border-collapse/mt-4/rounded-lg from this same @apply
+    all took effect, overflow-x-auto specifically did not, confirming this
+    is a platform limitation, not a build issue) — the standard fix is a
+    wrapping element, applied at each of the 5 call sites via a shared
+    .legal-prose-table-wrap class instead of overflow on the table itself.
+  */
   .legal-prose table {
-    @apply mt-4 w-full border-collapse overflow-hidden rounded-lg text-sm;
+    @apply mt-4 w-full border-collapse rounded-lg text-sm;
+  }
+  .legal-prose-table-wrap {
+    @apply mt-4 overflow-x-auto rounded-lg;
+  }
+  .legal-prose-table-wrap table {
+    @apply mt-0;
   }
   .legal-prose th {
     @apply border-b border-zinc-700 bg-zinc-900 px-3 py-2 text-start font-medium text-zinc-300;

@@ -99,7 +99,7 @@ export default function LoginPage() {
                 id="consent"
                 type="checkbox"
                 required
-                className="mt-0.5 h-4 w-4 shrink-0 rounded border-zinc-600 bg-elevated text-primary focus:ring-2 focus:ring-ring"
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-border-interactive bg-elevated text-primary focus:ring-2 focus:ring-ring"
               />
               <span>
                 קראתי ואני מסכים/ה ל

@@ -10,19 +10,32 @@ export function LegalLayout({
   title,
   version,
   updatedAt,
+  showDraftBanner = true,
   children,
 }: {
   title: string;
   version: string;
   /** Overrides the shared privacy/terms/DPA date stamp — needed for documents (e.g. the accessibility statement) versioned independently of lib/legal.ts. */
   updatedAt?: string;
+  /**
+   * D8 fix: this banner used to be unconditional, so it also showed up on
+   * the accessibility statement — which isn't a contract or a policy with
+   * legal liability riding on its wording the way privacy/terms/DPA are; a
+   * "needs a lawyer before this is real" banner on an accessibility
+   * statement reads as if the site's accessibility claims themselves
+   * aren't trustworthy yet. Defaults to true so privacy/terms/dpa keep
+   * their existing behavior unchanged; only the accessibility page opts out.
+   */
+  showDraftBanner?: boolean;
   children: ReactNode;
 }) {
   return (
     <main id="main-content" tabIndex={-1} className="mx-auto max-w-3xl px-4 py-10 outline-none sm:py-14">
-      <div className="rounded-lg border border-score-mid/30 bg-score-mid/10 px-4 py-3 text-sm text-score-mid">
-        טיוטה — טעון בדיקת עורך/ת דין לפני פרסום.
-      </div>
+      {showDraftBanner && (
+        <div className="rounded-lg border border-score-mid/30 bg-score-mid/10 px-4 py-3 text-sm text-score-mid">
+          טיוטה — טעון בדיקת עורך/ת דין לפני פרסום.
+        </div>
+      )}
 
       <h1 className="mt-6 text-2xl font-bold text-foreground sm:text-3xl">{title}</h1>
       <p className="mt-1 text-xs text-zinc-500">

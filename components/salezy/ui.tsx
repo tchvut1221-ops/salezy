@@ -200,6 +200,13 @@ export function Button({
  * never floating-label — breaks Hebrew RTL alignment). Matches the classes
  * login's email/OTP fields already used; also the fix for the one input
  * that had drifted to a different background (practice-dialog's composer).
+ *
+ * border-border-interactive (D8), not border-zinc-700: a text input's
+ * boundary is its ONLY visual cue when unfocused — border-zinc-700
+ * resolves to --border-strong (#3D3D5C), 1.90:1 against --bg-elevated,
+ * well under the 3:1 WCAG 1.4.11 minimum for UI component boundaries.
+ * --border-interactive (~3.2:1) was added in D0 specifically for this and
+ * had no consumer until now.
  */
 export function Input({
   className,
@@ -207,7 +214,7 @@ export function Input({
 }: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
-      className={`w-full rounded-lg border border-zinc-700 bg-elevated px-4 py-2.5 text-foreground placeholder-zinc-500 outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-ring ${
+      className={`w-full rounded-lg border border-border-interactive bg-elevated px-4 py-2.5 text-foreground placeholder-zinc-500 outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-ring ${
         className ?? ""
       }`}
       {...props}

@@ -22,6 +22,7 @@ export default function PrivacyPolicyPage() {
       </p>
 
       <h2>2. איזה מידע אנחנו אוספים</h2>
+      <div className="legal-prose-table-wrap">
       <table>
         <thead>
           <tr>
@@ -61,6 +62,7 @@ export default function PrivacyPolicyPage() {
           </tr>
         </tbody>
       </table>
+      </div>
       <p>
         <strong>חשוב:</strong> הקלטת שיחה עשויה לכלול מידע אישי — ולעיתים
         מידע רגיש — על המשתתפים בה. ראו סעיף 4 בדבר אחריותך כמעלה ההקלטה.
@@ -97,6 +99,7 @@ export default function PrivacyPolicyPage() {
       </p>
 
       <h2>5. ספקי משנה (מעבדי משנה)</h2>
+      <div className="legal-prose-table-wrap">
       <table>
         <thead>
           <tr>
@@ -142,6 +145,7 @@ export default function PrivacyPolicyPage() {
           </tr>
         </tbody>
       </table>
+      </div>
       <p>
         <strong>העברות בינלאומיות:</strong> חלק מהספקים מעבדים מידע מחוץ
         לישראל.
@@ -153,6 +157,7 @@ export default function PrivacyPolicyPage() {
 
       <h2>6. כמה זמן המידע נשמר (מדיניות שמירה)</h2>
       <p>המספרים להלן נאכפים אוטומטית על ידי המערכת ומשקפים את התנהגותה בפועל:</p>
+      <div className="legal-prose-table-wrap">
       <table>
         <thead>
           <tr>
@@ -179,6 +184,7 @@ export default function PrivacyPolicyPage() {
           </tr>
         </tbody>
       </table>
+      </div>
       <p>מחיקת ניתוח על ידך מוחקת גם את ההקלטה, התמלול והתוצרים המשויכים אליו.</p>
 
       <h2>7. הזכויות שלך</h2>
