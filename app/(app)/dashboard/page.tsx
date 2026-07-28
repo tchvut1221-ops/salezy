@@ -7,7 +7,8 @@ import {
   computePersonalityDistribution,
   fetchScorePoints,
 } from "@/lib/analytics";
-import { fetchDashboardInsights } from "@/lib/patterns";
+import { fetchDashboardInsights, MIN_CALLS_FOR_PATTERN } from "@/lib/patterns";
+import { hasCompletedPracticeSession } from "@/lib/practice";
 import { ScoreChart } from "@/components/salezy/score-chart";
 import { PerformanceSummary } from "@/components/salezy/performance-summary";
 import { DiscDistribution } from "@/components/salezy/disc-distribution";
@@ -17,6 +18,8 @@ import {
   AnalysesList,
   type AnalysisListItem,
 } from "@/components/salezy/analyses-list";
+import { OnboardingChecklist, type ChecklistStep } from "@/components/salezy/onboarding-checklist";
+import { WelcomeFlow } from "@/components/salezy/welcome-flow";
 import { buttonVariants, EmptyState } from "@/components/salezy/ui";
 
 export const metadata: Metadata = { title: "דשבורד" };
@@ -35,18 +38,34 @@ export default async function DashboardPage() {
   //     chart AND the personality split (all four are pure functions over it)
   //  3. the insight widgets' payload — scorecard/nextSteps/coachingActions JSON
   //     paths only; see fetchDashboardInsights for why it isn't getPatternsData
-  const [{ data }, scorePoints, insights] = await Promise.all([
+  const [{ data }, scorePoints, insights, practiced] = await Promise.all([
     supabase
       .from("analyses")
       .select("id, file_name, status, created_at, scores")
       .order("created_at", { ascending: false }),
     fetchScorePoints(supabase, user.id),
     fetchDashboardInsights(supabase, user.id),
+    hasCompletedPracticeSession(supabase, user.id),
   ]);
 
   const analyses = (data ?? []) as AnalysisListItem[];
   const stats = computeStats(scorePoints);
   const personalityShares = computePersonalityDistribution(scorePoints);
+  const hasCompletedAnalysis = analyses.some((a) => a.status === "completed");
+
+  // D6 onboarding checklist — 5 real, already-computed signals (no extra
+  // queries beyond the one practice-session existence check above).
+  const checklistSteps: ChecklistStep[] = [
+    { label: "החשבון שלך נוצר", done: true },
+    { label: "העלאת שיחה ראשונה", done: analyses.length > 0, href: "/upload" },
+    { label: "ניתוח ראשון הושלם", done: hasCompletedAnalysis },
+    { label: "תרגול ראשון עם ה-AI", done: practiced },
+    {
+      label: `${MIN_CALLS_FOR_PATTERN}+ שיחות מדורגות (פותח את עמוד הדפוסים)`,
+      done: scorePoints.length >= MIN_CALLS_FOR_PATTERN,
+      href: "/patterns",
+    },
+  ];
 
   return (
     <main
@@ -54,11 +73,17 @@ export default async function DashboardPage() {
       tabIndex={-1}
       className="w-full px-4 py-8 outline-none sm:px-6 sm:py-10"
     >
+      {analyses.length === 0 && <WelcomeFlow />}
+
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-h1 font-bold text-foreground">דשבורד</h1>
         <Link href="/upload" className={buttonVariants()}>
           + העלאת שיחה חדשה
         </Link>
+      </div>
+
+      <div className="mt-6">
+        <OnboardingChecklist steps={checklistSteps} />
       </div>
 
       {/*

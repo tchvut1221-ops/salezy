@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { Sparkles, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { retryAnalysis } from "@/app/actions";
 import { AUDIO_RETENTION_DAYS } from "@/lib/retention-policy";
@@ -11,6 +12,7 @@ import { AnalysisSections } from "./analysis-sections";
 import { TranscriptView } from "./transcript-view";
 import { LoadingMessages } from "./loading-messages";
 import { ResultSkeleton } from "./result-skeleton";
+import { ICON_STROKE_WIDTH } from "./icons";
 import {
   StopAnalysisButton,
   DeleteAnalysisButton,
@@ -38,10 +40,21 @@ const TERMINAL: AnalysisStatus[] = [
   "cancelled",
 ];
 
-export function AnalysisView({ initial }: { initial: Analysis }) {
+export function AnalysisView({
+  initial,
+  isFirstAnalysis = false,
+}: {
+  initial: Analysis;
+  /** D6 celebration: true when no OTHER completed analysis exists for this
+   *  user yet (computed server-side in the page). Self-resolving — once a
+   *  second analysis completes, this is false everywhere, so no dismissal
+   *  state needs to be persisted. */
+  isFirstAnalysis?: boolean;
+}) {
   const [analysis, setAnalysis] = useState<Analysis>(initial);
   const [retrying, startRetry] = useTransition();
   const [exportingPdf, startExportPdf] = useTransition();
+  const [showCelebration, setShowCelebration] = useState(isFirstAnalysis);
 
   const isDone = TERMINAL.includes(analysis.status);
 
@@ -141,6 +154,36 @@ export function AnalysisView({ initial }: { initial: Analysis }) {
           </Button>
         )}
       </div>
+
+      {/* D6 first-analysis celebration — outside #analysis-content on
+          purpose, same as the action row above: it's a one-time UI moment,
+          not part of the exported/printed report. */}
+      {isReady && showCelebration && (
+        <Alert tone="info" className="mb-4">
+          <div className="flex items-start gap-3">
+            <Sparkles
+              className="mt-0.5 h-5 w-5 shrink-0 text-primary"
+              strokeWidth={ICON_STROKE_WIDTH}
+              aria-hidden="true"
+            />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground">הניתוח הראשון שלך מוכן!</p>
+              <p className="mt-1 text-sm text-zinc-400">
+                עברו על הכרטיסים למטה כדי לראות את פרופיל הלקוח, כרטיס הציון שלך, והצעדים
+                הבאים המומלצים.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowCelebration(false)}
+              aria-label="סגור הודעה"
+              className="shrink-0 rounded-lg p-1 text-zinc-500 outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <X className="h-4 w-4" strokeWidth={ICON_STROKE_WIDTH} aria-hidden="true" />
+            </button>
+          </div>
+        </Alert>
+      )}
 
       <div id="analysis-content">
         <h1 className="text-2xl font-bold text-foreground">{analysis.file_name}</h1>
