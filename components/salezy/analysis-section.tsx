@@ -29,8 +29,12 @@ export interface AnalysisSectionProps {
   details?: ReactNode;
   /** Stage 2 (Practice Loop): whether this section actually has something to
    *  practice (e.g. a legacy analysis with no weeklyFocus has nothing for the
-   *  Follow-up section). When false, "תרגל עכשיו" stays inert with the
-   *  "בקרוב" tooltip exactly as in stage 1. */
+   *  Follow-up section). When false, "תרגל עכשיו" stays inert — see the
+   *  disabled-button copy below for why the tooltip says "not enough data
+   *  in THIS call", not "coming soon" (D0 audit: the old "בקרוב" wording
+   *  implied the whole Practice Loop feature wasn't shipped yet, when it's
+   *  actually live — it's just this specific legacy analysis missing the
+   *  underlying v2 field this section would practice). */
   practiceEnabled?: boolean;
   /** Fires when "תרגל עכשיו" is clicked while practiceEnabled is true. The
    *  parent (AnalysisSections) owns the actual PracticeDialog instance. */
@@ -85,7 +89,7 @@ export function AnalysisSection({
           <Button
             variant="secondary"
             aria-disabled
-            title="בקרוב"
+            title="אין מספיק נתונים בניתוח הזה כדי לתרגל את הקטע הזה"
             onClick={(e) => e.preventDefault()}
             className="cursor-not-allowed opacity-50 hover:border-zinc-700 hover:text-zinc-300"
           >

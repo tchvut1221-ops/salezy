@@ -261,6 +261,25 @@ export interface PracticeMessage {
 export interface PracticeFeedback {
   whatWorked: string;
   whatToImprove: string;
+  /**
+   * 1-5, same scale as the Scorecard (D5). Optional — sessions completed
+   * before scoring shipped have feedback with no score in the stored jsonb;
+   * the UI must degrade to showing whatWorked/whatToImprove alone for those.
+   */
+  score?: number;
+}
+
+/**
+ * Return shape of endPracticeSession (D5) — feedback plus the two "gentle
+ * gamification" numbers surfaced right after finishing a session:
+ * streakDays (consecutive-day coaching habit, across all of a user's
+ * practice) and attemptCount (how many times they've completed practice on
+ * this exact analysis+section, including this one).
+ */
+export interface PracticeSessionOutcome {
+  feedback: PracticeFeedback;
+  streakDays: number;
+  attemptCount: number;
 }
 
 /** A row of the public.practice_sessions table. */
