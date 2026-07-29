@@ -7,6 +7,8 @@ export async function sendOtpEmail(email: string, code: string): Promise<void> {
     throw new Error("Missing RESEND_API_KEY");
   }
 
+  console.log("[resend] Sending OTP to:", email, "from:", RESEND_FROM_EMAIL);
+
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -22,8 +24,12 @@ export async function sendOtpEmail(email: string, code: string): Promise<void> {
   });
 
   if (!res.ok) {
-    throw new Error(`Resend API error ${res.status}: ${await res.text()}`);
+    const errorBody = await res.text();
+    console.error("[resend] API error:", res.status, errorBody);
+    throw new Error(`Resend API error ${res.status}: ${errorBody}`);
   }
+
+  console.log("[resend] Email sent successfully to:", email);
 }
 
 function otpEmailHtml(code: string): string {

@@ -39,12 +39,14 @@ export async function POST(req: Request) {
     expires_at: new Date(Date.now() + OTP_EXPIRY_MS).toISOString(),
   });
   if (insertError) {
+    console.error("[send-otp] Supabase insert error:", insertError);
     return NextResponse.json({ error: "שליחת הקוד נכשלה. נסה שוב." }, { status: 500 });
   }
 
   try {
     await sendOtpEmail(email, code);
-  } catch {
+  } catch (err) {
+    console.error("[send-otp] Resend send error:", err instanceof Error ? err.message : err);
     return NextResponse.json({ error: "שליחת הקוד נכשלה. נסה שוב." }, { status: 500 });
   }
 
