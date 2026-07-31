@@ -1,6 +1,9 @@
+"use client";
+
 import { Panel } from "./ui";
 import { Quote } from "./quote";
 import { MOMENT_ICON, ICON_STROKE_WIDTH } from "./icons";
+import { scrollToTranscriptQuote } from "./scroll-to-quote";
 import type { MomentType } from "@/types";
 
 const MOMENT_META: Record<
@@ -60,7 +63,14 @@ export function KeyMoments({
                 {meta.label}
               </span>
               <p className={`mt-2 text-base leading-relaxed ${meta.quoteText}`}>
-                <Quote>{m.quote}</Quote>
+                <button
+                  type="button"
+                  onClick={() => scrollToTranscriptQuote(`moment-${i}`)}
+                  title="קפיצה למיקום בתמלול"
+                  className="text-start underline-offset-4 hover:underline focus-visible:underline"
+                >
+                  <Quote>{m.quote}</Quote>
+                </button>
               </p>
               <p className="mt-1 text-sm text-zinc-400">{m.significance}</p>
             </li>

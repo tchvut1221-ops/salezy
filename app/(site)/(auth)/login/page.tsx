@@ -87,6 +87,8 @@ export default function LoginPage() {
             <Input
               id="email"
               type="email"
+              inputMode="email"
+              autoComplete="email"
               required
               dir="ltr"
               value={email}

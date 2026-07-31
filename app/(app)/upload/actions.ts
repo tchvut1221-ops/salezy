@@ -4,12 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { inngest } from "@/lib/inngest/client";
 import { ALLOWED_EXTENSIONS, MAX_FILE_BYTES, fileExtension } from "@/lib/constants";
+import { parseId } from "@/lib/validation";
 
 /**
  * Kicks off background processing for an already-uploaded recording.
  * Verifies the caller owns the analysis row before sending the Inngest event.
  */
 export async function startAnalysis(analysisId: string) {
+  const id = parseId(analysisId, "Analysis not found");
   const supabase = await createClient();
   const {
     data: { user },
@@ -21,7 +23,7 @@ export async function startAnalysis(analysisId: string) {
   const { data, error } = await supabase
     .from("analyses")
     .select("id, user_id, file_path")
-    .eq("id", analysisId)
+    .eq("id", id)
     .single();
 
   if (error || !data || data.user_id !== user.id) {
@@ -37,11 +39,11 @@ export async function startAnalysis(analysisId: string) {
     throw new Error("Invalid analysis file path");
   }
 
-  await assertUploadedObjectIsValid(data.file_path, analysisId);
+  await assertUploadedObjectIsValid(data.file_path, id);
 
   await inngest.send({
     name: "analysis/requested",
-    data: { analysisId },
+    data: { analysisId: id },
   });
 }
 

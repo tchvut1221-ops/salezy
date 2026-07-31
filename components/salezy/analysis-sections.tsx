@@ -144,7 +144,7 @@ export function AnalysisSections({
         <ListBlock label="טיפים" items={result.salespersonPerformance.tips} />
       </Panel>
       {/* weeklyFocus deliberately omitted here — section 2 owns it entirely. */}
-      <CoachingPlan actions={result.coachingActions} />
+      <CoachingPlan analysisId={analysisId} actions={result.coachingActions} />
       {result.objections && result.objections.length > 0 && (
         <ObjectionTracker objections={result.objections} />
       )}

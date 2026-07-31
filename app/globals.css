@@ -371,6 +371,22 @@
 }
 
 /*
+  components/salezy/reveal-on-scroll.tsx renders its content `opacity-0`
+  (kept in the DOM, not `display:none`, so screen readers and crawlers are
+  unaffected) until an IntersectionObserver flips it visible. With
+  JavaScript disabled that observer never fires, so the content would stay
+  invisible forever — a real regression for sighted no-JS users, even though
+  it's a no-op for assistive tech. `opacity-0` has exactly one consumer in
+  this codebase (that component), so this override is safely scoped without
+  a dedicated marker class.
+*/
+@media (scripting: none) {
+  .opacity-0 {
+    opacity: 1 !important;
+  }
+}
+
+/*
   Accessibility widget support (components/salezy/accessibility-widget.tsx).
   Opt-in only classes toggled on <html> — the default design is untouched
   unless a user explicitly turns one of these on, and the choice persists via
@@ -388,6 +404,35 @@
 @media (max-width: 47.999rem) {
   html.has-bottom-nav .a11y-fab {
     bottom: calc(4.75rem + env(safe-area-inset-bottom));
+  }
+}
+
+/*
+  Momentary highlight when jumping to a quote's transcript occurrence
+  (components/salezy/scroll-to-quote.ts, triggered from KeyMoments/
+  Scorecard). The base rule alone (no fade) is what reduced-motion users
+  get — JS removes the class ~1.5s later, so it's an instant on/off, same
+  as .animate-fade-up's reduced-motion fallback of "just show the end
+  state". The animated fade-out is opt-in via the same
+  prefers-reduced-motion gate as that existing keyframe.
+*/
+.transcript-quote-flash {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes quote-flash {
+    from {
+      outline-color: var(--accent-blue);
+    }
+    to {
+      outline-color: transparent;
+    }
+  }
+
+  .transcript-quote-flash {
+    animation: quote-flash 1.5s ease-out;
   }
 }
 

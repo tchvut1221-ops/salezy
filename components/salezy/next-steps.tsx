@@ -23,16 +23,28 @@ const PRIORITY_META: Record<
   },
 };
 
+// Same explicit-rank-map + non-mutating-sort convention as analysis-sections.tsx's
+// PRIORITY_RANK for coachingActions — the LLM's own emission order isn't a
+// reliable urgency ordering.
+const PRIORITY_RANK: Record<NextStepPriority, number> = {
+  urgent: 0,
+  soon: 1,
+  "when-possible": 2,
+};
+
 /** Ordered action list — what to do next, ranked by urgency. */
 export function NextSteps({
   steps,
 }: {
   steps: Array<{ action: string; priority: NextStepPriority; reasoning: string }>;
 }) {
+  const sortedSteps = [...steps].sort(
+    (a, b) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]
+  );
   return (
     <Panel title="הצעדים הבאים">
       <ul className="space-y-3">
-        {steps.map((s, i) => {
+        {sortedSteps.map((s, i) => {
           const meta = PRIORITY_META[s.priority];
           const Icon = NEXT_STEP_PRIORITY_ICON[s.priority];
           return (

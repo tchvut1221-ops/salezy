@@ -41,6 +41,14 @@ import type { AnalysisResult, MomentType, ScorecardCategoryKey } from "@/types";
 interface HighlightSource {
   /** Stable key for grouping/filtering by kind. */
   kind: string;
+  /**
+   * Unique per-instance DOM id, set on this source's <mark> so
+   * components/salezy/scroll-to-quote.ts can jump here from elsewhere on the
+   * page (KeyMoments, Scorecard). Unlike `kind` (shared by every moment of
+   * the same MomentType, since it drives legend grouping/filtering), this
+   * must be unique per highlight instance.
+   */
+  anchorId: string;
   /** Human-readable Hebrew label shown on the badge and in the legend. */
   label: string;
   /** Tailwind classes for the inline <mark>. */
@@ -103,7 +111,9 @@ const SCORECARD_CATEGORIES: ScorecardCategoryKey[] = [
   "closing",
 ];
 
-function toneFor(kind: "high" | "mid" | "low" | "primary"): Omit<HighlightSource, "kind" | "label"> {
+function toneFor(
+  kind: "high" | "mid" | "low" | "primary"
+): Omit<HighlightSource, "kind" | "label" | "anchorId"> {
   return { markClass: TONE_MARK[kind], chipClass: TONE_CHIP[kind], dotClass: TONE_DOT[kind] };
 }
 
@@ -121,14 +131,19 @@ function collectQuoteSources(
   const sources: Array<{ quote: string; value: HighlightSource }> = [];
   if (!result) return sources;
 
-  for (const moment of result.keyMoments ?? []) {
-    if (!moment?.quote) continue;
+  (result.keyMoments ?? []).forEach((moment, i) => {
+    if (!moment?.quote) return;
     const tone = MOMENT_TONE[moment.type] ?? "primary";
     sources.push({
       quote: moment.quote,
-      value: { kind: moment.type, label: MOMENT_LABEL[moment.type] ?? "רגע מפתח", ...toneFor(tone) },
+      value: {
+        kind: moment.type,
+        anchorId: `moment-${i}`,
+        label: MOMENT_LABEL[moment.type] ?? "רגע מפתח",
+        ...toneFor(tone),
+      },
     });
-  }
+  });
 
   const scorecard = result.salespersonScorecard;
   if (scorecard) {
@@ -145,6 +160,7 @@ function collectQuoteSources(
         quote: category.quote,
         value: {
           kind: `scorecard:${key}`,
+          anchorId: `scorecard-${key}`,
           label: `סקורקארד · ${SCORECARD_CATEGORY_LABEL[key]} ${category.score}/5`,
           ...toneFor(tone),
         },
@@ -155,12 +171,13 @@ function collectQuoteSources(
   const personality = result.customerPersonality;
   const discMeta = personality?.type ? PERSONALITY_TYPE_META[personality.type] : null;
   if (discMeta && !personality.indeterminate) {
-    for (const signal of personality.signals ?? []) {
-      if (!signal?.quote) continue;
+    (personality.signals ?? []).forEach((signal, i) => {
+      if (!signal?.quote) return;
       sources.push({
         quote: signal.quote,
         value: {
           kind: "disc",
+          anchorId: `disc-${i}`,
           label: `סגנון הלקוח · ${discMeta.he}`,
           // The --disc-* family, deliberately outside the score bands: DISC
           // evidence is neutral, not good or bad. No decoration-* override —
@@ -170,7 +187,7 @@ function collectQuoteSources(
           dotClass: discMeta.dot,
         },
       });
-    }
+    });
   }
 
   return sources;
@@ -554,6 +571,7 @@ function TurnRow({
           ) : (
             <mark
               key={i}
+              id={segment.mark.sources[0].anchorId}
               title={segment.mark.sources.map((s) => s.label).join(" · ")}
               className={`rounded-sm px-0.5 underline decoration-2 underline-offset-4 ${segment.mark.sources[0].markClass}`}
             >

@@ -22,15 +22,18 @@ Current migrations on `main`:
 0013_add_transcription_provider.sql
 0014_harden_recordings_bucket.sql
 0015_add_practice_sessions.sql
+0016_coaching_completions.sql
 ```
 
 `0010` (retention: `analyses.audio_deleted_at` + purge indexes) and `0011` (`consent_log` table) were both reserved slots from the same security/legal plan, developed on separate branches and merged back to back. Both have been applied in the Supabase SQL Editor (confirmed by the user before each branch's merge, per this plan's rule of applying a migration before/with the deploy that depends on it — see the general rule below).
 
 `0012` and `0013` were applied via the Supabase SQL Editor on 2026-07-10, same day they merged. `0014` (MIME type + size limit on the `recordings` storage bucket) is also applied — confirmed 2026-07-13 by querying the live bucket config directly (`allowed_mime_types`/`file_size_limit` match the migration exactly).
 
-**All migrations through `0015` are applied. None are currently pending.**
+**All migrations through `0016` are applied. None are currently pending.**
 
 `0015` (new `practice_sessions` table for the Practice Loop feature) is applied — confirmed 2026-07-14 by querying the live table directly (service-role key, bypassing RLS) and by a real end-to-end practice session (start → message exchange → feedback) completing successfully in production.
+
+`0016` (new `coaching_completions` table — lets a user check off items in the weekly coaching plan) is applied — user ran it in the Supabase SQL Editor, confirmed same day by querying the live table directly (service-role key, bypassing RLS: table exists, 0 rows, as expected for a brand-new table). Unlike most prior gaps on this list, this one was **safe even before being applied**: `getCoachingCompletions`/`toggleCoachingCompletion` (`app/actions.ts`) both catch the read/write error and degrade to "nothing marked done" / "click silently doesn't persist" rather than throwing, specifically because this table's absence was treated as an expected pre-migration state to design for, not an edge case to catch later.
 
 **General rule, reconfirmed twice today:** a migration file existing and being merged is not the same as the fix being live — code that depends on a new column/policy can `throw` (not just degrade) if deployed before the migration is actually applied. Apply migrations before or as part of the same deploy, not after. (See `otp_rate_limits.email` earlier today for the fail-open case.)
 

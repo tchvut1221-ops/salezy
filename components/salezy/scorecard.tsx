@@ -11,6 +11,7 @@ import {
 import { Panel, scorecardScoreColor, Meter, EmptyNote } from "./ui";
 import { useCountUp } from "./use-count-up";
 import { Quote } from "./quote";
+import { scrollToTranscriptQuote } from "./scroll-to-quote";
 import type {
   AnalysisResult,
   ScorecardCategory,
@@ -91,7 +92,14 @@ function CategoryCard({
       <p className="mt-3 text-sm text-zinc-400">{category.rationale}</p>
       {category.quote ? (
         <blockquote className="mt-3 rounded-lg border-e-4 border-primary bg-zinc-950/40 px-4 py-2.5 text-sm text-zinc-300">
-          <Quote>{category.quote}</Quote>
+          <button
+            type="button"
+            onClick={() => scrollToTranscriptQuote(`scorecard-${categoryKey}`)}
+            title="קפיצה למיקום בתמלול"
+            className="text-start underline-offset-4 hover:underline focus-visible:underline"
+          >
+            <Quote>{category.quote}</Quote>
+          </button>
         </blockquote>
       ) : (
         <p className="mt-3 text-xs text-zinc-600">לא רלוונטי לשיחה זו</p>

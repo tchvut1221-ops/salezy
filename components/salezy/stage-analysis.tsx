@@ -69,7 +69,8 @@ function StageRow({
   const sentiment = category.sentiment ? SENTIMENT_META[category.sentiment] : null;
 
   return (
-    <li className="flex gap-4">
+    // eslint-disable-next-line jsx-a11y/no-redundant-roles -- not actually redundant: Tailwind's preflight sets `list-style: none` globally (app/globals.css imports "tailwindcss"), which strips the IMPLICIT list/listitem role in Safari + VoiceOver (a documented WCAG/WebAIM gotcha) — this restores it explicitly for that browser/AT combo.
+    <li className="flex gap-4" role="listitem">
       {/* Timeline rail: fixed icon node, then a growing connector to the next stage. */}
       <div className="flex flex-col items-center">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-800 bg-zinc-950">
@@ -128,7 +129,8 @@ export function StageAnalysis({ scorecard }: { scorecard: Scorecard }) {
         חמשת שלבי השיחה לפי הסדר — לכל שלב ציון, הסנטימנט הרגשי, וזיהוי נקודת הכשל אם
         הייתה. הצצה לאיך השיחה זרמה, מהפתיחה ועד הסגירה.
       </p>
-      <ol className="mt-1">
+      {/* eslint-disable-next-line jsx-a11y/no-redundant-roles -- see the matching disable on StageRow's <li>: list-style:none (Tailwind preflight) strips the implicit role in Safari + VoiceOver. */}
+      <ol className="mt-1" role="list" aria-label="ציר שלבי השיחה, לפי הסדר">
         {STAGES.map((stage, i) => (
           <StageRow
             key={stage.key}

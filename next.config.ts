@@ -1,32 +1,5 @@
 import type { NextConfig } from "next";
 
-const SUPABASE_ORIGIN = "https://gsfuzqoitldvudkeezwt.supabase.co";
-const SUPABASE_WS_ORIGIN = "wss://gsfuzqoitldvudkeezwt.supabase.co";
-
-// Baseline security headers. script-src/style-src need 'unsafe-inline' for
-// Next's hydration bootstrap and Tailwind's inline styles — a nonce-based CSP
-// would need per-request nonce generation in proxy.ts, a materially bigger
-// change not justified for this baseline-hardening pass. Fonts are
-// self-hosted via next/font/google (no external font origin needed).
-const CSP = [
-  "default-src 'self'",
-  // React dev mode needs eval() for its debugging features (it logs a CSP
-  // error on every page without it); production React never uses eval, so
-  // the allowance is dev-only.
-  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV !== "production" ? " 'unsafe-eval'" : ""}`,
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
-  "font-src 'self'",
-  `connect-src 'self' ${SUPABASE_ORIGIN} ${SUPABASE_WS_ORIGIN}`,
-  "object-src 'none'",
-  "frame-ancestors 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  // Dev runs over plain-http localhost, where upgrading same-origin
-  // subresources to https would just break them.
-  ...(process.env.NODE_ENV === "production" ? ["upgrade-insecure-requests"] : []),
-].join("; ");
-
 const nextConfig: NextConfig = {
   // Keep ffmpeg-static out of the webpack bundle. When it's bundled, its
   // `__dirname` is rewritten and the exported binary path resolves to a
@@ -41,12 +14,17 @@ const nextConfig: NextConfig = {
     "/api/inngest": ["./node_modules/ffmpeg-static/**"],
   },
 
+  // Content-Security-Policy is deliberately NOT set here — it needs a
+  // per-request nonce (see lib/csp.ts + proxy.ts), which this static config
+  // can't generate. proxy.ts's applySecurityHeaders sets it (and these same
+  // five headers again, redundant-but-harmless) on every response it
+  // touches; these five stay here as the backstop for paths proxy.ts's
+  // matcher excludes (static assets, images).
   async headers() {
     return [
       {
         source: "/:path*",
         headers: [
-          { key: "Content-Security-Policy", value: CSP },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },

@@ -10,6 +10,7 @@ import {
   startPracticeSession,
   sendPracticeMessage,
   endPracticeSession,
+  getPracticeHistory,
 } from "@/app/actions";
 import type {
   PracticeSectionKey,
@@ -21,7 +22,7 @@ import type {
 type DialogState =
   | { phase: "starting" }
   | { phase: "chat"; session: PracticeSession; isWaitingForReply: boolean; isEnding: boolean }
-  | ({ phase: "feedback" } & PracticeSessionOutcome)
+  | ({ phase: "feedback"; sessionId: string } & PracticeSessionOutcome)
   | { phase: "error"; message: string };
 
 /**
@@ -94,7 +95,7 @@ export function PracticeDialog({
     setState({ ...state, isEnding: true });
     try {
       const outcome = await endPracticeSession(sessionId);
-      setState({ phase: "feedback", ...outcome });
+      setState({ phase: "feedback", sessionId, ...outcome });
     } catch {
       setState({ phase: "error", message: "לא הצלחנו לסיים את התרגול. נסו שוב." });
     }
@@ -243,6 +244,14 @@ export function PracticeDialog({
                 </span>
               </div>
 
+              {state.attemptCount > 1 && (
+                <PracticeHistory
+                  analysisId={analysisId}
+                  sectionKey={sectionKey}
+                  excludeSessionId={state.sessionId}
+                />
+              )}
+
               <Button onClick={() => onOpenChange(false)} className="mt-6">
                 סגור
               </Button>
@@ -251,5 +260,60 @@ export function PracticeDialog({
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>
+  );
+}
+
+/**
+ * Previous completed practices for this exact analysis+section, shown right
+ * after finishing a new one (attemptCount already proved there's at least
+ * one to show — see the `attemptCount > 1` gate at the call site). Fetched
+ * client-side on demand rather than passed down from a parent — same reason
+ * as CoachingPlan's completion state: this dialog's ancestors have no
+ * server-fetched history to hand down, and this only ever needs to run once
+ * a session actually completes.
+ */
+function PracticeHistory({
+  analysisId,
+  sectionKey,
+  excludeSessionId,
+}: {
+  analysisId: string;
+  sectionKey: PracticeSectionKey;
+  excludeSessionId: string;
+}) {
+  const [history, setHistory] = useState<
+    Array<{ id: string; createdAt: string; feedback: PracticeSessionOutcome["feedback"] | null }>
+  >([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getPracticeHistory(analysisId, sectionKey, excludeSessionId).then((rows) => {
+      if (!cancelled) setHistory(rows);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [analysisId, sectionKey, excludeSessionId]);
+
+  if (history.length === 0) return null;
+
+  return (
+    <div className="mt-4 max-h-40 space-y-2 overflow-y-auto border-t border-zinc-800 pt-4">
+      <p className="text-xs font-medium text-zinc-400">תרגולים קודמים בנושא זה</p>
+      <ul className="space-y-2">
+        {history.map((session) => (
+          <li key={session.id} className="rounded-lg bg-zinc-950/40 p-2.5 text-xs">
+            <p dir="ltr" className="font-mono tabular-nums text-zinc-500">
+              {new Date(session.createdAt).toLocaleDateString("he-IL")}
+            </p>
+            {session.feedback ? (
+              <p className="mt-1 text-zinc-300">{session.feedback.whatToImprove}</p>
+            ) : (
+              <p className="mt-1 text-zinc-500">אין משוב שמור לתרגול זה</p>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
