@@ -211,15 +211,18 @@ export function AnalysisView({
         {analysis.status === "failed" ||
         analysis.status === "no_speech_detected" ||
         isCancelled ? (
+          // Same steps as the rest of the screen (Unit 3b): the title at the
+          // nested-title step (16/600, one below the 18px file name above it),
+          // the explanation as a 14px row, the retention line as a 13px caption.
           <Alert className="mt-6">
-            <p className="text-sm font-medium text-score-low">
+            <p className="text-body font-semibold text-score-low">
               {isCancelled
                 ? "הניתוח בוטל"
                 : analysis.status === "no_speech_detected"
                   ? "לא זוהה דיבור"
                   : "הניתוח נכשל"}
             </p>
-            <p className="mt-1 text-sm text-zinc-400">
+            <p className="mt-1 text-sm leading-relaxed text-zinc-400">
               {isCancelled
                 ? "עצרת את הניתוח הזה לפני שהסתיים."
                 : analysis.status === "no_speech_detected"
@@ -227,7 +230,7 @@ export function AnalysisView({
                   : "נתקלנו בתקלה בעיבוד ההקלטה. אפשר לנסות שוב — הקובץ שכבר העליתם נשמר."}
             </p>
             {!canReprocess ? (
-              <p className="mt-4 text-xs text-zinc-500">
+              <p className="mt-4 text-caption text-zinc-500">
                 ההקלטה נמחקה מהשרתים בהתאם למדיניות השמירה (
                 {AUDIO_RETENTION_DAYS} יום), ולכן לא ניתן להריץ את הניתוח
                 מחדש.
