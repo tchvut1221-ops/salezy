@@ -44,7 +44,12 @@ export const CHART_TOOLTIP_LINE_CURSOR = { stroke: "var(--border-strong)", strok
 export const CHART_TOOLTIP_BAR_CURSOR = { fill: "var(--bg-hover)" };
 
 export const CHART_SCORE_LINE_COLOR = "var(--score-high)";
-export const CHART_TREND_LINE_COLOR = "var(--border-strong)";
+/* --border-interactive, not DESIGN.md's --border-strong: the trend line is a
+   graphical object, and --border-strong reaches only 1.81:1 on the card
+   (WCAG 1.4.11 asks 3:1). --border-interactive measures 3.69:1 on the card
+   and 3.26:1 over the score area's tint, and as a 1px dash it stays quieter
+   than the 2px score line. */
+export const CHART_TREND_LINE_COLOR = "var(--border-interactive)";
 /** Flat fill under the score line — one colour at low opacity, not a gradient. */
 export const CHART_AREA_OPACITY = 0.08;
 
