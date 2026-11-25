@@ -51,13 +51,13 @@ export function PerformanceSummary({
       <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:gap-8">
         <div className="flex shrink-0 flex-col items-center gap-2">
           <ScoreRing value={stats.averageScore} caption="מתוך 100" />
-          <span className="text-caption text-zinc-500">ציון ממוצע</span>
+          <span className="text-caption font-medium text-zinc-500">ציון ממוצע</span>
         </div>
 
         <div className="flex w-full min-w-0 flex-1 flex-col gap-6">
           {sparkPoints.length > 1 && (
             <div>
-              <span className="text-caption text-zinc-500">
+              <span className="text-caption font-medium text-zinc-500">
                 מגמת {sparkPoints.length} השיחות האחרונות
               </span>
               <Sparkline values={sparkPoints.map((p) => p.overall)} className="mt-2" />

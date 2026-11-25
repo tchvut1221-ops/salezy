@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/salezy/ui";
 function PanelSkeleton({ className }: { className?: string }) {
   return (
     <div
-      className={`rounded-xl border border-zinc-800 bg-zinc-900 p-6 ${className ?? ""}`}
+      className={`rounded-xl border border-zinc-800 bg-zinc-900 p-4 sm:p-6 ${className ?? ""}`}
     >
       <Skeleton className="h-3 w-20" />
       <Skeleton className="mt-2 h-5 w-36" />
@@ -30,18 +30,18 @@ export default function DashboardLoading() {
     <main
       id="main-content"
       tabIndex={-1}
-      className="w-full px-4 py-8 outline-none sm:px-6 sm:py-10"
+      className="w-full px-4 py-6 outline-none sm:px-6 sm:py-8"
     >
       <p className="sr-only" role="status">
         טוען...
       </p>
 
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <Skeleton className="h-9 w-40" />
+        <Skeleton className="h-8 w-32" />
         <Skeleton className="h-11 w-44" />
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-3">
+      <div className="mt-8 grid gap-4 lg:grid-cols-3">
         <PanelSkeleton className="lg:col-span-2" />
         <PanelSkeleton />
         <PanelSkeleton className="lg:col-span-2" />
@@ -49,13 +49,13 @@ export default function DashboardLoading() {
         <PanelSkeleton className="lg:col-span-3" />
       </div>
 
-      <div className="mt-10">
+      <div className="mt-8">
         <Skeleton className="h-6 w-32" />
-        <div className="mt-4 space-y-3">
+        <div className="mt-4 space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3.5 sm:px-5 sm:py-4"
+              className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3"
             >
               <div className="min-w-0 flex-1 space-y-2">
                 <Skeleton className="h-4 w-1/2" />

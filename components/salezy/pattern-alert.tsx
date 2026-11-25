@@ -33,15 +33,15 @@ export function PatternAlert({
   return (
     <Panel eyebrow="דפוסים" title="הדפוס הבולט" className={className}>
       {!insights.eligible ? (
-        <p className="text-sm leading-relaxed text-zinc-500">
+        <p className="text-body text-zinc-500">
           זיהוי דפוסים דורש לפחות {MIN_CALLS_FOR_PATTERN} שיחות מנותחות עם כרטיס
           ביצועים. יש לך {insights.callCount} — עוד {remaining} ונתחיל לזהות מה
           חוזר על עצמו.
         </p>
       ) : !insights.topFinding ? (
-        <p className="flex items-start gap-2.5 text-sm leading-relaxed text-zinc-400">
+        <p className="flex items-start gap-2 text-body text-zinc-400">
           <Radar
-            className="mt-0.5 h-5 w-5 shrink-0 text-score-high"
+            className="mt-1 h-5 w-5 shrink-0 text-score-high"
             strokeWidth={ICON_STROKE_WIDTH}
             aria-hidden="true"
           />
@@ -49,7 +49,7 @@ export function PatternAlert({
         </p>
       ) : (
         <>
-          <p className="text-sm leading-relaxed text-zinc-300">
+          <p className="text-body text-zinc-300">
             {insights.topFinding.message}
           </p>
 
@@ -63,7 +63,9 @@ export function PatternAlert({
                 />
                 מה לעשות עם זה
               </p>
-              <p className="mt-2 text-sm text-zinc-200">{insights.topCoaching.action}</p>
+              <p className="mt-2 text-sm leading-relaxed text-zinc-200">
+                {insights.topCoaching.action}
+              </p>
               <p className="mt-1 text-sm leading-relaxed text-zinc-400">
                 {insights.topCoaching.how}
               </p>
@@ -74,7 +76,7 @@ export function PatternAlert({
 
       <Link
         href="/patterns"
-        className="mt-5 inline-flex items-center gap-1.5 rounded-lg text-sm text-primary outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring"
+        className="mt-4 inline-flex items-center gap-2 rounded-lg text-sm text-primary outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring"
       >
         לכל הדפוסים
         {/* RTL: forward points left (DESIGN.md). */}

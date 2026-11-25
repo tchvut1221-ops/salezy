@@ -26,7 +26,7 @@ export function OnboardingChecklist({ steps }: { steps: ChecklistStep[] }) {
       <ul className="space-y-1">
         {steps.map((step, i) => {
           const row = (
-            <span className="flex items-center gap-2.5">
+            <span className="flex items-center gap-2">
               {step.done ? (
                 <Check
                   className="h-4 w-4 shrink-0 text-score-high"
@@ -50,12 +50,12 @@ export function OnboardingChecklist({ steps }: { steps: ChecklistStep[] }) {
               {!step.done && step.href ? (
                 <Link
                   href={step.href}
-                  className="flex rounded-lg px-1 py-1.5 outline-none transition-colors hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring"
+                  className="flex rounded-lg px-1 py-2 outline-none transition-colors hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   {row}
                 </Link>
               ) : (
-                <div className="px-1 py-1.5">{row}</div>
+                <div className="px-1 py-2">{row}</div>
               )}
             </li>
           );

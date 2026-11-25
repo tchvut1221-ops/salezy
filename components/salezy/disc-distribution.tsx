@@ -28,7 +28,7 @@ export function DiscDistribution({
   return (
     <Panel eyebrow="לקוחות" title="טיפוסי אישיות" className={className}>
       {shares.length === 0 ? (
-        <p className="text-sm leading-relaxed text-zinc-500">
+        <p className="text-body text-zinc-500">
           עדיין לא זוהה טיפוס אישיות באף שיחה. הטיפוס מזוהה אוטומטית בכל שיחה
           מנותחת — הפילוח יופיע כאן מהשיחה הבאה.
         </p>
@@ -39,7 +39,7 @@ export function DiscDistribution({
             return (
               <li key={share.type}>
                 <div className="flex items-center justify-between gap-3">
-                  <span className="flex min-w-0 items-center gap-2 text-sm text-zinc-300">
+                  <span className="flex min-w-0 items-center gap-2 text-sm leading-relaxed text-zinc-300">
                     <span
                       className={`h-2 w-2 shrink-0 rounded-full ${meta.dot}`}
                       aria-hidden="true"
@@ -48,7 +48,7 @@ export function DiscDistribution({
                   </span>
                   <span
                     dir="ltr"
-                    className="shrink-0 font-mono text-caption tabular-nums text-zinc-500"
+                    className="shrink-0 font-mono text-caption font-medium tabular-nums text-zinc-500"
                   >
                     {share.count} · {share.percentage}%
                   </span>

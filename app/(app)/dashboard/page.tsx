@@ -71,18 +71,20 @@ export default async function DashboardPage() {
     <main
       id="main-content"
       tabIndex={-1}
-      className="w-full px-4 py-8 outline-none sm:px-6 sm:py-10"
+      className="w-full px-4 py-6 outline-none sm:px-6 sm:py-8"
     >
       {analyses.length === 0 && <WelcomeFlow />}
 
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-h1 font-bold text-foreground">דשבורד</h1>
+        <h1 className="text-h2 font-semibold text-foreground">דשבורד</h1>
         <Link href="/upload" className={buttonVariants()}>
           + העלאת שיחה חדשה
         </Link>
       </div>
 
-      <div className="mt-6">
+      {/* empty:hidden — the checklist renders nothing once every step is done,
+          and its wrapper should not keep the gap. */}
+      <div className="mt-6 empty:hidden">
         <OnboardingChecklist steps={checklistSteps} />
       </div>
 
@@ -92,7 +94,7 @@ export default async function DashboardPage() {
         the empty state below instead of five cards explaining they're empty.
       */}
       {scorePoints.length > 0 && (
-        <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {/* D7: staggered entrance (same animate-fade-up + delay pattern already
               used by analysis-sections.tsx's cards and the calls list below) — the
               wrapper carries both the animation and the grid col-span, since the
@@ -115,8 +117,8 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      <section className="mt-10">
-        <h2 className="text-h2 font-semibold text-foreground">השיחות שלך</h2>
+      <section className="mt-8">
+        <h2 className="text-h3 font-semibold text-foreground">השיחות שלך</h2>
 
         {analyses.length === 0 ? (
           <EmptyState

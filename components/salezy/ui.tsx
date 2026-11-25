@@ -55,8 +55,13 @@ export function scorecardScoreColor(score: number) {
  * radius convention (rounded-xl, the design system's 12px), one border, one
  * bg. Panel and Card both build on this so the two stay in lockstep instead
  * of drifting into slightly-different card shells over time.
+ *
+ * Padding is set per primitive, not here. Panel steps 16px → 24px at 640px,
+ * the same step the page gutter takes. Card stays at 24px: its callers (auth,
+ * error, 404) override it with their own padding, and a responsive step on
+ * the shell would beat those overrides from 640px up.
  */
-const CARD_CLASS = "rounded-xl border border-zinc-800 bg-zinc-900 p-6";
+const CARD_CLASS = "rounded-xl border border-zinc-800 bg-zinc-900";
 
 /**
  * THE card. Every boxed surface in the app goes through Panel (or at least
@@ -75,16 +80,14 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <section className={`${CARD_CLASS} ${className ?? ""}`}>
+    <section className={`${CARD_CLASS} p-4 sm:p-6 ${className ?? ""}`}>
       {(title || eyebrow) && (
         <div className="mb-4">
           {eyebrow && (
-            <p className="text-xs font-medium uppercase text-zinc-500">
-              {eyebrow}
-            </p>
+            <p className="text-caption font-medium text-zinc-500">{eyebrow}</p>
           )}
           {title && (
-            <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+            <h2 className="text-h3 font-semibold text-foreground">{title}</h2>
           )}
         </div>
       )}
@@ -106,7 +109,7 @@ export function Card({
   children: ReactNode;
   className?: string;
 }) {
-  return <div className={`${CARD_CLASS} ${className ?? ""}`}>{children}</div>;
+  return <div className={`${CARD_CLASS} p-6 ${className ?? ""}`}>{children}</div>;
 }
 
 const PILL_TONES = {
@@ -127,7 +130,7 @@ export function Pill({
 }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-3 py-1 text-sm ring-1 ring-inset ${PILL_TONES[tone]}`}
+      className={`inline-flex items-center rounded-full px-3 py-1 text-caption font-medium ring-1 ring-inset ${PILL_TONES[tone]}`}
     >
       {children}
     </span>
@@ -156,9 +159,11 @@ export const buttonVariants = cva(
         danger:
           "border border-score-low/30 text-score-low hover:bg-score-low/10",
       },
+      // min-h fixes the height whether or not the variant draws a border:
+      // md is the 44px touch target, sm a 32px inline control.
       size: {
-        sm: "px-2.5 py-1.5 text-xs",
-        md: "px-4 py-2.5 text-sm",
+        sm: "min-h-8 px-3 py-1 text-caption",
+        md: "min-h-11 px-4 py-2 text-sm",
         lg: "px-8 py-3 text-base",
       },
     },
@@ -297,13 +302,17 @@ export function Stat({
    *  Hebrew personality label) should pass mono={false}. */
   mono?: boolean;
 }) {
+  // A numeric value is its own LTR run, so a sign stays in front of the digits
+  // ("+1.3", not "1.3+") inside the RTL page. self-start keeps it on the
+  // right edge, under its label, now that its own text direction is LTR.
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-xs font-medium uppercase text-zinc-500">{label}</span>
+      <span className="text-caption font-medium text-zinc-500">{label}</span>
       <span
-        className={`text-2xl font-bold tabular-nums ${mono ? "font-mono" : ""} ${
-          valueClassName ?? "text-foreground"
-        }`}
+        dir={mono ? "ltr" : undefined}
+        className={`self-start text-2xl tabular-nums ${
+          mono ? "font-mono font-bold" : "font-semibold"
+        } ${valueClassName ?? "text-foreground"}`}
       >
         {value}
       </span>

@@ -47,7 +47,7 @@ export function CoachingQueue({
   return (
     <Panel eyebrow="אימון" title="מה לתרגל עכשיו" className={className}>
       {actions.length === 0 || !latest ? (
-        <p className="text-sm leading-relaxed text-zinc-500">
+        <p className="text-body text-zinc-500">
           המלצות האימון נוצרות מתוך ניתוח השיחה. אחרי הניתוח הבא הן יופיעו כאן,
           לפי סדר עדיפות.
         </p>
@@ -62,7 +62,7 @@ export function CoachingQueue({
                   className="rounded-lg border border-zinc-800 bg-elevated p-4"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-2">
-                    <p className="min-w-0 text-sm font-medium text-zinc-100">
+                    <p className="min-w-0 text-sm font-medium leading-relaxed text-zinc-100">
                       {action.action}
                     </p>
                     <Pill tone={meta.tone}>{meta.label}</Pill>
@@ -77,7 +77,7 @@ export function CoachingQueue({
 
           <Link
             href={`/analysis/${latest.analysisId}`}
-            className="mt-5 inline-flex items-center gap-1.5 rounded-lg text-sm text-primary outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring"
+            className="mt-4 inline-flex items-center gap-2 rounded-lg text-sm text-primary outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring"
           >
             לשיחה שממנה זה נובע
             {/* RTL: forward points left (DESIGN.md). */}
