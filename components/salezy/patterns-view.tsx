@@ -1,11 +1,12 @@
 "use client";
 
 import {
+  Area,
   Bar,
   BarChart,
   CartesianGrid,
+  ComposedChart,
   Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -13,13 +14,24 @@ import {
 } from "recharts";
 import { Panel, EmptyNote } from "./ui";
 import {
-  CHART_AXIS_STROKE,
+  CHART_AREA_OPACITY,
+  CHART_AXIS_PROPS,
   CHART_AXIS_TICK,
   CHART_GRID_STROKE,
   CHART_SCORE_LINE_COLOR,
-  CHART_TOOLTIP_CONTENT_STYLE,
+  CHART_TOOLTIP_BAR_CURSOR,
+  CHART_TOOLTIP_LINE_CURSOR,
+  CHART_Y_AXIS_WIDTH,
+  SCORECARD_TICKS,
   formatChartDates,
 } from "./chart-theme";
+import {
+  ChartTooltipContent,
+  SCORE_ACTIVE_DOT,
+  categoryTick,
+  scoreSeriesDot,
+  scorecardBar,
+} from "./chart-marks";
 import type { PatternsData } from "@/lib/patterns";
 
 const CONSISTENCY_LABEL: Record<string, string> = {
@@ -60,12 +72,25 @@ export function PatternsView({ data }: { data: Extract<PatternsData, { eligible:
           <div className="h-64 w-full" dir="ltr" role="img" aria-label={categorySummary}>
             <div aria-hidden="true" className="h-full w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={categoryAverages}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
-                  <XAxis dataKey="label" stroke={CHART_AXIS_STROKE} tick={CHART_AXIS_TICK} />
-                  <YAxis domain={[0, 5]} stroke={CHART_AXIS_STROKE} tick={CHART_AXIS_TICK} />
-                  <Tooltip contentStyle={CHART_TOOLTIP_CONTENT_STYLE} />
-                  <Bar dataKey="average" name="ממוצע" fill={CHART_SCORE_LINE_COLOR} radius={[4, 4, 0, 0]} />
+                <BarChart data={categoryAverages} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
+                  <CartesianGrid vertical={false} stroke={CHART_GRID_STROKE} />
+                  {/* interval 0 + a wrapping tick: every category keeps its label. */}
+                  <XAxis
+                    dataKey="label"
+                    {...CHART_AXIS_PROPS}
+                    tick={categoryTick}
+                    interval={0}
+                    height={48}
+                  />
+                  <YAxis
+                    domain={[0, 5]}
+                    ticks={SCORECARD_TICKS}
+                    width={CHART_Y_AXIS_WIDTH}
+                    {...CHART_AXIS_PROPS}
+                    tick={CHART_AXIS_TICK}
+                  />
+                  <Tooltip content={ChartTooltipContent} cursor={CHART_TOOLTIP_BAR_CURSOR} />
+                  <Bar dataKey="average" name="ממוצע" maxBarSize={40} shape={scorecardBar} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -79,19 +104,44 @@ export function PatternsView({ data }: { data: Extract<PatternsData, { eligible:
             <div className="h-56 w-full" dir="ltr" role="img" aria-label={trendSummary}>
               <div aria-hidden="true" className="h-full w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={trendData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
-                    <XAxis dataKey="date" stroke={CHART_AXIS_STROKE} tick={CHART_AXIS_TICK} />
-                    <YAxis domain={[0, 5]} stroke={CHART_AXIS_STROKE} tick={CHART_AXIS_TICK} />
-                    <Tooltip contentStyle={CHART_TOOLTIP_CONTENT_STYLE} />
-                    <Line
-                      type="monotone"
+                  <ComposedChart data={trendData} margin={{ top: 20, right: 16, bottom: 0, left: 0 }}>
+                    <CartesianGrid vertical={false} stroke={CHART_GRID_STROKE} />
+                    <XAxis
+                      dataKey="date"
+                      {...CHART_AXIS_PROPS}
+                      tick={CHART_AXIS_TICK}
+                      minTickGap={24}
+                      interval="preserveStartEnd"
+                    />
+                    <YAxis
+                      domain={[0, 5]}
+                      ticks={SCORECARD_TICKS}
+                      width={CHART_Y_AXIS_WIDTH}
+                      {...CHART_AXIS_PROPS}
+                      tick={CHART_AXIS_TICK}
+                    />
+                    <Tooltip content={ChartTooltipContent} cursor={CHART_TOOLTIP_LINE_CURSOR} />
+                    <Area
+                      type="linear"
                       dataKey="score"
+                      stroke="none"
+                      fill={CHART_SCORE_LINE_COLOR}
+                      fillOpacity={CHART_AREA_OPACITY}
+                      tooltipType="none"
+                      activeDot={false}
+                    />
+                    {/* name: the same series word ScoreChart uses; without it the
+                        tooltip showed the raw data key "score". */}
+                    <Line
+                      type="linear"
+                      dataKey="score"
+                      name="ציון"
                       stroke={CHART_SCORE_LINE_COLOR}
                       strokeWidth={2}
-                      dot={{ r: 3, fill: CHART_SCORE_LINE_COLOR }}
+                      dot={scoreSeriesDot}
+                      activeDot={SCORE_ACTIVE_DOT}
                     />
-                  </LineChart>
+                  </ComposedChart>
                 </ResponsiveContainer>
               </div>
             </div>

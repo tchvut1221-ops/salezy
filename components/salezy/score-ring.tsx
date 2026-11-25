@@ -34,15 +34,16 @@ export function ScoreRing({
   return (
     <div
       dir="ltr"
-      className={`relative h-32 w-32 shrink-0 rounded-full ${className ?? ""}`}
+      className={`relative h-36 w-36 shrink-0 rounded-full ${className ?? ""}`}
       style={{
         // The `0` second stop is a hard cut, not a gradient — a fill/track
         // boundary, not a blend (DESIGN.md: no gradients).
         background: `conic-gradient(${sc.stroke} ${swept}%, var(--bg-elevated) 0)`,
       }}
     >
-      <div className="absolute inset-[10px] flex flex-col items-center justify-center rounded-full bg-surface">
-        <span className={`font-mono text-3xl font-bold tabular-nums ${sc.text}`}>
+      {/* 144px ring, 12px band, 36px numeral: the dashboard's one large number. */}
+      <div className="absolute inset-3 flex flex-col items-center justify-center rounded-full bg-surface">
+        <span className={`font-mono text-4xl font-bold tabular-nums ${sc.text}`}>
           {animated.toFixed(1)}
         </span>
         {caption && <span className="text-caption text-zinc-500">{caption}</span>}

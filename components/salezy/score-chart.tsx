@@ -1,9 +1,10 @@
 "use client";
 
 import {
+  Area,
   CartesianGrid,
+  ComposedChart,
   Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -11,15 +12,18 @@ import {
 } from "recharts";
 import { Panel } from "./ui";
 import {
-  CHART_AXIS_STROKE,
+  CHART_AREA_OPACITY,
+  CHART_AXIS_PROPS,
   CHART_AXIS_TICK,
   CHART_GRID_STROKE,
   CHART_SCORE_LINE_COLOR,
-  CHART_TOOLTIP_CONTENT_STYLE,
-  CHART_TOOLTIP_LABEL_STYLE,
+  CHART_TOOLTIP_LINE_CURSOR,
   CHART_TREND_LINE_COLOR,
+  CHART_Y_AXIS_WIDTH,
+  SCORE_TICKS,
   formatChartDates,
 } from "./chart-theme";
+import { ChartTooltipContent, SCORE_ACTIVE_DOT, scoreSeriesDot } from "./chart-marks";
 import type { ScorePoint } from "@/lib/analytics";
 
 /**
@@ -83,34 +87,56 @@ export function ScoreChart({
     <Panel eyebrow="מגמה" title="ציון לאורך זמן" className={className}>
       <div className="h-64 w-full" dir="ltr" role="img" aria-label={chartSummary}>
         <div aria-hidden="true" className="h-full w-full">
+          {/* Top margin leaves room for the last point's value label; the right
+              margin keeps that label inside the plot when the last call is
+              the right-most point. */}
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
-              <XAxis dataKey="date" stroke={CHART_AXIS_STROKE} tick={CHART_AXIS_TICK} />
-              <YAxis domain={[0, 100]} stroke={CHART_AXIS_STROKE} tick={CHART_AXIS_TICK} />
-              <Tooltip
-                contentStyle={CHART_TOOLTIP_CONTENT_STYLE}
-                labelStyle={CHART_TOOLTIP_LABEL_STYLE}
+            <ComposedChart data={data} margin={{ top: 20, right: 16, bottom: 0, left: 0 }}>
+              <CartesianGrid vertical={false} stroke={CHART_GRID_STROKE} />
+              <XAxis
+                dataKey="date"
+                {...CHART_AXIS_PROPS}
+                tick={CHART_AXIS_TICK}
+                minTickGap={24}
+                interval="preserveStartEnd"
+              />
+              <YAxis
+                domain={[0, 100]}
+                ticks={SCORE_TICKS}
+                width={CHART_Y_AXIS_WIDTH}
+                {...CHART_AXIS_PROPS}
+                tick={CHART_AXIS_TICK}
+              />
+              <Tooltip content={ChartTooltipContent} cursor={CHART_TOOLTIP_LINE_CURSOR} />
+              <Area
+                type="linear"
+                dataKey="score"
+                stroke="none"
+                fill={CHART_SCORE_LINE_COLOR}
+                fillOpacity={CHART_AREA_OPACITY}
+                tooltipType="none"
+                activeDot={false}
               />
               <Line
-                type="monotone"
+                type="linear"
+                dataKey="trend"
+                name="מגמה"
+                stroke={CHART_TREND_LINE_COLOR}
+                strokeWidth={1}
+                strokeDasharray="4 4"
+                dot={false}
+                activeDot={false}
+              />
+              <Line
+                type="linear"
                 dataKey="score"
                 name="ציון"
                 stroke={CHART_SCORE_LINE_COLOR}
                 strokeWidth={2}
-                dot={{ r: 3, fill: CHART_SCORE_LINE_COLOR }}
-                activeDot={{ r: 5 }}
+                dot={scoreSeriesDot}
+                activeDot={SCORE_ACTIVE_DOT}
               />
-              <Line
-                type="monotone"
-                dataKey="trend"
-                name="מגמה"
-                stroke={CHART_TREND_LINE_COLOR}
-                strokeWidth={2}
-                strokeDasharray="6 4"
-                dot={false}
-              />
-            </LineChart>
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
       </div>
