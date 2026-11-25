@@ -1,5 +1,5 @@
 import { Panel, Pill, scoreColor, Meter } from "./ui";
-import { Quote } from "./quote";
+import { QuoteBlock } from "./quote";
 import { PERSONALITY_TYPE_META as TYPE_META } from "@/lib/disc-reference";
 import { PERSONALITY_TYPE_ICON, ICON_STROKE_WIDTH } from "./icons";
 import type { AnalysisResult, PersonalityType } from "@/types";
@@ -54,11 +54,9 @@ export function PersonalityCard({
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <span className="h-3.5 w-3.5 rounded-full bg-zinc-600" />
-            <span className="text-lg font-semibold text-zinc-300">
-              לא ניתן לקבוע בביטחון
-            </span>
+            <span className="text-h3 font-semibold text-zinc-300">לא ניתן לקבוע בביטחון</span>
           </div>
-          <p className="text-sm leading-relaxed text-zinc-400">{explanation}</p>
+          <p className="text-body text-zinc-400">{explanation}</p>
           {typeof confidence === "number" && <Confidence value={confidence} />}
           {discAxes && (
             <div className="grid gap-4 sm:grid-cols-2">
@@ -73,19 +71,19 @@ export function PersonalityCard({
 
   return (
     <Panel title="סוג אישיות הלקוח" eyebrow="פרופיל DISC">
-      <div className="space-y-5">
+      <div className="space-y-6">
         {/* Type headline + blend + confidence */}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <span className="flex items-center gap-2">
             <Icon className={`h-5 w-5 ${meta.text}`} strokeWidth={ICON_STROKE_WIDTH} />
-            <span className={`text-2xl font-bold ${meta.text}`}>{meta.he}</span>
+            <span className={`text-2xl font-semibold ${meta.text}`}>{meta.he}</span>
           </span>
-          <span className="text-sm text-zinc-500">
+          <span className="text-caption text-zinc-500">
             {meta.colorName} · {meta.tagline} · {type}
           </span>
           {secondaryType && secondaryType !== type && (
             <Pill tone="info">
-              <span className="flex items-center gap-1.5">
+              <span className="flex items-center gap-2">
                 <span
                   className={`h-2 w-2 rounded-full ${TYPE_META[secondaryType].dot}`}
                 />
@@ -114,24 +112,16 @@ export function PersonalityCard({
           </div>
         )}
 
-        <p className="text-sm leading-relaxed text-zinc-300">{explanation}</p>
+        <p className="text-body text-zinc-300">{explanation}</p>
 
         {/* Linguistic evidence */}
         {!hideSignals && signals && signals.length > 0 && (
           <div>
-            <p className="mb-2 text-sm font-medium text-zinc-400">
-              סימנים בתמלול
-            </p>
-            <ul className="space-y-2.5">
+            <p className="mb-2 text-caption font-medium text-zinc-500">סימנים בתמלול</p>
+            <ul className="space-y-4">
               {signals.map((s, i) => (
-                <li
-                  key={i}
-                  className="border-s-2 border-zinc-700 ps-3 text-sm"
-                >
-                  <p className="text-zinc-200">
-                    <Quote>{s.quote}</Quote>
-                  </p>
-                  <p className="mt-0.5 text-zinc-500">{s.interpretation}</p>
+                <li key={i}>
+                  <QuoteBlock note={s.interpretation}>{s.quote}</QuoteBlock>
                 </li>
               ))}
             </ul>
@@ -218,7 +208,7 @@ function AxisMeter({
   const startPct = frac >= 0 ? 50 : 50 - widthPct;
   return (
     <div>
-      <div className="mb-1 flex items-center justify-between text-xs text-zinc-500">
+      <div className="mb-1 flex items-center justify-between text-caption text-zinc-500">
         <span>{label}</span>
         <span dir="ltr" className="font-mono tabular-nums">
           {score}/18 · {signalCount} סימנים
@@ -239,7 +229,7 @@ function AxisMeter({
           style={{ insetInlineStart: "50%" }}
         />
       </div>
-      <div dir="ltr" className="mt-1 flex justify-between text-[11px] text-zinc-600">
+      <div dir="ltr" className="mt-1 flex justify-between text-caption text-zinc-500">
         <span>{lowPoleLabel}</span>
         <span>{highPoleLabel}</span>
       </div>
@@ -247,11 +237,22 @@ function AxisMeter({
   );
 }
 
-const QUADRANT_TINT: Record<PersonalityType, string> = {
-  Driver: "bg-disc-d/5",
-  Expressive: "bg-disc-i/5",
-  Amiable: "bg-disc-s/5",
-  Analytical: "bg-disc-c/5",
+/* The customer's own quadrant carries its DISC colour at 15%; the other three
+   sit on the raised surface, so the map reads at a glance (all four were a
+   5% tint of their own colour, and the map did not read). */
+const QUADRANT_ACTIVE_TINT: Record<PersonalityType, string> = {
+  Driver: "bg-disc-d/15",
+  Expressive: "bg-disc-i/15",
+  Amiable: "bg-disc-s/15",
+  Analytical: "bg-disc-c/15",
+};
+
+/* Each type name sits in its quadrant's outer corner (the map is dir="ltr"). */
+const QUADRANT_CORNER: Record<PersonalityType, string> = {
+  Driver: "items-start justify-start",
+  Expressive: "items-start justify-end",
+  Analytical: "items-end justify-start",
+  Amiable: "items-end justify-end",
 };
 
 /**
@@ -293,16 +294,32 @@ function DiscQuadrant({
         aria-label={positionLabel}
         className="relative grid grid-cols-2 grid-rows-2 gap-px overflow-hidden rounded-lg bg-zinc-800"
       >
-        {(["Driver", "Expressive", "Analytical", "Amiable"] as const).map((cellType) => (
-          <div key={cellType} className={`aspect-square ${QUADRANT_TINT[cellType]}`} />
-        ))}
+        {(["Driver", "Expressive", "Analytical", "Amiable"] as const).map((cellType) => {
+          const active = !indeterminate && cellType === type;
+          return (
+            <div
+              key={cellType}
+              aria-hidden="true"
+              className={`flex aspect-square p-2 ${QUADRANT_CORNER[cellType]} ${
+                active ? QUADRANT_ACTIVE_TINT[cellType] : "bg-elevated"
+              }`}
+            >
+              <span
+                dir="rtl"
+                className={`text-caption ${active ? "font-medium text-foreground" : "text-zinc-500"}`}
+              >
+                {TYPE_META[cellType].he}
+              </span>
+            </div>
+          );
+        })}
         <span
           aria-hidden="true"
-          className={`absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-zinc-950 ${dotColor}`}
+          className={`absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-surface ${dotColor}`}
           style={{ insetInlineStart: `${xPct}%`, top: `${yPct}%` }}
         />
       </div>
-      <div dir="ltr" className="mt-1.5 flex justify-between text-[11px] text-zinc-600">
+      <div dir="ltr" className="mt-2 flex justify-between text-caption text-zinc-500">
         <span>ממוקד-משימה</span>
         <span>ממוקד-אנשים</span>
       </div>
@@ -315,9 +332,9 @@ function Confidence({ value }: { value: number }) {
   const c = scoreColor(pct);
   return (
     <div>
-      <div className="mb-1 flex items-center justify-between text-sm">
+      <div className="mb-1 flex items-center justify-between text-sm leading-relaxed">
         <span className="text-zinc-400">רמת ביטחון בזיהוי</span>
-        <span dir="ltr" className={`font-mono tabular-nums ${c.text}`}>
+        <span dir="ltr" className={`font-mono font-medium tabular-nums ${c.text}`}>
           {pct}%
         </span>
       </div>
@@ -339,11 +356,11 @@ function TipList({
   const head = tone === "positive" ? "text-score-high" : "text-score-low";
   return (
     <div>
-      <p className={`mb-2 text-sm font-medium ${head}`}>{label}</p>
-      <ul className="space-y-1.5">
+      <p className={`mb-2 text-caption font-medium ${head}`}>{label}</p>
+      <ul className="space-y-2">
         {items.map((item, i) => (
-          <li key={i} className="flex gap-2 text-sm text-zinc-300">
-            <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${dot}`} />
+          <li key={i} className="flex gap-2 text-sm leading-relaxed text-zinc-300">
+            <span className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${dot}`} />
             <span>{item}</span>
           </li>
         ))}

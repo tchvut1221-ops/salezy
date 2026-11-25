@@ -7,16 +7,15 @@ const SECTION_TITLES = ["שיחת המכירה", "Follow-up", "סגנון הלק
  * disclosure layout (components/salezy/analysis-sections.tsx +
  * analysis-section.tsx), shown while an analysis is still processing. Every
  * real AnalysisSection card renders COLLAPSED by default, so this mirrors
- * the collapsed shape — title, a short summary block, and the two action
- * buttons — not the expanded "פרטים נוספים" content, since that's not what
- * actually occupies this space on first paint. Reshaped from the pre-pivot
- * 6-8-card Stage B layout this used to mirror, so swapping the skeleton for
- * the real result no longer shifts layout (CLS = 0).
+ * the collapsed shape — title, the summary, and the footer row on its
+ * hairline — not the expanded "פרטים נוספים" content, since that's not what
+ * actually occupies this space on first paint. Same width as the real
+ * sections (it used to be capped at max-w-3xl inside a wider column).
  */
 export function ResultSkeleton() {
   return (
-    <div className="mx-auto mt-8 max-w-3xl space-y-6" aria-hidden="true">
-      <ProgressBarSkeleton />
+    <div className="mt-8 space-y-6" aria-hidden="true">
+      <CounterSkeleton />
       {SECTION_TITLES.map((title, i) => (
         <SectionSkeleton key={title} title={title} variant={i} />
       ))}
@@ -24,17 +23,14 @@ export function ResultSkeleton() {
   );
 }
 
-/** Mirrors AnalysisSections' own ProgressBar — starts at 0/4 opened. */
-function ProgressBarSkeleton() {
+/** Mirrors AnalysisSections' sections-opened counter: a count and 4 segments. */
+function CounterSkeleton() {
   return (
-    <div>
-      <div className="mb-2 flex items-center justify-between text-sm">
-        <div className={`h-3 w-24 ${shimmer}`} />
-        <div className={`h-3 w-20 ${shimmer}`} />
-      </div>
-      <div className="flex gap-1.5">
+    <div className="flex items-center justify-end gap-3">
+      <div className={`h-3 w-24 ${shimmer}`} />
+      <div className="flex gap-1">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="h-1.5 flex-1 rounded-full bg-zinc-800" />
+          <div key={i} className="h-1 w-6 rounded-full bg-zinc-800" />
         ))}
       </div>
     </div>
@@ -42,35 +38,50 @@ function ProgressBarSkeleton() {
 }
 
 /**
- * Mirrors AnalysisSection's collapsed shape exactly: `<section
- * rounded-xl border p-6>`, an `<h2>` title, the summary area, then the
- * "פרטים נוספים"/"תרגל עכשיו" button row — no expanded `details` block,
- * since a freshly-loaded card is always closed. `variant` alternates between
- * two summary shapes (a big score + two highlight lines for sections 1/4,
- * a single highlight card for sections 2/3) matching the two real summary
- * shapes in analysis-sections.tsx.
+ * Mirrors AnalysisSection's collapsed shape: `<section rounded-xl border
+ * p-4 sm:p-6>`, an `<h2>` title, the summary, then the footer row on a
+ * hairline. `variant` picks the summary's shape: the score gauge with its
+ * four sub-score rows (section 1), an insight block (section 2), the DISC
+ * headline and two quotes (section 3), a score and a verdict (section 4).
  */
 function SectionSkeleton({ title, variant }: { title: string; variant: number }) {
-  const isScoreVariant = variant === 0 || variant === 3;
   return (
-    <section className="rounded-xl border border-zinc-800 bg-zinc-900 p-6">
-      <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+    <section className="rounded-xl border border-zinc-800 bg-zinc-900 p-4 sm:p-6">
+      <h2 className="text-h3 font-semibold text-foreground">{title}</h2>
 
-      <div className="mt-4 space-y-3">
-        {isScoreVariant ? (
-          <>
-            <div className={`h-9 w-16 ${shimmer}`} />
-            <div className={`h-4 w-full ${shimmer}`} />
-            <div className={`h-4 w-4/5 ${shimmer}`} />
-          </>
-        ) : (
-          <div className={`h-20 w-full rounded-xl ${shimmer}`} />
+      <div className="mt-4">
+        {variant === 0 && (
+          <div className="flex flex-col items-center gap-6 sm:flex-row sm:gap-8">
+            <div className={`h-[123px] w-52 shrink-0 rounded-t-full ${shimmer}`} />
+            <div className="w-full space-y-3">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i}>
+                  <div className={`mb-2 h-4 w-full ${shimmer}`} />
+                  <div className="h-1.5 rounded-full bg-zinc-800" />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {variant === 1 && <div className={`h-28 w-full rounded-lg ${shimmer}`} />}
+        {variant === 2 && (
+          <div className="space-y-4">
+            <div className={`h-8 w-40 ${shimmer}`} />
+            <div className={`h-12 w-full ${shimmer}`} />
+            <div className={`h-12 w-4/5 ${shimmer}`} />
+          </div>
+        )}
+        {variant === 3 && (
+          <div className="space-y-4">
+            <div className={`h-8 w-24 ${shimmer}`} />
+            <div className={`h-10 w-full ${shimmer}`} />
+          </div>
         )}
       </div>
 
-      <div className="mt-5 flex flex-wrap items-center gap-3">
-        <div className={`h-10 w-28 rounded-lg ${shimmer}`} />
-        <div className={`h-10 w-24 rounded-lg ${shimmer}`} />
+      <div className="mt-6 flex items-center justify-between gap-3 border-t border-zinc-800 pt-4">
+        <div className={`h-11 w-28 rounded-lg ${shimmer}`} />
+        <div className={`h-11 w-24 rounded-lg ${shimmer}`} />
       </div>
     </section>
   );

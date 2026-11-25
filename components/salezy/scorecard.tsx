@@ -10,7 +10,8 @@ import {
 } from "lucide-react";
 import { Panel, scorecardScoreColor, Meter, EmptyNote } from "./ui";
 import { useCountUp } from "./use-count-up";
-import { Quote } from "./quote";
+import { QuoteBlock } from "./quote";
+import { Verdict } from "./insight";
 import { scrollToTranscriptQuote } from "./scroll-to-quote";
 import type {
   AnalysisResult,
@@ -56,13 +57,14 @@ function CategoryCard({
   const meta = CATEGORY_META[categoryKey];
   const Icon = meta.icon;
   return (
+    // Second-level block: raised surface, no border of its own.
     <article
       aria-label={`${meta.label}: ${category.score != null ? `${category.score} מתוך 5` : "לא דורג"}`}
-      className="rounded-xl border border-zinc-800 bg-zinc-900 p-5"
+      className="rounded-lg bg-elevated p-4"
     >
       <div className="flex items-center gap-2">
         <Icon className="h-4 w-4 text-zinc-500" strokeWidth={1.5} aria-hidden="true" />
-        <h3 className="m-0 font-medium text-zinc-200">{meta.label}</h3>
+        <h3 className="m-0 text-sm font-medium leading-relaxed text-zinc-100">{meta.label}</h3>
       </div>
       <div
         role="img"
@@ -89,20 +91,16 @@ function CategoryCard({
           fillClassName={`h-full rounded-full ${scorecardScoreColor(category.score).dot}`}
         />
       )}
-      <p className="mt-3 text-sm text-zinc-400">{category.rationale}</p>
+      <p className="mt-3 text-sm leading-relaxed text-zinc-400">{category.rationale}</p>
       {category.quote ? (
-        <blockquote className="mt-3 rounded-lg border-e-4 border-primary bg-zinc-950/40 px-4 py-2.5 text-sm text-zinc-300">
-          <button
-            type="button"
-            onClick={() => scrollToTranscriptQuote(`scorecard-${categoryKey}`)}
-            title="קפיצה למיקום בתמלול"
-            className="text-start underline-offset-4 hover:underline focus-visible:underline"
-          >
-            <Quote>{category.quote}</Quote>
-          </button>
-        </blockquote>
+        <QuoteBlock
+          className="mt-3"
+          onJump={() => scrollToTranscriptQuote(`scorecard-${categoryKey}`)}
+        >
+          {category.quote}
+        </QuoteBlock>
       ) : (
-        <p className="mt-3 text-xs text-zinc-600">לא רלוונטי לשיחה זו</p>
+        <p className="mt-3 text-caption text-zinc-500">לא רלוונטי לשיחה זו</p>
       )}
     </article>
   );
@@ -111,23 +109,23 @@ function CategoryCard({
 function TalkRatioCard({ talkRatio }: { talkRatio: Scorecard["talkRatio"] }) {
   if (!talkRatio) {
     return (
-      <article className="flex flex-col items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 p-5 text-center sm:col-span-2">
+      <article className="flex flex-col items-center justify-center rounded-lg bg-elevated p-4 text-center sm:col-span-2">
         <div className="flex items-center gap-2 text-zinc-500">
           <Scale className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
-          <h3 className="m-0 font-medium">יחס דיבור / הקשבה</h3>
+          <h3 className="m-0 text-sm font-medium leading-relaxed">יחס דיבור / הקשבה</h3>
         </div>
-        <p className="mt-3 text-sm text-zinc-500">לא ניתן היה להעריך יחס דיבור לשיחה זו</p>
+        <p className="mt-3 text-sm leading-relaxed text-zinc-500">לא ניתן היה להעריך יחס דיבור לשיחה זו</p>
       </article>
     );
   }
   return (
-    <article className="rounded-xl border border-zinc-800 bg-zinc-900 p-5 sm:col-span-2">
+    <article className="rounded-lg bg-elevated p-4 sm:col-span-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Scale className="h-4 w-4 text-zinc-500" strokeWidth={1.5} aria-hidden="true" />
-          <h3 className="m-0 font-medium text-zinc-200">יחס דיבור / הקשבה</h3>
+          <h3 className="m-0 text-sm font-medium leading-relaxed text-zinc-100">יחס דיבור / הקשבה</h3>
         </div>
-        <span dir="ltr" className="font-mono text-3xl font-bold tabular-nums text-primary">
+        <span dir="ltr" className="font-mono text-2xl font-bold tabular-nums text-primary">
           {Math.round(talkRatio.repPercentage)}%
         </span>
       </div>
@@ -150,13 +148,13 @@ function TalkRatioCard({ talkRatio }: { talkRatio: Scorecard["talkRatio"] }) {
           style={{ insetInlineStart: "43%" }}
         />
       </div>
-      <div className="mt-1.5 flex justify-between text-xs text-zinc-500">
+      <div className="mt-2 flex justify-between text-caption text-zinc-500">
         <span>איש מכירות</span>
         <span>בנצ&apos;מרק 43%</span>
         <span>לקוח</span>
       </div>
-      <p className="mt-3 text-sm text-zinc-400">{VERDICT_LABEL[talkRatio.verdict]}</p>
-      <p className="mt-1 text-xs text-zinc-600">
+      <p className="mt-3 text-sm leading-relaxed text-zinc-400">{VERDICT_LABEL[talkRatio.verdict]}</p>
+      <p className="mt-1 text-caption text-zinc-500">
         אידיאלי: 43% דיבור / 57% הקשבה (מחקר Gong Labs)
       </p>
     </article>
@@ -170,20 +168,20 @@ export function Scorecard({ scorecard }: { scorecard: Scorecard }) {
 
   return (
     <Panel eyebrow="דירוג מבוסס ציטוטים" title="ניתוח ביצועים — איש המכירות">
-      <p className="mb-5 text-xs leading-relaxed text-zinc-500">
+      <p className="mb-6 text-caption text-zinc-500">
         ציון זה מבוסס על ציטוטים ספציפיים מהשיחה ונפרד מ&quot;ציון השיחה&quot; הכללי
         למעלה — הוא בודק התנהגויות ספציפיות של איש המכירות, לא את השיחה בכללותה.
       </p>
 
       <div className="mb-6 text-center">
         {overall != null ? (
-          <span className={`font-mono text-5xl font-bold tabular-nums ${sc!.text}`}>
+          <span dir="ltr" className={`font-mono text-4xl font-bold tabular-nums ${sc!.text}`}>
             {display.toFixed(2)}
           </span>
         ) : (
           <EmptyNote className="justify-center text-lg">אין מספיק נתונים</EmptyNote>
         )}
-        <p className="mt-1 text-xs text-zinc-500">ציון סקורקארד כולל (מתוך 5)</p>
+        <p className="mt-1 text-caption text-zinc-500">ציון סקורקארד כולל (מתוך 5)</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -193,23 +191,22 @@ export function Scorecard({ scorecard }: { scorecard: Scorecard }) {
         <TalkRatioCard talkRatio={scorecard.talkRatio} />
       </div>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border border-score-high/25 bg-score-high/5 p-5">
-          <p className="mb-2 text-sm font-medium text-score-high">חוזקות</p>
-          <ul className="space-y-1.5 text-sm text-zinc-300">
+      {/* The verdict voice: a dot and a coloured 13px label, not tinted boxes. */}
+      <div className="mt-6 grid gap-6 sm:grid-cols-2">
+        <Verdict tone="positive" label="חוזקות">
+          <ul className="space-y-1">
             {scorecard.strengths.map((s, i) => (
               <li key={i}>{s}</li>
             ))}
           </ul>
-        </div>
-        <div className="rounded-xl border border-score-low/25 bg-score-low/5 p-5">
-          <p className="mb-2 text-sm font-medium text-score-low">תחומים לשיפור</p>
-          <ul className="space-y-1.5 text-sm text-zinc-300">
+        </Verdict>
+        <Verdict tone="negative" label="תחומים לשיפור">
+          <ul className="space-y-1">
             {scorecard.improvementAreas.map((s, i) => (
               <li key={i}>{s}</li>
             ))}
           </ul>
-        </div>
+        </Verdict>
       </div>
     </Panel>
   );

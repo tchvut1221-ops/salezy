@@ -29,13 +29,13 @@ export function ObjectionTracker({
 }) {
   return (
     <Panel title="מעקב התנגדויות">
-      <div className="overflow-x-auto rounded-xl border border-zinc-800">
-        <table className="w-full text-start text-sm">
-          <thead className="bg-zinc-950/40 text-xs uppercase text-zinc-500">
+      <div className="overflow-x-auto rounded-lg border border-zinc-800">
+        <table className="w-full text-start text-sm leading-relaxed">
+          <thead className="bg-elevated text-caption text-zinc-500">
             <tr>
-              <th className="px-4 py-2.5 font-medium">מה הלקוח אמר</th>
-              <th className="px-4 py-2.5 font-medium">איך טופל</th>
-              <th className="px-4 py-2.5 font-medium">ציון</th>
+              <th className="px-4 py-2 font-medium">מה הלקוח אמר</th>
+              <th className="px-4 py-2 font-medium">איך טופל</th>
+              <th className="px-4 py-2 font-medium">ציון</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-800">
@@ -48,7 +48,7 @@ export function ObjectionTracker({
                   <td className="px-4 py-3 text-zinc-400">{o.howHandled}</td>
                   <td className="px-4 py-3">
                     <span
-                      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs ring-1 ring-inset ${meta.cls}`}
+                      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-1 text-caption font-medium ring-1 ring-inset ${meta.cls}`}
                     >
                       <Icon className="h-3.5 w-3.5" strokeWidth={ICON_STROKE_WIDTH} />
                       {meta.label}

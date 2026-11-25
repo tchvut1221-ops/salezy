@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useMemo, useState, type ReactNode } from "react";
-import { Panel, Button, scoreColor, scorecardScoreColor, EmptyNote } from "./ui";
+import { Panel, Button, scorecardScoreColor, EmptyNote } from "./ui";
 import { AnalysisSection } from "./analysis-section";
 import { ExecutiveSummary } from "./executive-summary";
 import { ScoreGauge } from "./score-gauge";
@@ -13,6 +13,8 @@ import { StageAnalysis } from "./stage-analysis";
 import { Scorecard } from "./scorecard";
 import { CoachingPlan } from "./coaching-plan";
 import { PersonalityCard } from "./personality-card";
+import { Insight, Verdict } from "./insight";
+import { QuoteBlock } from "./quote";
 import { PERSONALITY_TYPE_META } from "@/lib/disc-reference";
 import { PERSONALITY_TYPE_ICON, ICON_STROKE_WIDTH } from "./icons";
 import { PracticeDialog } from "./practice-dialog";
@@ -52,13 +54,27 @@ const DELAY = (step: number) => ({ animationDelay: `${step * 60}ms` });
  * user sees only the highlights first. Every field the previous long-form view
  * rendered is still rendered here — nothing is deleted, it's relocated into a
  * section's `details` (hidden until "פרטים נוספים" is clicked).
+ *
+ * Reading order on the loaded screen (Unit 3 of the visual pass): first the
+ * call score — the gauge, at the top of the first section, the only number
+ * above 24px; second the week's insight, the only tinted block; third the
+ * customer's DISC type in its colour. Everything else is set to stay quieter.
+ *
+ * The file name `title` (the report's h1) renders here when the result is
+ * shown, on one row with the sections-opened counter; it stays inside
+ * #analysis-content, so the PDF still carries it.
  */
 export function AnalysisSections({
   analysisId,
   result,
+  title,
+  note,
 }: {
   analysisId: string;
   result: AnalysisResult;
+  title: string;
+  /** A line under the title (the audio-retention notice), when there is one. */
+  note?: ReactNode;
 }) {
   const [openedIds, setOpenedIds] = useState<ReadonlySet<string>>(new Set());
   const [practiceTarget, setPracticeTarget] = useState<{
@@ -98,24 +114,33 @@ export function AnalysisSections({
     Boolean(result.buyingSignals?.negative.length) ||
     Boolean(result.competitorsMentioned?.length);
 
+  // The gauge is the summary's score (it used to sit behind "פרטים נוספים",
+  // with a 36px numeral standing in for it here), so the score is drawn once.
   const section1Summary = (
-    <div className="space-y-4">
-      <div className="flex items-baseline gap-3">
-        {typeof overallScore === "number" ? (
-          <span
-            className={`font-mono text-4xl font-bold tabular-nums ${scoreColor(overallScore).text}`}
-          >
-            {Math.round(overallScore)}
-          </span>
-        ) : (
-          <EmptyNote className="text-lg">אין ציון זמין</EmptyNote>
-        )}
-        {typeof overallScore === "number" && (
-          <span className="text-sm text-zinc-500">מתוך 100</span>
-        )}
-      </div>
-      {strength && <HighlightRow tone="positive" label="נקודת חוזק" text={strength} />}
-      {improvement && <HighlightRow tone="negative" label="נקודה לשיפור" text={improvement} />}
+    <div className="space-y-6">
+      {typeof overallScore === "number" ? (
+        <ScoreGauge
+          variant="summary"
+          overall={overallScore}
+          scores={result.salespersonPerformance.scores}
+        />
+      ) : (
+        <EmptyNote className="text-lg">אין ציון זמין</EmptyNote>
+      )}
+      {(strength || improvement) && (
+        <div className="space-y-4">
+          {strength && (
+            <Verdict tone="positive" label="נקודת חוזק">
+              {strength}
+            </Verdict>
+          )}
+          {improvement && (
+            <Verdict tone="negative" label="נקודה לשיפור">
+              {improvement}
+            </Verdict>
+          )}
+        </div>
+      )}
     </div>
   );
 
@@ -127,9 +152,6 @@ export function AnalysisSections({
           callObjective={result.callObjective}
           achieved={result.callObjectiveAchieved}
         />
-      )}
-      {typeof overallScore === "number" && (
-        <ScoreGauge overall={overallScore} scores={result.salespersonPerformance.scores} />
       )}
       {hasDealIntelligence && (
         <DealIntelligence
@@ -158,19 +180,19 @@ export function AnalysisSections({
   const weeklyFocus = result.weeklyFocus;
   const firstNextStep = result.nextSteps?.[0];
 
+  // The insight voice (amber, components/salezy/insight.tsx): the only tinted
+  // block on the loaded screen, and the second thing the eye reaches.
   const section2Summary = weeklyFocus ? (
-    <div className="rounded-xl border border-primary/25 bg-primary/5 p-5">
-      <p className="text-sm font-medium text-primary">היעד המרכזי לשבוע</p>
-      <p className="mt-1 text-zinc-100">{weeklyFocus.primaryGoal}</p>
-      <p className="mt-2 text-sm text-zinc-400">
+    <Insight label="היעד המרכזי לשבוע">
+      <p className="text-h3 font-semibold text-foreground">{weeklyFocus.primaryGoal}</p>
+      <p className="mt-2 text-sm leading-relaxed text-zinc-400">
         איך תדע שהצלחת: {weeklyFocus.successMetric}
       </p>
-    </div>
+    </Insight>
   ) : firstNextStep ? (
-    <div className="rounded-xl border border-primary/25 bg-primary/5 p-5">
-      <p className="text-sm font-medium text-primary">המשימה הבאה</p>
-      <p className="mt-1 text-zinc-100">{firstNextStep.action}</p>
-    </div>
+    <Insight label="המשימה הבאה">
+      <p className="text-h3 font-semibold text-foreground">{firstNextStep.action}</p>
+    </Insight>
   ) : (
     <EmptyNote>אין עדיין המלצות המשך טיפול לשיחה זו.</EmptyNote>
   );
@@ -220,34 +242,30 @@ export function AnalysisSections({
       (k) => scorecard[k]?.sentiment != null || scorecard[k]?.failurePoint != null
     );
 
+  // 24px, not 36: the gauge's 56px numeral is the page's one large number.
   const section4Summary = scorecard ? (
     <div className="space-y-4">
-      <div className="flex items-baseline gap-3">
+      <div className="flex items-baseline gap-2">
         {overallScorecardScore != null ? (
           <span
-            className={`font-mono text-4xl font-bold tabular-nums ${scorecardScoreColor(overallScorecardScore).text}`}
+            dir="ltr"
+            className={`font-mono text-2xl font-bold tabular-nums ${scorecardScoreColor(overallScorecardScore).text}`}
           >
             {overallScorecardScore.toFixed(2)}
           </span>
         ) : (
           <EmptyNote className="text-lg">אין מספיק נתונים</EmptyNote>
         )}
-        <span className="text-sm text-zinc-500">מתוך 5</span>
+        <span className="text-caption text-zinc-500">מתוך 5</span>
       </div>
       {weakestCategory ? (
-        <div className="rounded-xl border border-score-low/25 bg-score-low/5 p-4">
-          <p className="text-sm font-medium text-score-low">
-            התחום הכי חלש: {SCORECARD_CATEGORY_LABEL[weakestCategory.key]}
-          </p>
-          <p className="mt-1 font-mono text-sm tabular-nums text-zinc-400">
-            {weakestCategory.score}/5
-          </p>
-          {scorecard[weakestCategory.key].rationale && (
-            <p className="mt-1 text-sm text-zinc-400">
-              {scorecard[weakestCategory.key].rationale}
-            </p>
-          )}
-        </div>
+        <Verdict
+          tone="negative"
+          label={`התחום הכי חלש: ${SCORECARD_CATEGORY_LABEL[weakestCategory.key]}`}
+          value={`${weakestCategory.score}/5`}
+        >
+          {scorecard[weakestCategory.key].rationale || null}
+        </Verdict>
       ) : (
         <EmptyNote>אין מספיק נתונים לזהות תחום לשיפור.</EmptyNote>
       )}
@@ -314,8 +332,14 @@ export function AnalysisSections({
   const openedCount = sections.filter((s) => Boolean(s.details) && openedIds.has(s.id)).length;
 
   return (
-    <div className="mt-8 space-y-6">
-      <ProgressBar opened={openedCount} total={totalWithDetails} />
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+        <div className="min-w-0">
+          <h1 className="break-words text-h3 font-semibold text-foreground">{title}</h1>
+          {note}
+        </div>
+        <ProgressCounter opened={openedCount} total={totalWithDetails} />
+      </div>
 
       {sections.map((s, i) => (
         <div key={s.id} className="animate-fade-up" style={DELAY(i)}>
@@ -347,21 +371,23 @@ export function AnalysisSections({
   );
 }
 
-function ProgressBar({ opened, total }: { opened: number; total: number }) {
+/**
+ * How many sections have been opened, on the title's row: a 13px count and
+ * one 24x4px segment per section (it used to be a full-width bar on a row
+ * of its own, louder than anything it measured).
+ */
+function ProgressCounter({ opened, total }: { opened: number; total: number }) {
   if (total === 0) return null;
   return (
-    <div>
-      <div className="mb-2 flex items-center justify-between text-sm">
-        <span className="text-zinc-400">התקדמות בניתוח</span>
-        <span>
-          <span className="font-mono tabular-nums text-primary">
-            {opened}/{total}
-          </span>{" "}
-          <span className="text-zinc-500">חלקים נפתחו</span>
-        </span>
-      </div>
+    <div className="flex items-center gap-3">
+      <span className="text-caption text-zinc-500">
+        <span dir="ltr" className="font-mono font-medium tabular-nums text-primary">
+          {opened}/{total}
+        </span>{" "}
+        חלקים נפתחו
+      </span>
       <div
-        className="flex gap-1.5"
+        className="flex gap-1"
         role="progressbar"
         aria-valuenow={opened}
         aria-valuemin={0}
@@ -371,7 +397,7 @@ function ProgressBar({ opened, total }: { opened: number; total: number }) {
         {Array.from({ length: total }).map((_, i) => (
           <div
             key={i}
-            className={`h-1.5 flex-1 rounded-full transition-colors ${
+            className={`h-1 w-6 rounded-full transition-colors ${
               i < opened ? "bg-primary" : "bg-zinc-800"
             }`}
           />
@@ -426,9 +452,9 @@ function CustomerStyleSummary({
       <div className="space-y-3">
         <div className="flex items-center gap-2">
           <span className="h-3.5 w-3.5 rounded-full bg-zinc-600" />
-          <span className="text-lg font-semibold text-zinc-300">לא ניתן לקבוע בביטחון</span>
+          <span className="text-h3 font-semibold text-zinc-300">לא ניתן לקבוע בביטחון</span>
         </div>
-        <p className="text-sm leading-relaxed text-zinc-400">{explanation}</p>
+        <p className="text-body text-zinc-400">{explanation}</p>
       </div>
     );
   }
@@ -436,22 +462,23 @@ function CustomerStyleSummary({
   const shown = signals?.slice(0, 2) ?? [];
   const rest = signals?.slice(2) ?? [];
 
+  // The DISC voice: the type name at 24/600 in its own colour, the only place
+  // a DISC colour appears in this section. Quotes take the quote voice.
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <Icon className={`h-5 w-5 ${meta.text}`} strokeWidth={ICON_STROKE_WIDTH} />
-        <span className={`text-2xl font-bold ${meta.text}`}>{meta.he}</span>
-        <span className="text-sm text-zinc-500">
+        <span className={`text-2xl font-semibold ${meta.text}`}>{meta.he}</span>
+        <span className="text-caption text-zinc-500">
           {meta.colorName} · {meta.tagline}
         </span>
       </div>
 
       {shown.length > 0 && (
-        <ul className="space-y-2.5">
+        <ul className="space-y-4">
           {shown.map((s, i) => (
-            <li key={i} className="border-s-2 border-zinc-700 ps-3 text-sm">
-              <p className="text-zinc-200">&ldquo;{s.quote}&rdquo;</p>
-              <p className="mt-0.5 text-zinc-500">{s.interpretation}</p>
+            <li key={i}>
+              <QuoteBlock note={s.interpretation}>{s.quote}</QuoteBlock>
             </li>
           ))}
         </ul>
@@ -469,11 +496,10 @@ function CustomerStyleSummary({
             {showRest ? "הסתר ציטוטים נוספים" : "למה זיהיתי ככה?"}
           </Button>
           {showRest && (
-            <ul id={restId} className="mt-3 space-y-2.5">
+            <ul id={restId} className="mt-4 space-y-4">
               {rest.map((s, i) => (
-                <li key={i} className="border-s-2 border-zinc-700 ps-3 text-sm">
-                  <p className="text-zinc-200">&ldquo;{s.quote}&rdquo;</p>
-                  <p className="mt-0.5 text-zinc-500">{s.interpretation}</p>
+                <li key={i}>
+                  <QuoteBlock note={s.interpretation}>{s.quote}</QuoteBlock>
                 </li>
               ))}
             </ul>
@@ -487,9 +513,9 @@ function CustomerStyleSummary({
 function ListBlock({ label, items }: { label: string; items: string[] }) {
   if (!items?.length) return null;
   return (
-    <div className="mt-3 first:mt-0">
-      <p className="text-sm font-medium text-zinc-400">{label}</p>
-      <ul className="mt-1 list-inside list-disc space-y-1 text-sm text-zinc-200">
+    <div className="mt-4 first:mt-0">
+      <p className="text-caption font-medium text-zinc-500">{label}</p>
+      <ul className="mt-2 list-inside list-disc space-y-1 text-sm leading-relaxed text-zinc-200">
         {items.map((item, i) => (
           <li key={i}>{item}</li>
         ))}

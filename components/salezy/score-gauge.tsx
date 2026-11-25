@@ -24,13 +24,22 @@ const clamp = (n: number) => Math.max(0, Math.min(100, n));
  * four sub-scores as compact meters beside it. The dial reads as a performance
  * meter — the natural instrument for "how did this call go". The arc and the
  * center number count up together on mount.
+ *
+ * Two variants:
+ * - "panel" (default): its own "ציון השיחה" Panel, as the landing page's demo
+ *   shows it. Unchanged.
+ * - "summary": no Panel, for the top of the analysis screen's first section,
+ *   where it is the first thing the eye lands on: a 56px numeral (DESIGN.md's
+ *   score display size), 13px caption, 14px sub-score rows with 6px meters.
  */
 export function ScoreGauge({
   overall,
   scores,
+  variant = "panel",
 }: {
   overall: number;
   scores?: SubScores;
+  variant?: "panel" | "summary";
 }) {
   const value = clamp(overall);
   const display = useCountUp(value);
@@ -38,9 +47,9 @@ export function ScoreGauge({
   const r = 80;
   const len = Math.PI * r; // length of the 180° arc
   const offset = len * (1 - display / 100);
+  const summary = variant === "summary";
 
-  return (
-    <Panel title="ציון השיחה">
+  const gauge = (
       <div className="flex flex-col items-center gap-6 sm:flex-row sm:gap-8">
         {/* Gauge — kept LTR; a dial is an instrument, not text. */}
         <div className="relative shrink-0" dir="ltr">
@@ -69,11 +78,15 @@ export function ScoreGauge({
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-end pb-2">
             <span
-              className={`font-mono text-5xl font-bold tabular-nums sm:text-6xl ${c.text}`}
+              className={`font-mono font-bold tabular-nums ${
+                summary ? "text-[3.5rem] leading-none" : "text-5xl sm:text-6xl"
+              } ${c.text}`}
             >
               {Math.round(display)}
             </span>
-            <span className="text-xs text-zinc-500">מתוך 100</span>
+            <span className={`${summary ? "mt-1 text-caption" : "text-xs"} text-zinc-500`}>
+              מתוך 100
+            </span>
           </div>
         </div>
 
@@ -84,14 +97,24 @@ export function ScoreGauge({
               const sc = scoreColor(v);
               return (
                 <div key={key}>
-                  <div className="mb-1 flex items-center justify-between text-sm">
+                  <div
+                    className={`mb-1 flex items-center justify-between text-sm ${
+                      summary ? "leading-relaxed" : ""
+                    }`}
+                  >
                     <span className="text-zinc-400">{label}</span>
-                    <span className={`font-mono tabular-nums ${sc.text}`}>
+                    <span
+                      className={`font-mono tabular-nums ${summary ? "font-medium" : ""} ${sc.text}`}
+                    >
                       {Math.round(v)}
                     </span>
                   </div>
                   {/* Track + fill anchored to the trailing edge so it grows RTL. */}
-                  <div className="relative h-2 overflow-hidden rounded-full bg-zinc-800">
+                  <div
+                    className={`relative ${
+                      summary ? "h-1.5" : "h-2"
+                    } overflow-hidden rounded-full bg-zinc-800`}
+                  >
                     <div
                       className={`absolute inset-y-0 end-0 rounded-full transition-[width] duration-700 ease-out ${sc.bar}`}
                       style={{ width: `${v}%` }}
@@ -103,6 +126,7 @@ export function ScoreGauge({
           </div>
         )}
       </div>
-    </Panel>
   );
+
+  return summary ? gauge : <Panel title="ציון השיחה">{gauge}</Panel>;
 }

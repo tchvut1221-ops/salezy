@@ -21,17 +21,15 @@ export function ExecutiveSummary({
 }) {
   return (
     <Panel>
-      <p className="text-xs font-medium uppercase text-zinc-500">
-        סיכום השיחה
-      </p>
-      <p className="mt-2 text-lg leading-relaxed text-zinc-100">{summary}</p>
+      <p className="text-caption font-medium text-zinc-500">סיכום השיחה</p>
+      <p className="mt-2 text-body text-zinc-100">{summary}</p>
 
       {(callObjective || achieved) && (
-        <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-3 border-t border-zinc-800 pt-4 text-sm">
+        <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-3 border-t border-zinc-800 pt-4">
           {callObjective && (
             <>
-              <span className="text-zinc-500">מטרת השיחה:</span>
-              <span className="text-zinc-300">{callObjective}</span>
+              <span className="text-caption font-medium text-zinc-500">מטרת השיחה:</span>
+              <span className="text-sm leading-relaxed text-zinc-300">{callObjective}</span>
             </>
           )}
           {achieved && (

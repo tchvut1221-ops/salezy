@@ -13,6 +13,7 @@ import {
   YAxis,
 } from "recharts";
 import { Panel, EmptyNote } from "./ui";
+import { Insight } from "./insight";
 import {
   CHART_AREA_OPACITY,
   CHART_AXIS_PROPS,
@@ -187,12 +188,14 @@ export function PatternsView({ data }: { data: Extract<PatternsData, { eligible:
 
       {data.coaching && (
         <div className="animate-fade-up" style={DELAY(4)}>
-          <Panel title="אימון מבוסס דפוסים" className="border-primary/25 bg-primary/5">
-            <p className="text-sm text-zinc-300">{data.coaching.finding.message}</p>
-            <p className="mt-3 font-medium text-zinc-100">
-              בשבוע הקרוב: {data.coaching.action}
-            </p>
-            <p className="mt-1 text-sm text-zinc-400">{data.coaching.how}</p>
+          {/* The insight voice (amber), as on the analysis screen; it was a
+              blue box that read like a link. */}
+          <Panel title="אימון מבוסס דפוסים">
+            <p className="text-body text-zinc-300">{data.coaching.finding.message}</p>
+            <Insight label="בשבוע הקרוב" className="mt-4">
+              <p className="text-body font-medium text-zinc-100">{data.coaching.action}</p>
+              <p className="mt-1 text-sm leading-relaxed text-zinc-400">{data.coaching.how}</p>
+            </Insight>
           </Panel>
         </div>
       )}

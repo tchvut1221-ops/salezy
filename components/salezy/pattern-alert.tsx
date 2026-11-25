@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ArrowLeft, Lightbulb, Radar } from "lucide-react";
+import { ArrowLeft, Radar } from "lucide-react";
 import { Panel } from "./ui";
+import { Insight } from "./insight";
 import { ICON_STROKE_WIDTH } from "./icons";
 import { MIN_CALLS_FOR_PATTERN, type DashboardInsights } from "@/lib/patterns";
 
@@ -54,22 +55,14 @@ export function PatternAlert({
           </p>
 
           {insights.topCoaching && (
-            <div className="mt-4 rounded-lg border border-insight/25 bg-insight/5 p-4">
-              <p className="flex items-center gap-2 text-caption font-medium text-insight">
-                <Lightbulb
-                  className="h-4 w-4 shrink-0"
-                  strokeWidth={ICON_STROKE_WIDTH}
-                  aria-hidden="true"
-                />
-                מה לעשות עם זה
-              </p>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-200">
+            <Insight label="מה לעשות עם זה" className="mt-4">
+              <p className="text-sm leading-relaxed text-zinc-200">
                 {insights.topCoaching.action}
               </p>
               <p className="mt-1 text-sm leading-relaxed text-zinc-400">
                 {insights.topCoaching.how}
               </p>
-            </div>
+            </Insight>
           )}
         </>
       )}

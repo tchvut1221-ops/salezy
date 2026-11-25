@@ -47,7 +47,7 @@ export function DealIntelligence({
                 const current = i === idx;
                 return (
                   <div key={s.key} className="flex flex-1 items-center">
-                    <div className="flex flex-col items-center gap-1.5">
+                    <div className="flex flex-col items-center gap-2">
                       <span
                         className={`h-3 w-3 rounded-full ${
                           current
@@ -58,8 +58,8 @@ export function DealIntelligence({
                         }`}
                       />
                       <span
-                        className={`whitespace-nowrap text-xs ${
-                          reached ? "text-primary" : "text-zinc-500"
+                        className={`whitespace-nowrap text-caption ${
+                          reached ? "font-medium text-primary" : "text-zinc-500"
                         }`}
                       >
                         {s.label}
@@ -80,7 +80,7 @@ export function DealIntelligence({
         )}
 
         {showSignals && (
-          <div className="grid gap-5 sm:grid-cols-2">
+          <div className="grid gap-6 sm:grid-cols-2">
             {positive.length > 0 && (
               <SignalList
                 label="אותות חיוביים"
@@ -100,9 +100,7 @@ export function DealIntelligence({
 
         {competitors && competitors.length > 0 && (
           <div>
-            <p className="mb-2 text-sm font-medium text-zinc-400">
-              מתחרים שהוזכרו
-            </p>
+            <p className="mb-2 text-caption font-medium text-zinc-500">מתחרים שהוזכרו</p>
             <div className="flex flex-wrap gap-2">
               {competitors.map((name, i) => (
                 <Pill key={i} tone="info">
@@ -130,14 +128,14 @@ function SignalList({
   const Icon = SIGNAL_DIRECTION_ICON[tone];
   return (
     <div>
-      <p className={`mb-2 flex items-center gap-1.5 text-sm font-medium ${head}`}>
+      <p className={`mb-2 flex items-center gap-2 text-caption font-medium ${head}`}>
         <Icon className="h-4 w-4" strokeWidth={ICON_STROKE_WIDTH} />
         {label}
       </p>
-      <ul className="space-y-1.5">
+      <ul className="space-y-2">
         {items.map((s, i) => (
-          <li key={i} className="flex gap-2 text-sm text-zinc-300">
-            <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${tone === "positive" ? "bg-score-high" : "bg-score-low"}`} />
+          <li key={i} className="flex gap-2 text-sm leading-relaxed text-zinc-300">
+            <span className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${tone === "positive" ? "bg-score-high" : "bg-score-low"}`} />
             <span>{s}</span>
           </li>
         ))}

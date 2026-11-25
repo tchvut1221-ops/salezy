@@ -198,12 +198,14 @@ export function AnalysisView({
       )}
 
       <div id="analysis-content">
-        <h1 className="text-2xl font-bold text-foreground">{analysis.file_name}</h1>
-        {audioDeleted && isReady && (
-          <p className="mt-1 text-xs text-zinc-500">
-            ההקלטה המקורית נמחקה בהתאם למדיניות השמירה ({AUDIO_RETENTION_DAYS}{" "}
-            יום) — התמלול והניתוח נשמרים.
-          </p>
+        {/* The report's h1 (the file name). Once the result is shown,
+            AnalysisSections renders it instead, on one row with the
+            sections-opened counter, together with the retention notice that
+            only applies to a finished analysis. */}
+        {!isReady && (
+          <h1 className="break-words text-h3 font-semibold text-foreground">
+            {analysis.file_name}
+          </h1>
         )}
 
         {analysis.status === "failed" ||
@@ -241,7 +243,19 @@ export function AnalysisView({
             )}
           </Alert>
         ) : isReady && analysis.result ? (
-          <AnalysisSections analysisId={initial.id} result={analysis.result} />
+          <AnalysisSections
+            analysisId={initial.id}
+            result={analysis.result}
+            title={analysis.file_name}
+            note={
+              audioDeleted ? (
+                <p className="mt-1 text-caption text-zinc-500">
+                  ההקלטה המקורית נמחקה בהתאם למדיניות השמירה ({AUDIO_RETENTION_DAYS}{" "}
+                  יום) — התמלול והניתוח נשמרים.
+                </p>
+              ) : undefined
+            }
+          />
         ) : (
           <Progress status={analysis.status} analysisId={initial.id} />
         )}

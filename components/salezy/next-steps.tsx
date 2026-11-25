@@ -48,22 +48,20 @@ export function NextSteps({
           const meta = PRIORITY_META[s.priority];
           const Icon = NEXT_STEP_PRIORITY_ICON[s.priority];
           return (
-            <li
-              key={i}
-              className="flex gap-3 rounded-xl border border-zinc-800 bg-zinc-950/40 p-4"
-            >
-              <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${meta.dot}`} />
-              <div className="flex-1">
+            // Second-level block: raised surface, no border of its own.
+            <li key={i} className="flex gap-3 rounded-lg bg-elevated p-4">
+              <span className={`mt-2 h-2.5 w-2.5 shrink-0 rounded-full ${meta.dot}`} />
+              <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-medium text-zinc-100">{s.action}</p>
+                  <p className="text-sm font-medium leading-relaxed text-zinc-100">{s.action}</p>
                   <span
-                    className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs ring-1 ring-inset ${meta.cls}`}
+                    className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-1 text-caption font-medium ring-1 ring-inset ${meta.cls}`}
                   >
                     <Icon className="h-3.5 w-3.5" strokeWidth={ICON_STROKE_WIDTH} />
                     {meta.label}
                   </span>
                 </div>
-                <p className="mt-1 text-sm text-zinc-400">{s.reasoning}</p>
+                <p className="mt-1 text-sm leading-relaxed text-zinc-400">{s.reasoning}</p>
               </div>
             </li>
           );

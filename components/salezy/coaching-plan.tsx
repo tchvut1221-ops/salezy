@@ -65,23 +65,28 @@ export function CoachingPlan({
           const meta = PRIORITY_META[a.priority];
           const isDone = completed.has(i);
           return (
-            <li key={i} className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4">
+            // Second-level block: raised surface, no border of its own.
+            <li key={i} className="rounded-lg bg-elevated p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
-                <label className="flex items-start gap-2.5">
+                <label className="flex items-start gap-2">
                   <input
                     type="checkbox"
                     checked={isDone}
                     onChange={() => toggle(i, a.action)}
-                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-border-interactive bg-elevated text-primary focus:ring-2 focus:ring-ring"
+                    className="mt-1 h-4 w-4 shrink-0 rounded border-border-interactive bg-elevated text-primary focus:ring-2 focus:ring-ring"
                   />
-                  <p className={`font-medium text-zinc-100 ${isDone ? "text-zinc-500 line-through" : ""}`}>
+                  <p
+                    className={`text-sm font-medium leading-relaxed ${
+                      isDone ? "text-zinc-500 line-through" : "text-zinc-100"
+                    }`}
+                  >
                     {a.action}
                   </p>
                 </label>
                 <Pill tone={meta.tone}>{meta.label}</Pill>
               </div>
-              <p className="mt-2 text-sm text-zinc-400">למה: {a.why}</p>
-              <p className="mt-1 text-sm text-zinc-400">איך: {a.how}</p>
+              <p className="mt-2 text-sm leading-relaxed text-zinc-400">למה: {a.why}</p>
+              <p className="mt-1 text-sm leading-relaxed text-zinc-400">איך: {a.how}</p>
             </li>
           );
         })}

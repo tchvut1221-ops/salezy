@@ -8,7 +8,8 @@ import {
   Handshake,
 } from "lucide-react";
 import { Panel, Pill, scorecardScoreColor } from "./ui";
-import { Quote } from "./quote";
+import { QuoteBlock } from "./quote";
+import { Verdict } from "./insight";
 import type {
   AnalysisResult,
   ScorecardCategory,
@@ -79,35 +80,30 @@ function StageRow({
         {!isLast && <span className="mt-1 w-px grow bg-zinc-800" aria-hidden />}
       </div>
 
-      <div className="flex-1 pb-6">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <span className="font-medium text-zinc-200">{stage.label}</span>
+      <div className="min-w-0 flex-1 pb-6">
+        <div className="flex min-h-10 flex-wrap items-center gap-x-3 gap-y-2">
+          <span className="text-sm font-medium leading-relaxed text-zinc-100">{stage.label}</span>
           <div className="flex items-center gap-2">
             <ScoreDots score={category.score} />
             {category.score != null && sc && (
-              <span className={`text-sm font-semibold ${sc.text}`}>{category.score}/5</span>
+              <span dir="ltr" className={`font-mono text-sm font-medium tabular-nums ${sc.text}`}>
+                {category.score}/5
+              </span>
             )}
           </div>
           {sentiment && <Pill tone={sentiment.tone}>{sentiment.label}</Pill>}
         </div>
 
         {category.score == null && (
-          <p className="mt-2 text-xs text-zinc-600">שלב זה לא זוהה בשיחה</p>
+          <p className="mt-2 text-caption text-zinc-500">שלב זה לא זוהה בשיחה</p>
         )}
 
-        {category.quote && (
-          <blockquote className="mt-3 rounded-lg border-e-4 border-primary bg-zinc-950/40 px-4 py-2.5 text-sm text-zinc-300">
-            <Quote>{category.quote}</Quote>
-          </blockquote>
-        )}
+        {category.quote && <QuoteBlock className="mt-3">{category.quote}</QuoteBlock>}
 
         {category.failurePoint && (
-          <div className="mt-3 flex gap-2 rounded-lg border border-score-low/25 bg-score-low/5 px-4 py-2.5">
-            <span className="mt-0.5 shrink-0 text-xs font-medium text-score-low">
-              נקודת כשל
-            </span>
-            <p className="text-sm text-zinc-300">{category.failurePoint}</p>
-          </div>
+          <Verdict tone="negative" label="נקודת כשל" className="mt-4">
+            {category.failurePoint}
+          </Verdict>
         )}
       </div>
     </li>
@@ -125,7 +121,7 @@ function StageRow({
 export function StageAnalysis({ scorecard }: { scorecard: Scorecard }) {
   return (
     <Panel eyebrow="מסע השיחה" title="ניתוח לפי שלבים">
-      <p className="mb-5 text-xs leading-relaxed text-zinc-500">
+      <p className="mb-6 text-caption text-zinc-500">
         חמשת שלבי השיחה לפי הסדר — לכל שלב ציון, הסנטימנט הרגשי, וזיהוי נקודת הכשל אם
         הייתה. הצצה לאיך השיחה זרמה, מהפתיחה ועד הסגירה.
       </p>
