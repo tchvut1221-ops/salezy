@@ -9,9 +9,11 @@ import { SiteFooter } from "@/components/salezy/site-footer";
  * group exists purely so these routes get the sidebar shell while the public
  * pages keep the plain top bar (app/(site)/layout.tsx).
  *
- * Layout: a flex row capped at --container-app (1400px, the D1 token this is
- * the intended first consumer of). The sidebar is the row's FIRST child, which
- * under `dir="rtl"` puts it on the right — no physical positioning anywhere.
+ * Layout: a full-width flex row, so the sidebar is the window's own edge rather
+ * than a panel floating inside a centred container. The sidebar is the row's
+ * FIRST child, which under `dir="rtl"` puts it on the right — no physical
+ * positioning anywhere. Each page caps its own content width and hangs it from
+ * the same start edge as its PageHeader title (components/salezy/page-header.tsx).
  * Below `md` the sidebar hides and AppBottomNav takes over.
  *
  * The `pb-[...]` on the content column reserves exactly the bottom tab bar's
@@ -32,7 +34,7 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mx-auto flex w-full max-w-app flex-1">
+    <div className="flex w-full flex-1">
       <AppSidebar />
 
       <div className="flex min-w-0 flex-1 flex-col pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">

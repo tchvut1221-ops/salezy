@@ -50,12 +50,16 @@ export function AppBottomNav() {
               <Link
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                className={`flex h-16 flex-col items-center justify-center gap-1 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${
-                  active ? "text-primary" : "text-zinc-400"
+                // Active: the same language as the sidebar — a solid accent bar
+                // (here on the top edge, facing the content) plus a raised surface.
+                className={`relative flex h-16 flex-col items-center justify-center gap-1 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${
+                  active
+                    ? "bg-elevated text-foreground before:absolute before:inset-x-4 before:top-0 before:h-1 before:rounded-b-full before:bg-primary"
+                    : "text-zinc-400 hover:bg-hover hover:text-foreground"
                 }`}
               >
                 <Icon
-                  className="h-6 w-6"
+                  className={`h-6 w-6 ${active ? "text-primary" : ""}`}
                   strokeWidth={ICON_STROKE_WIDTH}
                   aria-hidden="true"
                 />

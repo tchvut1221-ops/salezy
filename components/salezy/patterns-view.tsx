@@ -54,7 +54,7 @@ export function PatternsView({ data }: { data: Extract<PatternsData, { eligible:
       : "";
 
   return (
-    <div className="mt-8 space-y-6">
+    <div className="space-y-6">
       <div className="animate-fade-up" style={DELAY(0)}>
         <Panel eyebrow="מגמה" title="ציוני קטגוריות — ממוצע">
           <div className="h-64 w-full" dir="ltr" role="img" aria-label={categorySummary}>

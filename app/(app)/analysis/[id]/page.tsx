@@ -1,6 +1,4 @@
 import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import type { Analysis } from "@/types";
@@ -59,18 +57,10 @@ export default async function AnalysisPage({
   if (error || !data) notFound();
 
   return (
-    <main id="main-content" tabIndex={-1} className="mx-auto max-w-5xl px-4 py-12 outline-none">
-      <Link
-        href="/dashboard"
-        className="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-foreground"
-      >
-        {/* RTL back — DESIGN.md: "back points right" */}
-        <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
-        חזרה לדשבורד
-      </Link>
-      <div className="mt-2">
-        <AnalysisView initial={data as Analysis} isFirstAnalysis={!otherCompletedCount} />
-      </div>
+    // AnalysisView renders the PageHeader itself: its actions (delete, PDF)
+    // depend on the analysis' live status, which only the client view tracks.
+    <main id="main-content" tabIndex={-1} className="w-full outline-none">
+      <AnalysisView initial={data as Analysis} isFirstAnalysis={!otherCompletedCount} />
     </main>
   );
 }

@@ -8,6 +8,7 @@ import { UploadCloud } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { isAllowedAudio, MAX_FILE_BYTES } from "@/lib/constants";
 import { Button, Meter } from "@/components/salezy/ui";
+import { PageHeader } from "@/components/salezy/page-header";
 import { AUDIO_RETENTION_DAYS } from "@/lib/retention-policy";
 import { startAnalysis } from "@/app/(app)/upload/actions";
 
@@ -165,9 +166,11 @@ export function UploadForm({ hasNoAnalyses }: { hasNoAnalyses: boolean }) {
   }
 
   return (
-    <main id="main-content" tabIndex={-1} className="mx-auto max-w-xl px-4 py-12 outline-none">
-      <h1 className="text-2xl font-bold text-foreground">העלאת שיחת מכירה</h1>
-      <p className="mt-1 text-sm text-zinc-400">
+    <main id="main-content" tabIndex={-1} className="w-full outline-none">
+      <PageHeader title="העלאת שיחת מכירה" />
+
+      <div className="max-w-xl px-4 py-6 sm:px-6 sm:py-8">
+      <p className="text-sm text-zinc-400">
         העלה הקלטה (mp3 / wav / m4a / mp4 / mov / ogg / aac / webm / flac, עד{" "}
         {Math.round(MAX_FILE_BYTES / 1024 / 1024)}MB) ונתחיל לנתח אותה.
       </p>
@@ -253,6 +256,7 @@ export function UploadForm({ hasNoAnalyses }: { hasNoAnalyses: boolean }) {
       >
         {busy ? "מעלה ומתחיל ניתוח..." : "העלה ונתח"}
       </Button>
+      </div>
     </main>
   );
 }

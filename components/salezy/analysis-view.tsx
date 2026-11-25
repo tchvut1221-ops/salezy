@@ -19,6 +19,7 @@ import {
   ResumeAnalysisButton,
 } from "./analysis-actions";
 import { Button, Alert } from "./ui";
+import { PageHeader } from "./page-header";
 
 const STEPS: { key: AnalysisStatus; label: string }[] = [
   { key: "uploaded", label: "הועלה" },
@@ -144,16 +145,27 @@ export function AnalysisView({
 
   return (
     <div>
-      {/* כפתורי פעולה — מחוץ ל-#analysis-content ומוסתרים בהדפסה. מחיקה זמינה
-          תמיד; PDF רק כשהניתוח מוכן. */}
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <DeleteAnalysisButton analysisId={initial.id} />
-        {isReady && (
-          <Button onClick={onExportPdf} disabled={exportingPdf}>
-            {exportingPdf ? "מכין PDF..." : "הורד PDF"}
-          </Button>
-        )}
-      </div>
+      {/* כפתורי פעולה — בפס הכותרת של הדף, מחוץ ל-#analysis-content ומוסתרים
+          בהדפסה. מחיקה זמינה תמיד; PDF רק כשהניתוח מוכן.
+          The report's own h1 (the file name, inside #analysis-content) stays the
+          page heading and the PDF's title, so the band carries a plain label. */}
+      <PageHeader
+        title="ניתוח שיחה"
+        titleAs="p"
+        back={{ href: "/dashboard", label: "חזרה לדשבורד" }}
+        actions={
+          <>
+            <DeleteAnalysisButton analysisId={initial.id} />
+            {isReady && (
+              <Button onClick={onExportPdf} disabled={exportingPdf}>
+                {exportingPdf ? "מכין PDF..." : "הורד PDF"}
+              </Button>
+            )}
+          </>
+        }
+      />
+
+      <div className="max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
 
       {/* D6 first-analysis celebration — outside #analysis-content on
           purpose, same as the action row above: it's a one-time UI moment,
@@ -271,6 +283,7 @@ export function AnalysisView({
           <TranscriptView transcript={analysis.transcript} result={analysis.result} />
         </div>
       )}
+      </div>
     </div>
   );
 }

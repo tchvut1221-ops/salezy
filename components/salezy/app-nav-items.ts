@@ -36,9 +36,10 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
 ];
 
 /**
- * The upload entry is kept out of APP_NAV_ITEMS because it isn't styled as a
- * nav link: it's the primary CTA (matching the treatment the old header nav
- * gave it) in the sidebar, and the third tab on mobile.
+ * The upload entry is kept out of APP_NAV_ITEMS because it sits in its own
+ * group in the sidebar ("פעולות", below the overview group), and it is the
+ * third tab on mobile. The page-level CTA for it lives in the dashboard's
+ * PageHeader.
  */
 export const UPLOAD_NAV_ITEM: AppNavItem = {
   href: "/upload",

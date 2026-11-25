@@ -1,4 +1,5 @@
 import { Skeleton } from "@/components/salezy/ui";
+import { PageHeaderSkeleton } from "@/components/salezy/page-header";
 
 /** Same shell as a real Panel, so the skeleton grid occupies the real grid's box. */
 function PanelSkeleton({ className }: { className?: string }) {
@@ -27,21 +28,15 @@ function PanelSkeleton({ className }: { className?: string }) {
  */
 export default function DashboardLoading() {
   return (
-    <main
-      id="main-content"
-      tabIndex={-1}
-      className="w-full px-4 py-6 outline-none sm:px-6 sm:py-8"
-    >
+    <main id="main-content" tabIndex={-1} className="w-full outline-none">
       <p className="sr-only" role="status">
         טוען...
       </p>
 
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <Skeleton className="h-8 w-32" />
-        <Skeleton className="h-11 w-44" />
-      </div>
+      <PageHeaderSkeleton actions={1} />
 
-      <div className="mt-8 grid gap-4 lg:grid-cols-3">
+      <div className="max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+      <div className="grid gap-4 lg:grid-cols-3">
         <PanelSkeleton className="lg:col-span-2" />
         <PanelSkeleton />
         <PanelSkeleton className="lg:col-span-2" />
@@ -66,6 +61,7 @@ export default function DashboardLoading() {
             </div>
           ))}
         </div>
+      </div>
       </div>
     </main>
   );

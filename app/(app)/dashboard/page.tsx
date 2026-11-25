@@ -21,6 +21,7 @@ import {
 import { OnboardingChecklist, type ChecklistStep } from "@/components/salezy/onboarding-checklist";
 import { WelcomeFlow } from "@/components/salezy/welcome-flow";
 import { buttonVariants, EmptyState } from "@/components/salezy/ui";
+import { PageHeader } from "@/components/salezy/page-header";
 
 export const metadata: Metadata = { title: "דשבורד" };
 
@@ -68,23 +69,23 @@ export default async function DashboardPage() {
   ];
 
   return (
-    <main
-      id="main-content"
-      tabIndex={-1}
-      className="w-full px-4 py-6 outline-none sm:px-6 sm:py-8"
-    >
+    <main id="main-content" tabIndex={-1} className="w-full outline-none">
       {analyses.length === 0 && <WelcomeFlow />}
 
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-h2 font-semibold text-foreground">דשבורד</h1>
-        <Link href="/upload" className={buttonVariants()}>
-          + העלאת שיחה חדשה
-        </Link>
-      </div>
+      <PageHeader
+        title="דשבורד"
+        actions={
+          <Link href="/upload" className={buttonVariants()}>
+            + העלאת שיחה חדשה
+          </Link>
+        }
+      />
 
-      {/* empty:hidden — the checklist renders nothing once every step is done,
-          and its wrapper should not keep the gap. */}
-      <div className="mt-6 empty:hidden">
+      <div className="max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+      {/* empty:hidden — the checklist renders nothing once every step is done.
+          The wrapper carries the gap below it (mb-8), so when it is empty the
+          widget grid starts right under the page header. */}
+      <div className="mb-8 empty:hidden">
         <OnboardingChecklist steps={checklistSteps} />
       </div>
 
@@ -94,7 +95,7 @@ export default async function DashboardPage() {
         the empty state below instead of five cards explaining they're empty.
       */}
       {scorePoints.length > 0 && (
-        <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {/* D7: staggered entrance (same animate-fade-up + delay pattern already
               used by analysis-sections.tsx's cards and the calls list below) — the
               wrapper carries both the animation and the grid col-span, since the
@@ -137,6 +138,7 @@ export default async function DashboardPage() {
           </div>
         )}
       </section>
+      </div>
     </main>
   );
 }

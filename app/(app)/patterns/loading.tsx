@@ -1,16 +1,11 @@
-import { Skeleton } from "@/components/salezy/ui";
+import { PageHeaderSkeleton } from "@/components/salezy/page-header";
 
 export default function PatternsLoading() {
   return (
-    <main
-      id="main-content"
-      tabIndex={-1}
-      className="mx-auto max-w-4xl px-4 py-8 outline-none sm:py-12"
-    >
+    <main id="main-content" tabIndex={-1} className="w-full outline-none">
       <p className="sr-only" role="status">טוען...</p>
-      <Skeleton className="h-4 w-24" />
-      <Skeleton className="mt-2 h-8 w-56" />
-      <div className="mt-8 space-y-6">
+      <PageHeaderSkeleton back />
+      <div className="max-w-4xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}

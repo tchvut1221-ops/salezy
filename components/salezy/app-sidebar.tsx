@@ -5,13 +5,33 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ChevronsLeft, ChevronsRight, LogOut } from "lucide-react";
 import { signOut } from "@/app/actions";
-import { cn } from "@/lib/utils";
 import { Logo } from "./logo";
-import { buttonVariants } from "./ui";
 import { ICON_STROKE_WIDTH } from "./icons";
-import { APP_NAV_ITEMS, UPLOAD_NAV_ITEM, isNavItemActive } from "./app-nav-items";
+import {
+  APP_NAV_ITEMS,
+  UPLOAD_NAV_ITEM,
+  isNavItemActive,
+  type AppNavItem,
+} from "./app-nav-items";
 
 const COLLAPSED_KEY = "salezy-sidebar-collapsed";
+
+/** Nav groups, in the same order as the mobile tabs. */
+const NAV_GROUPS: { label: string; items: AppNavItem[] }[] = [
+  { label: "סקירה", items: APP_NAV_ITEMS },
+  { label: "פעולות", items: [UPLOAD_NAV_ITEM] },
+];
+const ACCOUNT_LABEL = "חשבון";
+
+/** Every row in the sidebar: 44px tall, accent focus ring, visible hover. */
+const ROW =
+  "relative flex h-11 items-center gap-3 rounded-lg text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring";
+const ROW_IDLE = "text-zinc-400 hover:bg-hover hover:text-foreground";
+/* Active: a solid accent bar on the start edge plus a raised surface, so the
+   current page reads at a glance and not only through a text colour. */
+const ROW_ACTIVE =
+  "bg-elevated font-medium text-foreground before:absolute before:inset-y-2 before:start-0 before:w-1 before:rounded-e-full before:bg-primary";
+const GROUP_LABEL = "px-3 pb-1 text-caption font-medium text-zinc-500";
 
 /**
  * Desktop sidebar for the authenticated app (md and up — below that the
@@ -19,9 +39,14 @@ const COLLAPSED_KEY = "salezy-sidebar-collapsed";
  * collapsed to icons, with the choice persisted to localStorage the same way
  * accessibility-widget.tsx persists its preferences.
  *
+ * It is the frame's own surface, one step above the page background, with a
+ * strong edge toward the content. Its brand row is the same 64px band with the
+ * same hairline as the PageHeader beside it. Collapsed, the group labels give
+ * way to hairlines so the grouping still shows.
+ *
  * RTL: the sidebar is the first child of the shell's flex row, so it lands on
- * the start (right) edge, and its inner divider is `border-e` (the end/left
- * side in RTL). No physical left/right classes anywhere in this file.
+ * the start (right) edge, and its edge is `border-e` (the end/left side in
+ * RTL). No physical left/right classes anywhere in this file.
  *
  * Every hit target is h-11 (44px) — the D0 audit flagged sub-24px controls in
  * the old nav, so nothing here goes below the 44px comfortable minimum.
@@ -48,14 +73,16 @@ export function AppSidebar() {
     });
   }
 
+  const rowPadding = collapsed ? "justify-center px-0" : "px-3";
+
   return (
     <aside
-      className={`sticky top-0 hidden h-svh shrink-0 flex-col overflow-y-auto border-e border-border bg-surface transition-[width] duration-200 md:flex ${
+      className={`sticky top-0 hidden h-svh shrink-0 flex-col overflow-y-auto border-e border-border-strong bg-surface transition-[width] duration-200 md:flex ${
         collapsed ? "w-16" : "w-60"
       }`}
     >
       <div
-        className={`flex h-14 shrink-0 items-center ${
+        className={`flex h-16 shrink-0 items-center border-b border-border ${
           collapsed ? "justify-center px-2" : "px-4"
         }`}
       >
@@ -74,62 +101,54 @@ export function AppSidebar() {
           wide rather than 40 — comfortably past the 24px WCAG floor. */}
       <nav
         aria-label="ניווט ראשי"
-        className={`mt-4 flex flex-col gap-1 ${collapsed ? "px-2" : "px-3"}`}
+        className={`flex flex-col gap-6 py-4 ${collapsed ? "px-2" : "px-3"}`}
       >
-        {APP_NAV_ITEMS.map((item) => {
-          const active = isNavItemActive(item, pathname);
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={active ? "page" : undefined}
-              aria-label={collapsed ? item.label : undefined}
-              title={collapsed ? item.label : undefined}
-              className={`flex h-11 items-center gap-3 rounded-lg text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring ${
-                collapsed ? "justify-center px-0" : "px-3"
-              } ${
-                active
-                  ? "bg-primary/10 font-medium text-primary"
-                  : "text-zinc-400 hover:bg-hover hover:text-foreground"
-              }`}
-            >
-              <Icon
-                className="h-5 w-5 shrink-0"
-                strokeWidth={ICON_STROKE_WIDTH}
-                aria-hidden="true"
-              />
-              {!collapsed && <span className="truncate">{item.label}</span>}
-            </Link>
-          );
-        })}
-
-        <Link
-          href={UPLOAD_NAV_ITEM.href}
-          aria-label={collapsed ? UPLOAD_NAV_ITEM.label : undefined}
-          title={collapsed ? UPLOAD_NAV_ITEM.label : undefined}
-          // cn() (tailwind-merge), not buttonVariants' own className slot: the
-          // collapsed pill has to override the recipe's px-4 with px-0, and
-          // cva only concatenates — leaving both classes in play and the
-          // outcome up to stylesheet order.
-          className={cn(
-            buttonVariants(),
-            "mt-2 h-11 gap-2",
-            collapsed ? "w-11 self-center px-0" : "w-full"
-          )}
-        >
-          <UPLOAD_NAV_ITEM.icon
-            className="h-5 w-5 shrink-0"
-            strokeWidth={ICON_STROKE_WIDTH}
-            aria-hidden="true"
-          />
-          {!collapsed && <span className="text-sm">{UPLOAD_NAV_ITEM.label}</span>}
-        </Link>
+        {NAV_GROUPS.map((group, index) => (
+          <div key={group.label} role="group" aria-label={group.label} className="flex flex-col gap-1">
+            {collapsed ? (
+              index > 0 && <div className="mx-2 mb-2 border-t border-border" aria-hidden="true" />
+            ) : (
+              <p className={GROUP_LABEL} aria-hidden="true">
+                {group.label}
+              </p>
+            )}
+            {group.items.map((item) => {
+              const active = isNavItemActive(item, pathname);
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  aria-label={collapsed ? item.label : undefined}
+                  title={collapsed ? item.label : undefined}
+                  className={`${ROW} ${rowPadding} ${active ? ROW_ACTIVE : ROW_IDLE}`}
+                >
+                  <Icon
+                    className={`h-5 w-5 shrink-0 ${active ? "text-primary" : ""}`}
+                    strokeWidth={ICON_STROKE_WIDTH}
+                    aria-hidden="true"
+                  />
+                  {!collapsed && <span className="truncate">{item.label}</span>}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       <div
-        className={`mt-auto flex flex-col gap-1 py-3 ${collapsed ? "px-2" : "px-3"}`}
+        role="group"
+        aria-label={ACCOUNT_LABEL}
+        className={`mt-auto flex flex-col gap-1 border-t border-border py-3 ${
+          collapsed ? "px-2" : "px-3"
+        }`}
       >
+        {!collapsed && (
+          <p className={GROUP_LABEL} aria-hidden="true">
+            {ACCOUNT_LABEL}
+          </p>
+        )}
         <button
           type="button"
           onClick={toggle}
@@ -138,9 +157,7 @@ export function AppSidebar() {
           // lie to a screen reader. The state-specific label carries the
           // meaning instead.
           aria-label={collapsed ? "הרחבת תפריט הצד" : "כיווץ תפריט הצד"}
-          className={`flex h-11 items-center gap-3 rounded-lg text-sm text-zinc-400 outline-none transition-colors hover:bg-hover hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring ${
-            collapsed ? "justify-center px-0" : "px-3"
-          }`}
+          className={`${ROW} ${rowPadding} ${ROW_IDLE}`}
         >
           {/* RTL: the sidebar sits on the right, so "collapse" pushes it toward
               the right edge (ChevronsRight) and "expand" pulls it back toward
@@ -166,9 +183,7 @@ export function AppSidebar() {
             type="submit"
             aria-label={collapsed ? "התנתקות" : undefined}
             title={collapsed ? "התנתקות" : undefined}
-            className={`flex h-11 w-full items-center gap-3 rounded-lg text-sm text-zinc-400 outline-none transition-colors hover:bg-hover hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring ${
-              collapsed ? "justify-center px-0" : "px-3"
-            }`}
+            className={`${ROW} w-full ${rowPadding} ${ROW_IDLE}`}
           >
             <LogOut
               className="h-5 w-5 shrink-0"
